@@ -1,0 +1,94 @@
+{% extends 'base_layout.html' %} {% block content %}{% load static %}
+
+<div class="wrapper" style="font-family: Microsoft Yahei;">
+</br>
+</br>
+</br>
+</br>
+</br>
+
+<div class="container">
+    <h4><b>品項輸入</b><span class="badge badge-info">alpha</span></h4>
+    <!--<form action="/test_func/" method="POST" id="test_form">-->
+    <form method="POST" id="test_form">
+        {% csrf_token %}
+        <div class="input-group">
+            <div class="input-group col-md-10">
+                <input type="text" class="form-control" name='prod_input1' value="" id='prod_input1' placeholder="第一組：測試的商品/規格組合名稱" aria-describedby="button-addon4">
+            </div>
+            <div class="input-group col-md-2">
+                <input type="number" class="form-control" name='num_input1' value="" step="1" data-bind="value:replyNumber" id='num_input1' min="1" placeholder="組數(預設1)" aria-describedby="button-addon4">
+            </div>
+            </br>
+            <div class="input-group col-md-10">
+                <input type="text" class="form-control" name='prod_input2' value="" id='prod_input2' placeholder="第二組：測試的商品/規格組合名稱" aria-describedby="button-addon4">
+            </div>
+            <div class="input-group col-md-2">
+                <input type="number" class="form-control" name='num_input2' value="" step="1" data-bind="value:replyNumber" id='num_input2' min="1" placeholder="組數(預設1)" aria-describedby="button-addon4">
+            </div>
+            </br>
+            <div class="input-group col-md-10">
+                <input type="text" class="form-control" name='prod_input3' value="" id='prod_input3' placeholder="第三組：測試的商品/規格組合名稱" aria-describedby="button-addon4">
+            </div>
+            <div class="input-group col-md-2">
+                <input type="number" class="form-control" name='num_input3' value="" step="1" data-bind="value:replyNumber" id='num_input3' min="1" placeholder="組數(預設1)" aria-describedby="button-addon4">
+            </div>
+        </div>
+
+
+        </br>
+        <div class="float-right" id="btns">
+            <button type="submit" class="btn btn-primary" style="width:130px;height:50px;" name="execute" id="execute" onclick="show_runnung()">
+                執行分析
+            </button>
+            <button class="btn btn-primary" type="button" id="running" disabled style="display:none;width:130px;height:50px;">
+                <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                運算中
+            </button>
+        </div>
+        
+        <script src="{% static 'jquery-3.1.1.slim.min.js' %}"></script>
+        <script src="{% static 'popper.min.js' %} "></script>
+        <script src="{% static 'tether.min.js' %} "></script>
+        <script src="{% static 'bootstrap.min.js' %} "></script>
+        <script>
+            function show_runnung(){
+                $("#execute").hide();
+                $("#running").show();
+            }
+        </script>
+
+        </br>
+        </br>
+        </br>
+        </br>
+        {% if outputs %}
+        <div class="card">
+            <h4 class="card-header"><b>分析結果</b></h4>
+            <div class="card-body">
+                {% for key, value in inputs_prod.items %}
+                <!--該輸入存在-->
+                <div class='row'>
+                    <div class='desc col-md-8'>
+                        <font size="3" color="lightslategray">您輸入的名稱: 『{{ inputs_prod|get_item:key }}』</font>
+                    </div>
+                    <div class='desc col-md-4'>
+                        <font size="3" color="lightslategray">您輸入的數量: {{ inputs_num|get_item:key }}</font>
+                    </div>
+                </div>
+                </br>
+                <div style="background-color:#ABFFFF;">
+                    <h5 class="card-title">>> {{ outputs|get_item:key }}</h5>
+                </div>
+
+                <hr> {% endfor %}
+            </div>
+
+        </div>
+        {% endif %}
+    </form>
+    </br>
+</div>
+
+
+{% endblock %}

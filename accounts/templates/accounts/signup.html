@@ -1,0 +1,27 @@
+{% extends 'base_lay_bar_only.html' %}
+{% block content %}
+
+
+
+    <form class = "site-form" method = "POST">
+      
+        <h1 class="h3 mb-3 font-weight-normal"><b>註冊使用者</b></h1>
+        <h5 class="h5 mb-3 font-weight-normal"></h5>
+
+        <h6><b><font color='red'>{{mystery}}</font></b></h6>
+        <label for="inputEmail" class = "sr-only">Email</label>
+        {% csrf_token %}
+        
+        <input type="text" id = "n_username" name = 'username' class = "form-control" placeholder = "帳號(e-mail)" required autofocus>
+        <label for="inputPassword" class="sr-only">密碼</label>
+        <div class="mt-3">
+          <h6 class="h7 mb-3 font-weight-normal">密碼請輸入8碼以上英文+數字組合</h6>
+        <input  type="password" id = "n_password1" name ='password1' class="form-control" placeholder = "密碼" required>
+        <label for="inputPassword" class="sr-only">確認密碼</label>
+        </div><div class="mt-3">
+        <input type="password" id = "n_password2" name ='password2' class="form-control" placeholder = "確認密碼" required>
+      </div><div class="mt-3"></div>
+        <button class="btn btn-lg btn-primary btn-block" type = "submit">註冊並登入</button>
+      </div>
+    </form>    
+{% endblock %}

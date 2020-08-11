@@ -1,0 +1,13 @@
+{% extends 'base_lay_bar_only.html' %}
+
+{% block content %}
+<h2 class="h2 mb-3 font-weight-normal">登入智慧訂單整合系統</h2>
+<h4 class="h4 mb-3 font-weight-normal">請輸入帳號密碼</h4>
+{{ mysteryword}}
+  
+  <form class = "site-form" method = "POST">
+        {% csrf_token %}
+        {{form}}
+        <input type = "submit" value = "登入">
+    </form>
+{% endblock %}

@@ -1,0 +1,36 @@
+{% extends 'base_layout.html' %} {% block content %}{% load static %}
+
+<div class="jumbotron">
+    <div class="container">
+        <div class="row">
+            <div class="col-md-6">
+                <a href="/order_manage/ordertracking/">
+                    <img src="{{'/static/picture/homepage_icon_1.png'}}" width=100%></img>
+                </a>
+            </div>
+            <div class="col-md-6">
+                <a href="/order_manage/name_test/">
+                    <img src="{{'/static/picture/homepage_icon_2.png'}}" width=100%></img>
+                </a>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-md-6">
+                <a href="/order_manage/orderhistory/">
+                    <img src="{{'/static/picture/homepage_icon_4.png'}}" width=100%></img>
+                </a>
+            </div>
+            <!--限定管理員以上層級才能使用註冊帳號功能-->
+            {% if Auth == "happy_manager" %}
+            <div class="col-md-6">
+                <a href="/accounts/signup/">
+                    <img src="{{'/static/picture/homepage_icon_3.png'}}" width=1 00%></img>
+                </a>
+            </div>
+            {% endif %}
+        </div>
+
+    </div>
+</div>
+
+{% endblock %}

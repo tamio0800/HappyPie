@@ -1,0 +1,12 @@
+{% extends 'base_lay_bar_only.html' %}
+
+{% block content %}
+
+    <form class = "site-form" method = "POST">
+        <h1 class="h3 mb-3 font-weight-normal">註冊使用者</h1>
+        <h5 class="h5 mb-3 font-weight-normal">使用智慧訂單整合系統請先註冊</h5>
+        {% csrf_token %}
+        {{form}}
+        <input type = "submit" value = "註冊">
+    </form>
+{% endblock %}

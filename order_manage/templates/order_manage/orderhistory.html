@@ -1,0 +1,441 @@
+{% load static %}
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+    <title>歷史訂單查詢</title>
+    <!-- Bootstrap core CSS -->
+    <link rel="stylesheet" href="{% static 'bootstrap.min.css' %}">
+
+    <!-- Custom styles for this template -->
+
+    <link rel="stylesheet" href="{% static 'jquery-ui.min.css' %}">
+    <script src="{% static 'jquery-1.10.2.min.js' %} "></script>
+
+    <meta charset="utf-8">
+
+</head>
+
+<body class="jumbotron" style="font-family:Microsoft JhengHei;">
+    <nav class="navbar navbar-expand-md navbar-dark fixed-top bg-dark">
+
+        <button class="navbar-toggler navbar-toggler-right" type="button" data-toggle="collapse" data-target="#navbarsExampleDefault" aria-controls="navbarsExampleDefault" aria-expanded="false" aria-label="Toggle navigation">
+    <span class="navbar-toggler-icon"></span>
+        </button>
+        <a class="navbar-brand" href="#">Edony A.I.</a>
+        <!--../homepage/-->
+        <div class="collapse navbar-collapse" id="navbarsExampleDefault">
+            <ul class="navbar-nav mr-auto">
+                <li class="nav-item active">
+                    <a class="nav-link" href="/homepage">首頁 <span class="sr-only">(current)</span></a>
+                    <!--http://127.0.0.1:8000/homepage-->
+                </li>
+                <li class="nav-item active">
+                    <a class="nav-link" href="/order_manage/ordertracking/">訂單整合</a>
+                    <!--http://127.0.0.1:8000/order_manage/upload_test/-->
+                </li>
+                <li class="nav-item active">
+                    <a class="nav-link" href="/order_manage/name_test/">規格抓取測試</a>
+                    <!--/abstract_funtest/fun1/-->
+                </li>
+                <li class="nav-item active">
+                    <a class="nav-link" href="/order_manage/orderhistory/">歷史查詢結果</a>
+                    <!--http://127.0.0.1:8000/order_manage/orderhistory-->
+                </li>
+            </ul>
+            <!--<a href="http://127.0.0.1:8000/accounts/logout">
+                <button class="btn btn-outline-success my-2 my-sm-0" type="submit">登出</button>
+            </a>-->
+        </div>
+    </nav>
+
+    <div class="row mt-3">
+        <div class="col-2 text-center ">
+            <h4>請選擇查詢條件</h4>
+        </div>
+
+    </div>
+    <div class="contianer col-10 offset-1">
+
+        <!-- 查詢的FORM-->
+        <form method="GET">
+
+            <div class="row">
+
+                <div class="col-4">
+                    <div class="row mt-3">
+
+                        <div class="input-group input-group-lg">
+                            <div class="input-group-prepend">
+                                <span class="input-group-text bg-warning text-white justify-content-around" style="width:150px; font-size: 27px;height: 48px;">通路</span>
+                            </div>
+                            <select class="custom-select " name="platform">
+                          <option selected value="">所有平台</option>
+                          <option value="生活市集">生活市集</option>
+                          <option value="好吃市集">好吃市集</option>
+                          <option value="樂天派官網">樂天派官網</option>
+                          <option value="MOMO">MOMO</option>
+                          <option value="亞伯">亞伯</option>
+                          <option value="東森得易購">東森得易購</option>
+                          <option value="Yahoo購物中心">Yahoo購物中心</option>
+                          <option value="UDN">UDN</option>
+                          <option value="Friday">Friday</option>
+                          <option value="博客來">博客來</option>
+                        </select>
+                        </div>
+
+                    </div>
+                    <div class="row mt-5 ">
+
+                        <div class="input-group input-group-lg">
+                            <div class="input-group-prepend">
+                                <span class="input-group-text bg-primary text-white justify-content-around" style="width:150px; font-size:27px;height: 48px;">訂單編號</span>
+                            </div>
+                            <input type="text " class="form-control " placeholder="(請輸入) " name="txn_id">
+
+                        </div>
+                    </div>
+                    <div class="row mt-5 ">
+                        <div class="input-group input-group-lg">
+                            <div class="input-group-prepend">
+                                <span class="input-group-text bg-warning text-white justify-content-around" style="width:150px; font-size:27px;height: 48px;">訂購人</span>
+                            </div>
+                            <input type="text " class="form-control " placeholder="(請輸入) " name="customer_name">
+
+                        </div>
+                    </div>
+
+                    <div class="row mt-5 ">
+                        <div class="input-group input-group-lg">
+                            <div class="input-group-prepend">
+                                <span class="input-group-text bg-primary text-white justify-content-around" style="width:150px; font-size:27px;height: 48px;">收件人</span>
+                            </div>
+                            <input type="text " class="form-control " placeholder="(請輸入) " name="receiver_name">
+
+                        </div>
+                    </div>
+                    <div class="row mt-5 ">
+                        <div class="input-group input-group-lg">
+                            <div class="input-group-prepend">
+                                <span class="input-group-text bg-warning text-white justify-content-around" style="width:150px; font-size:27px;height: 48px;">電話</span>
+                            </div>
+                            <input type="text " class="form-control " placeholder="(請輸入) " name="receiver_phone_nbr">
+
+                        </div>
+                    </div>
+                    <div class="row mt-5 ">
+                        <div class="input-group input-group-lg">
+                            <div class="input-group-prepend">
+                                <span class="input-group-text bg-primary text-white justify-content-around" style="width:150px; font-size:27px;height: 48px;">手機</span>
+                            </div>
+                            <input type="text " class="form-control " placeholder="(請輸入) " name="receiver_mobile">
+                        </div>
+                    </div>
+                </div>
+
+
+
+                <div class="col-4 ">
+                    <div class="row mt-3 ">
+                        <div class="input-group input-group-lg" style="margin-left:20px">
+                            <div class="input-group-prepend">
+                                <span class="input-group-text bg-warning text-white justify-content-around" style="width:150px; font-size:27px;height: 48px;">地址</span>
+                            </div>
+                            <input type="text " class="form-control " placeholder="(請輸入) " name="receiver_address">
+                        </div>
+                    </div>
+
+                    <div class="row mt-5 ">
+                        <div class="input-group input-group-lg" style="margin-left:20px">
+                            <div class="input-group-prepend">
+                                <span class="input-group-text bg-primary text-white justify-content-around" style="width:150px; font-size:27px;height: 48px;">內容物</span>
+                            </div>
+                            <input type="text " class="form-control " placeholder="(請輸入) " name="content">
+                        </div>
+                    </div>
+
+                    <div class="row mt-5 ">
+                        <div class="input-group input-group-lg" style="margin-left:20px">
+                            <div class="input-group-prepend">
+                                <span class="input-group-text bg-warning text-white justify-content-around" style="width:150px; font-size:27px;height: 48px;">數量</span>
+                            </div>
+                            <input type="text " class="form-control " placeholder="(請輸入) " name="how_many">
+                        </div>
+                    </div>
+
+                    <div class="row mt-5 ">
+                        <div class="input-group input-group-lg" style="margin-left:20px">
+                            <div class="input-group-prepend">
+                                <span class="input-group-text bg-primary text-white justify-content-around" style="width:150px; font-size:27px;height: 48px;">規格</span>
+                            </div>
+                            <input type="text " class="form-control " placeholder="(請輸入) " name="subcontent">
+                        </div>
+                    </div>
+
+                    <div class="row mt-5 ">
+                        <div class="input-group input-group-lg" style="margin-left:20px">
+                            <div class="input-group-prepend">
+                                <span class="input-group-text bg-warning text-white justify-content-around" style="width:150px; font-size:27px;height: 48px;">備註</span>
+                            </div>
+                            <input type="text " class="form-control " placeholder="(請輸入) " name="remark">
+                        </div>
+                    </div>
+
+                    <div class="row mt-5 ">
+                        <div class="input-group input-group-lg" style="margin-left:20px">
+                            <div class="input-group-prepend">
+                                <span class="input-group-text bg-primary text-white justify-content-around" style="width:150px; font-size:27px;height: 48px;">宅單號碼</span>
+                            </div>
+                            <input type="text " class="form-control " placeholder="(請輸入) " name="shipping_id">
+                        </div>
+                    </div>
+
+                </div>
+
+
+
+                <div class="col-4 ">
+
+                    <div class="row mt-3 ">
+                        <div class="input-group input-group-lg" style="margin-left:20px">
+                            <div class="input-group-prepend">
+                                <span class="input-group-text bg-warning text-white justify-content-around" style="width:150px; font-size:27px;height: 48px;">是否出貨</span>
+                            </div>
+                            <select class="custom-select " name="ifsend">
+                                <option selected  value=''>全部</option>
+                                <option value=True>已出貨</option>
+                                <option value=False>未出貨</option>
+                              </select>
+                        </div>
+                    </div>
+
+                    <div class="row mt-5 ">
+                        <div class="input-group input-group-lg" style="margin-left:20px">
+                            <div class="input-group-prepend">
+                                <span class="input-group-text bg-primary text-white justify-content-around" style="width:150px; font-size:27px;height: 48px;">是否取消</span>
+                            </div>
+                            <select class="custom-select " name="ifcancel">
+                                <option selected value=''>全部</option>
+                                <option value=True>是</option>
+                                <option value=False>否</option>
+                              </select>
+                        </div>
+                    </div>
+
+
+                    <div class="row mt-5 ">
+                        <div class="col ">
+                            <div class="border border-primary bg-primary text-center " style="margin-left:10px">
+                                <h3 class="text-white " style="margin-top:5px">抓單日</h3>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row mt-3 justify-content-around ">
+
+                        <input class="w-25 " type="text " name="from_date" id="from" placeholder="From">
+
+                        <h3>~</h3>
+                        <input class="w-25 " type="text " name="to_date" id="to" placeholder="To">
+
+                    </div>
+                    <div class="row justify-content-end " style="height:240px ">
+
+                        <button class="btn btn-danger btn-lg align-self-end btn-block col-5 " type="submit">送出</button>
+                    </div>
+
+                </div>
+            </div>
+        </form>
+
+    </div>
+    <div class="row mt-3 ">
+        <div class="col-2 text-center ">
+            <h4> 查詢結果</h4>
+        </div>
+        <a id="export1" class="btn btn-primary btn-lg col-2 offset-8 btn-block " href="{% url 'downloadsearchfile' %}">匯出(.xlsx)</a>
+
+    </div>
+
+    <!-- 儲存的form -->
+    <form id="store_form" method="POST">
+        {% csrf_token %}
+        <div class="table-responsive   mt-5 bg-white">
+            <table id='mytable' class="table table-bordered table-striped" style=" height:500px; display: block;">
+                <thead class=" text-center ">
+                    <tr>
+                        <th>#</th>
+                        <th nowrap="nowrap ">是否出貨</th>
+                        <th nowrap="nowrap ">是否取銷</th>
+                        <th nowrap="nowrap ">宅單連結</th>
+                        <th nowrap="nowrap ">通路</th>
+                        <th nowrap="nowrap ">抓單日</th>
+                        <th nowrap="nowrap ">訂單編號</th>
+                        <th nowrap="nowrap ">訂購人</th>
+                        <th nowrap="nowrap ">收件人</th>
+                        <th nowrap="nowrap ">貨到付款</th>
+                        <th nowrap="nowrap ">地址</th>
+                        <th nowrap="nowrap ">電話</th>
+                        <th nowrap="nowrap ">手機</th>
+                        <th nowrap="nowrap">內容物</th>
+                        <th nowrap="nowrap ">金額</th>
+                        <th nowrap="nowrap ">數量</th>
+                        <th nowrap="nowrap ">備註</th>
+                        <th nowrap="nowrap ">宅單</th>
+                        <th nowrap="nowrap ">最後回押日</th>
+                        <th nowrap="nowrap ">回押</th>
+                        <th nowrap="nowrap ">規格</th>
+
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for y in data %}
+
+                    <tr>
+                        <th>{{ forloop.counter }}</th>
+                        <td nowrap="nowrap ">
+                            {% if y.ifsend %}
+                            <div class="radio">
+                                <label>
+                            <input type="radio" name=ifsend,{{forloop.counter}}  value={{y.id}},True checked> 已出貨
+                        </label>
+                            </div>
+
+                            <div class="radio">
+                                <label>
+                            <input type="radio" name=ifsend,{{forloop.counter}}  value={{y.id}},False > 未出貨
+                        </label>
+                            </div>
+                            {% else %}
+                            <div class="radio">
+                                <label>
+                                    <input type="radio" name=ifsend,{{forloop.counter}}  value={{y.id}},True  > 已出貨
+                                </label>
+                            </div>
+
+                            <div class="radio">
+                                <label>
+                                    <input type="radio" name=ifsend,{{forloop.counter}}  value={{y.id}},False checked>未出貨
+                                </label>
+                            </div>
+                            {% endif %}
+                        </td>
+                        <td nowrap="nowrap ">
+                            {% if y.ifcancel %}
+                            <div class="radio">
+                                <label>
+                            <input type="radio" name=ifcancel,{{forloop.counter}}  value={{y.id}},True checked> 是
+                        </label>
+                            </div>
+                            <div class="radio">
+                                <label>
+                            <input type="radio" name=ifcancel,{{forloop.counter}}  value={{y.id}},False>否
+                        </label>
+                            </div>
+                            {% else %}
+                            <div class="radio">
+                                <label>
+                            <input type="radio" name=ifcancel,{{forloop.counter}} value={{y.id}},True > 是
+                        </label>
+                            </div>
+                            <div class="radio">
+                                <label>
+                            <input type="radio" name=ifcancel,{{forloop.counter}}  value={{y.id}},False checked>否
+                        </label>
+                            </div>
+                            {% endif %}
+                        </td>
+                        <td nowrap="nowrap ">{{y.shipping_link}}</td>
+                        <td nowrap="nowrap ">{{y.platform}}</td>
+                        <td nowrap="nowrap ">{{y.file_created_date}}</td>
+                        <td nowrap="nowrap ">{{y.txn_id}}</td>
+                        <td nowrap="nowrap ">{{y.customer_name}}</td>
+                        <td nowrap="nowrap ">{{y.receiver_name}}</td>
+                        <td nowrap="nowrap ">{{y.paid_after_receiving}}</td>
+                        <td nowrap="nowrap ">{{y.receiver_address}}</td>
+                        <td nowrap="nowrap ">{{y.receiver_phone_nbr}}</td>
+                        <td nowrap="nowrap ">{{y.receiver_mobile}}</td>
+                        <td nowrap="nowrap ">{{y.content}}</td>
+                        <td class="text-right " nowrap="nowrap ">{{y.how_much}}</td>
+                        <td class="text-right " nowrap="nowrap ">{{y.how_many}}</td>
+                        <td nowrap="nowrap ">{{y.remark}}</td>
+                        <td nowrap="nowrap ">{{y.shipping_id}}</td>
+                        <td nowrap="nowrap ">{{y.last_charged_date}}</td>
+                        <td nowrap="nowrap ">{{y.charged}}</td>
+                        <td nowrap="nowrap ">{{y.subcontent}}</td>
+
+                    </tr>
+
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <div class="row mt-3 ">
+            <button id='store' class="btn btn-primary btn-lg align-self-end col-2 offset-5 btn-block " type="submit" disabled>儲存</button>
+        </div>
+    </form>
+    <div class="row mt-3 ">
+        <a id="export2" class="btn btn-primary btn-lg col-2 offset-10 btn-block " href="{% url 'downloadsearchfile' %}">匯出(.xlsx)</a>
+    </div>
+
+
+    <script src="{% static 'jquery-3.1.1.slim.min.js' %} "></script>
+    <script src="{% static 'popper.min.js' %} "></script>
+    <script src="{% static 'tether.min.js' %} "></script>
+    <script src="{% static 'bootstrap.min.js' %} "></script>
+    <script src="{% static 'jquery-1.10.2.min.js' %} "></script>
+    <script src="{% static 'jquery-ui.min.js' %} "></script>
+    <script>
+        $(function() {
+            $("#from ").datepicker({
+                defaultDate: "+1w ",
+                changeMonth: true,
+                changeYear: true,
+                numberOfMonths: 1,
+                onClose: function(selectedDate) {
+                    $("#to ").datepicker("option ", "minDate ", selectedDate);
+                }
+            });
+            $("#to ").datepicker({
+                defaultDate: "+1w ",
+                changeMonth: true,
+                numberOfMonths: 1,
+                changeYear: true,
+                onClose: function(selectedDate) {
+                    $("#from ").datepicker("option ", "maxDate ", selectedDate);
+                }
+            });
+            var Table = document.getElementById('mytable');
+            var rowLength = Table.rows.length;
+
+            if (rowLength >= 2) {
+                $('#export1').show();
+                $('#export2').show();
+            } else {
+                $('#export1').hide();
+                $('#export2').hide();
+            }
+
+        });
+    </script>
+    <script>
+        $(document).ready(function() {
+
+            $(".radio").change(function() {
+                $('#store').removeAttr('disabled');
+            });
+
+            $("#store").click(function() {
+                $("#store_form").submit();
+                $(this).attr('disabled', true);
+
+            });
+
+        });
+    </script>
+</body>
+
+</html>

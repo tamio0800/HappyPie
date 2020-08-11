@@ -1,0 +1,162 @@
+{% extends 'base_layout.html' %} {% block content %}{% load static %}
+<div class="container col-10 offset-1" style="font-family: Microsoft Yahei;">
+    <div class="row mt-5 ">
+        <div class=" col-6">
+            <div class="p-3 mb-2 bg-white text-dark">
+                <h1 class="display-5"><b>訂單合併</b></h1>
+                <p style="font-size:22px; color: #626567;">您可以在這裡上傳「從各平台抓取的訂單檔案」，或「修改過後的整合訂單檔案」，並下載所有尚未處理完畢的訂單。</p>
+                <!-- 在這裡加入警告與上傳成功的提示 -->
+                <br> {% if upload_files_conditions %}
+                <div class="alert alert-danger" role="alert">
+                    <h4 class="alert-heading">糟糕! 上傳過程出現問題:(</h4>
+                    <p>請您檢查以下這幾份檔案的名稱是否有誤：</p>
+                    <hr> {% for each_file in exception_files %} {{each_file}}
+                    </br>
+                    {% endfor %}
+                </div>
+                {% elif is_integrated_done %}
+
+                <div class="alert alert-primary" role="alert">
+                    <h4 class="alert-heading">您的檔案處理好囉:)</h4>
+                    {% if platforms_found %}
+                        <hr>
+                        <p>我們在您上傳的檔案中發現了以下幾個平台的資料：</p>
+                        {% for each_found in platforms_found %} 
+                            {{each_found}}
+                        </br>
+                        {% endfor %} 
+                    {% endif %} 
+                    
+                    {% if after_alicia_exception_files %}
+                        <hr>
+                        <p>另外，以下幾份檔案在分析過程中內容異常，我們沒有加入整合，請您再檢查看看：</p>
+                        {% for each_exception in after_alicia_exception_files %} 
+                            {{each_exception}}
+                        </br>
+                        {% endfor %} 
+                    {% endif %} 
+                    
+                    {% if platforms_not_found %}
+                    <!--沒找到的平台-->
+                    <hr>
+                    <p>我們沒有在這一次上傳中看到以下幾個平台的交易，請您確認是否有漏掉整合唷：</p>
+                    {% for each_not_found in platforms_not_found %} {{each_not_found}}
+                    </br>
+                    {% endfor %} {% endif %}
+                    <hr>
+                </div>
+                {% endif %}
+
+
+                <hr class="my-5">
+                <p class="lead">
+                <form method="post" enctype="multipart/form-data" action="">
+                    {% csrf_token %}
+                    <input id="files" type="file" multiple name="files" accept=".xls,.xlsx,.csv,.xlsm,.xlsb" />
+                    <br>
+                    <div class="row mt-3">
+                        <div class="col-5 ">
+                            <button class="btn btn-primary btn-lg" type="button" style="width:250px;height:70px;"
+                                id="raw_txns_upload_running" disabled>
+                                <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                                全力整合中
+                            </button>
+                            <input id="upload_raw_txns" style="width:250px;height:70px;" class="btn btn-primary btn-lg"
+                                type="submit" role="button" value=上傳檔案 disabled=true>
+                        </div>
+
+                        <div class="col-6">
+                            <a class="btn btn-success btn-lg" style="width:250px;height:70px;line-height:45px;"
+                                href="{% url 'downloadfile' %}" role="button">下載待處理訂單</a>
+                        </div>
+
+                    </div>
+
+                </form>
+
+                <!--<div class="mt-4 ">
+                            <input id="download_aggregated_txns" style="width:210px;height:70px;" href="{% url 'downloadfile' %}" class="btn btn-success btn-lg" value=下載待處理訂單 role="button" type="button"></input>-->
+                <!--<a class="btn btn-warning btn-lg " style="width:210px;height:70px;" href="{% url 'downloadfile' %}" role="button">下載待處理交易</a>-->
+                <!--</div>-->
+
+                </p>
+            </div>
+
+        </div>
+
+        <div class="col-6">
+            <div class="row ">
+                <div class="col">
+                    <div class="p-3 mb-2 bg-white text-dark">
+                        <h3><b>詳細說明</b></h3>
+                        <p style="font-size:22px; color: #626567;">1. 我們為您整理了所有「尚未出貨/取消」的訂單，您可以點擊「下載待處理訂單」來取得最新資料。</p>
+                        <p style="font-size:22px; color: #626567;">2.
+                            當您每次上傳【來自各平台的交易資料】或【修改後的整合訂單】時，我們都會立即比對資料、進行更新，以確保您取得最新的訂單資料。</p>
+                    </div>
+                </div>
+
+            </div>
+            <div class="row mt-5">
+                <div class="col">
+                    <div class="p-3 mb-2 bg-white text-dark">
+                        <h3><b>目前支援平台列表</b></h3>
+                        <table class="table table-bordered">
+                            <tr>
+                                <td>樂天派官網</td>
+                                <td>YAHOO</td>
+                                <td>MOMO</td>
+                            </tr>
+                            <tr style="background-color: #E8F8F5;">
+                                <td>UDN</td>
+                                <td>亞伯</td>
+                                <td>博客來</td>
+                            </tr>
+                            <tr>
+                                <td>東森</td>
+                                <td>好吃市集</td>
+                                <td>生活市集</td>
+                            </tr>
+                            <tr style="background-color: #E8F8F5;">
+                                <td>Friday</td>
+                                <td>台塑</td>
+                                <td>LaNew</td>
+                            </tr>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<script src="{% static 'jquery-3.1.1.slim.min.js' %}"></script>
+<script src="{% static 'popper.min.js' %} "></script>
+<script src="{% static 'tether.min.js' %} "></script>
+<script src="{% static 'bootstrap.min.js' %} "></script>
+<script>
+    $(document).ready(function () {
+        $("#raw_txns_upload_running").hide();
+        $("#aggregated_txns_upload_running").hide();
+
+        $("#upload_raw_txns").click(function () {
+            $(this).hide();
+            $("#raw_txns_upload_running").show();
+        });
+
+        $("#upload_aggregated_txns").click(function () {
+            $(this).hide();
+            $("#aggregated_txns_upload_running").show();
+        });
+
+        $("#files").change(function () {
+            //document.getElementById("upload_raw_txns").disable=false;
+            if (document.getElementById("files").files.length == 0) {
+                $('#upload_raw_txns').attr('disabled', true);
+            } else {
+                $('#upload_raw_txns').removeAttr('disabled');
+            }
+        });
+    });
+</script>
+{% endblock %}

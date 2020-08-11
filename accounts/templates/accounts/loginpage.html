@@ -1,0 +1,41 @@
+{% extends 'base_lay_bar_only.html' %}
+{% load static %}
+
+{% block content %}
+    <style>
+      .bd-placeholder-img {
+        font-size: 1.125rem;
+        text-anchor: middle;
+        -webkit-user-select: none;
+        -moz-user-select: none;
+        -ms-user-select: none;
+        user-select: none;
+      }
+
+      @media (min-width: 768px) {
+        .bd-placeholder-img-lg {
+          font-size: 3.5rem;
+        } 
+      }
+    </style>
+
+  <body class ="text-center" style="font-family: Microsoft Yahei;">
+    <img class="mb-4" src= "{%static 'picture/page_icon.png'%}" alt="" width="72" height="72">
+    <h3 class="h3 mb-3 font-weight-normal">登入智慧訂單整合系統</h3>
+    <form class ="form-signin" method = 'POST'
+        action ='/accounts/login/' >
+        {% csrf_token %}
+      
+      <h4 class="h4 mb-3 font-weight-normal">請輸入帳號密碼</h4>
+      <h6><b><font color='red'>{{mystery}}</font></b></h6>
+      <label for="inputEmail" class="sr-only">Email</label>
+      <input type="text" id="id_username" name='id_username' class="form-control" placeholder="帳號" required autofocus>
+      <label for="inputPassword" class="sr-only">密碼</label>
+      <input type="password" id="id_password" name='id_password' class="form-control" placeholder="密碼" required>
+
+      <button class="btn btn-lg btn-primary btn-block" type="submit">登入</button>
+      <p class="mt-5 mb-3 text-muted">&copy; 2020</p>
+    </form>
+    </body>
+</html>
+{% endblock %}

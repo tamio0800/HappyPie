@@ -1,0 +1,176 @@
+{% extends 'base_layout.html' %} {% block content %}{% load static %}
+<div class="container" style="font-family: Microsoft Yahei;">
+    <div class="row mt-5">
+        <div class="col">
+            <div class="p-3 mb-2 bg-white text-dark">
+                <h1 class="display-5"><b>匯入自訂訂單</b></h1>
+                <p style="font-size:22px; color: #626567;">
+                    - 您可以將自己整理的訂單資料(符合資料庫儲存格式)，以手動的方式整批匯入到系統當中。<br>
+                    - 訂單資料除了必須是Excel檔案外，還必須包含以下欄位：</p>
+                <div class="ml-3 mr-3">
+                    <table class="table table-bordered">
+                        <tr>
+                            <td>通路</td>
+                            <td>抓單日</td>
+                            <td>訂單編號</td>
+                            <td>訂購人</td>
+                            <td>收件人</td>
+                        </tr>
+                        <tr style="background-color: #E8F8F5;">
+                            <td>地址</td>
+                            <td>手機</td>
+                            <td>內容物</td>
+                            <td>數量</td>
+                            <td>備註</td>
+                        </tr>
+                        <tr>
+                            <td>宅單</td>
+                            <!--規格我們自動產生-->
+                            <td></td>
+                            <td></td>
+                            <td></td>
+                            <td></td>
+                        </tr>
+                    </table>
+                </div>
+                <!-- 在這裡加入警告與上傳成功的提示 -->
+                {% if upload_files_conditions %}
+                <div class="alert alert-danger" role="alert">
+                    <h4 class="alert-heading">糟糕! 上傳過程出現問題:(</h4>
+                    <p>請您檢查以下這幾份檔案的名稱是否有誤：</p>
+                    <hr> {% for each_file in exception_files %} {{each_file}}
+                    </br>
+                    {% endfor %}
+                </div>
+                {% elif is_integrated_done %}
+
+                <div class="alert alert-primary" role="alert">
+                    <h4 class="alert-heading">您的檔案處理好囉:)</h4>
+                    {% if platforms_found %}
+                    <hr>
+                    <p>我們在您上傳的檔案中發現了以下幾個平台的資料：</p>
+                    {% for each_found in platforms_found %}
+                    {{each_found}}
+                    </br>
+                    {% endfor %}
+                    {% endif %}
+
+                    {% if after_alicia_exception_files %}
+                    <hr>
+                    <p>另外，以下幾份檔案在分析過程中內容異常，我們沒有加入整合，請您再檢查看看：</p>
+                    {% for each_exception in after_alicia_exception_files %}
+                    {{each_exception}}
+                    </br>
+                    {% endfor %}
+                    {% endif %}
+
+                    {% if platforms_not_found %}
+                    <!--沒找到的平台-->
+                    <hr>
+                    <p>我們沒有在這一次上傳中看到以下幾個平台的交易，請您確認是否有漏掉整合唷：</p>
+                    {% for each_not_found in platforms_not_found %} {{each_not_found}}
+                    </br>
+                    {% endfor %} {% endif %}
+                    <hr>
+                </div>
+                {% endif %}
+
+
+                <hr class="my-5">
+                <p class="lead">
+                <form method="post" enctype="multipart/form-data" action="">
+                    {% csrf_token %}
+                    <div class="row mt-3">
+                        <input class="col-7" id="files" type="file" multiple name="files"
+                            accept=".xls,.xlsx,.csv,.xlsm,.xlsb" />
+                        <div class="col-5">
+                            <button class="btn btn-primary btn-lg" type="button" style="width:250px;height:70px;"
+                                id="raw_txns_upload_running" disabled>
+                                <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                                訂單寫入中
+                            </button>
+                            <input id="upload_raw_txns" style="width:250px;height:70px;" class="btn btn-primary btn-lg"
+                                type="submit" role="button" value=匯入訂單 disabled=true>
+                        </div>
+                    </div>
+                </form>
+
+                <!--<div class="mt-4 ">
+                            <input id="download_aggregated_txns" style="width:210px;height:70px;" href="{% url 'downloadfile' %}" class="btn btn-success btn-lg" value=下載待處理訂單 role="button" type="button"></input>-->
+                <!--<a class="btn btn-warning btn-lg " style="width:210px;height:70px;" href="{% url 'downloadfile' %}" role="button">下載待處理交易</a>-->
+                <!--</div>-->
+
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!--呈現此筆匯入訂單的資料-->
+        <div class="col">
+            <table class="table table-active">
+                <thead>
+                    <tr>
+                        <th scope="col">#</th>
+                        <th scope="col">First</th>
+                        <th scope="col">Last</th>
+                        <th scope="col">Handle</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <th scope="row">1</th>
+                        <td>Mark</td>
+                        <td>Otto</td>
+                        <td>@mdo</td>
+                    </tr>
+                    <tr>
+                        <th scope="row">2</th>
+                        <td>Jacob</td>
+                        <td>Thornton</td>
+                        <td>@fat</td>
+                    </tr>
+                    <tr>
+                        <th scope="row">3</th>
+                        <td>Larry</td>
+                        <td>the Bird</td>
+                        <td>@twitter</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+</div>
+
+
+<script src="{% static 'jquery-3.1.1.slim.min.js' %}"></script>
+<script src="{% static 'popper.min.js' %} "></script>
+<script src="{% static 'tether.min.js' %} "></script>
+<script src="{% static 'bootstrap.min.js' %} "></script>
+<script>
+    $(document).ready(function () {
+        $("#raw_txns_upload_running").hide();
+        $("#aggregated_txns_upload_running").hide();
+
+        $("#upload_raw_txns").click(function () {
+            $(this).hide();
+            $("#raw_txns_upload_running").show();
+        });
+
+        $("#upload_aggregated_txns").click(function () {
+            $(this).hide();
+            $("#aggregated_txns_upload_running").show();
+        });
+
+        $("#files").change(function () {
+            //document.getElementById("upload_raw_txns").disable=false;
+            if (document.getElementById("files").files.length == 0) {
+                $('#upload_raw_txns').attr('disabled', true);
+            } else {
+                $('#upload_raw_txns').removeAttr('disabled');
+            }
+        });
+    });
+</script>
+{% endblock %}

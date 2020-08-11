@@ -1,0 +1,70 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <title>{{title}}</title>
+    <link rel="canonical" href="{% static 'jumbotron.css' %}">
+    <link rel="icon" href="{% static 'picture/page_icon.png' %}">
+    <!-- Bootstrap core CSS -->
+    <link rel="stylesheet" href="{% static 'bootstrap.min.css' %}">
+
+    <!-- Custom styles for this template -->
+    <link href="{% static 'jumbotron.css' %}" rel="stylesheet">
+</head>
+
+
+<body class="jumbotron" style="font-family: Microsoft Yahei;">
+    <nav class="navbar navbar-expand-md navbar-dark fixed-top bg-dark">
+
+        <button class="navbar-toggler navbar-toggler-right" type="button" data-toggle="collapse" data-target="#navbarsExampleDefault" aria-controls="navbarsExampleDefault" aria-expanded="false" aria-label="Toggle navigation">
+    <span class="navbar-toggler-icon"></span>
+        </button>
+        <a class="navbar-brand" href="#">Edony A.I.</a>
+        <!--../homepage/-->
+        <div class="collapse navbar-collapse" id="navbarsExampleDefault">
+            <ul class="navbar-nav mr-auto">
+                <li class="nav-item active">
+                    <a class="nav-link" href="#" style="color: gray;">首頁 <span class="sr-only">(current)</span></a>
+                    <!--http://127.0.0.1:8000/homepage-->
+                </li>
+                <li class="nav-item active">
+                    <a class="nav-link" href="/order_manage/ordertracking/">訂單整合</a>
+                    <!--http://127.0.0.1:8000/order_manage/upload_test/-->
+                </li>
+                <li class="nav-item active">
+                    <a class="nav-link" href="/order_manage/name_test/">規格抓取測試</a>
+                    <!--/abstract_funtest/fun1/-->
+                </li>
+                <li class="nav-item active">
+                    <a class="nav-link" href="#" style="color: gray;">歷史查詢結果</a>
+                    <!--http://127.0.0.1:8000/order_manage/orderhistory-->
+                </li>
+            </ul>
+            <!--<a href="http://127.0.0.1:8000/accounts/logout">
+                <button class="btn btn-outline-success my-2 my-sm-0" type="submit">登出</button>
+            </a>-->
+        </div>
+    </nav>
+    <!--其他頁的內容在這邊-->
+    <div class="wrapper">
+        {% block content %} {% endblock %}
+    </div>
+
+
+    <!-- Bootstrap core JavaScript
+    ================================================== -->
+    <!-- Placed at the end of the document so the pages load faster -->
+    <script src="{% static 'jquery-3.1.1.slim.min.js' %}" integrity="sha384-A7FZj7v+d/sdmMqp/nOQwliLvUsJfDHW+k9Omg/a/EheAdgtzNs3hpfag6Ed950n" crossorigin="anonymous"></script>
+    <script>
+        window.jQuery || document.write('<script src=  "{% static "jquery-3.5.1.min.js" %}"><\/script>')
+    </script>
+    <script src="{% static 'tether.min.js' %}" integrity="sha384-DztdAPBWPRXSA/3eYEEUWrWCy7G5KFbe8fFjk5JAIxUYHKkDx6Qin1DkWx51bBrb" crossorigin="anonymous"></script>
+    <script src="{% static 'bootstrap.min.js' %}"></script>
+    <!-- IE10 viewport hack for Surface/desktop Windows 8 bug -->
+    <script src="{% static 'ie10-viewport-bug-workaround.js' %}"></script>
+</body>
+
+</html>

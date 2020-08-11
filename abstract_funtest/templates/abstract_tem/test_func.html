@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.0/css/bootstrap.min.css" 
+    integrity="sha384-9aIt2nRpC12Uk9gS9baDl411NQApFmC26EwAOH8WgZl5MYYxFfc+NcPb1dKGj7Sk" crossorigin="anonymous">
+
+
+
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <meta name="description" content="">
+    <meta name="author" content="">
+    <link rel="icon" href="https://v4-alpha.getbootstrap.com/favicon.ico">
+
+    <title>{{title}}</title>
+    <link rel="canonical" href="https://getbootstrap.com/docs/4.0/examples/jumbotron/">
+
+    <!-- Bootstrap core CSS -->
+    <link href="https://v4-alpha.getbootstrap.com/dist/css/bootstrap.min.css" rel="stylesheet">
+    
+    <!-- Custom styles for this template -->
+    <link href="jumbotron.css" rel="stylesheet">
+  </head>
+
+  <body>
+
+    <nav class="navbar navbar-toggleable-md navbar-inverse fixed-top bg-inverse">
+      <button class="navbar-toggler navbar-toggler-right" type="button" data-toggle="collapse" data-target="#navbarsExampleDefault" aria-controls="navbarsExampleDefault" aria-expanded="false" aria-label="Toggle navigation">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+
+      <div class="collapse navbar-collapse" id="navbarsExampleDefault">
+        <ul class="navbar-nav mr-auto">
+          <li class="nav-item active">
+            <a class="nav-link" href="homepage">首頁 <span class="sr-only">(current)</span></a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="#">訂單整合</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link disabled" href="#">規格抓取測試</a>
+          </li>
+          <li class="nav-item dropdown">
+            <a class="nav-link dropdown-toggle" href="#" id="dropdown01" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+              歷史訂單
+            </a>
+            <div class="dropdown-menu" aria-labelledby="dropdown01">
+              <a class="dropdown-item" href="#">查詢與編輯</a>
+              <a class="dropdown-item" href="#">歷史查詢結果</a>
+            </div>
+          </li>
+        </ul>
+      </div>
+    </nav>
+    <!--其他頁的內容在這邊-->
+    <div class="wrapper">
+    </br></br></br></br></br>
+
+    <div class="container">
+      <h4><b>數量/規格重組</b><span class="badge badge-info">alpha</span></h4>
+      <form action="/test_func/" method="POST" id="test_form">
+        
+        <div class="input-group">
+            {% csrf_token %}
+            <div class= "input-group col-md-10">
+            <input type="text" class="form-control" name='prod_input' value=""
+            id='prod_input'
+            placeholder="測試的商品/規格組合名稱" aria-describedby="button-addon4">
+            </div>
+
+            <div class= "input-group col-md-2">
+            <input type="number" class="form-control" name='num_input' value=""
+            step="1" data-bind="value:replyNumber" id='num_input'
+            min="1" placeholder="測試數量" aria-describedby="button-addon4">
+            </div>
+        
+        </div>
+
+          </br>
+          <div class="float-right">
+          
+
+          <button type="submit" class="btn btn-primary" name="execute" id="execute">執行分析</button>
+
+
+          </div>
+
+      </br>
+    </br>
+        </br>
+     
+        </br>
+        <div class="card">
+        <h5 class="card-header"><b>定序結果</b></h5>
+            <div class="card-body">
+
+              <div class='row'>
+                <div class='desc col-md-6'>
+                <font size="1" color="lightslategray">您輸入的名稱為:  {{prod_input}}</font>
+                </div>
+                <div class='desc col-md-6'>
+                <font size="1" color="lightslategray">您輸入的數量為:  {{num_input}}</font>
+                </div>
+              </div>
+
+                <hr>
+
+                <h5 class="card-title">{{ the_opt }}</h5>
+                <!-- <p class="card-text">{{ btn_info }}</p> -->
+                <!-- <p class="card-text">{{ the_opt }}</p> -->
+                <!-- <a href="#" class="btn btn-primary">Go somewhere</a> -->
+
+            </div>
+        </div>
+      </form>
+      </br>
+    </div>
+
+    <div class="text-center">
+      <div class="spinner-grow text-primary spinner-grow-sm" role="status">
+        <span class="sr-only">Loading...</span>
+      </div>
+      <div class="spinner-grow text-primary spinner-grow-sm" role="status">
+        <span class="sr-only">Loading...</span>
+      </div>
+      <div class="spinner-grow text-primary spinner-grow-sm" role="status">
+        <span class="sr-only">Loading...</span>
+      </div>
+    </div>
+
+    <!-- Bootstrap core JavaScript
+    ================================================== -->
+    <!-- Placed at the end of the document so the pages load faster -->
+    <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js" integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo" crossorigin="anonymous"></script>
+    <script>window.jQuery || document.write('<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.5.1/jquery.slim.min.js"><\/script>')</script>
+    <script src="https://getbootstrap.com/docs/4.1/assets/js/vendor/popper.min.js"></script>
+    <script src="https://getbootstrap.com/docs/4.1/dist/js/bootstrap.min.js"></script>
+    
+    <!-- IE10 viewport hack for Surface/desktop Windows 8 bug -->
+    <script src="happypi/assets/ie10-viewport-bug-workaround.js"></script>
+  </body>
+</html>
