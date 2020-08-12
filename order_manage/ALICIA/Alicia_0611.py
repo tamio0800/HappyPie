@@ -230,6 +230,7 @@ class ALICIA:
                  '台塑': re.compile(r'^Order_2[0-9]{16}[(]台塑[)]'),
                  '整合檔': re.compile(r'^20[0-9]{6}-[0-9]{6}_\S*整合檔\S*.xls[x]{0,1}'),
                  'LaNew': re.compile(r'.*_\w{5}_2[0-9]{3}[01][0-9][0123][0-9].xls[x]{0,1}'),
+                 '快車肉乾銷港': re.compile(r'.{0,6}orders\s{0,1}[(]{0,1}\d{0,1}[)]{0,1}.csv|.{0,6}orders\s{0,1}[(]{0,1}\d{0,1}[)]{0,1}.xls[x]{0,1}'),
                 }
         # 我們把 "整合檔" 也當作一個平台來處理，只是它不需要被再度整合、也不需要丟進kashgari做分析
         # by Annie and Tamio @2020.06.24
@@ -678,8 +679,7 @@ class ALICIA:
                         #_temp_df = self._clean_dataframe(_temp_df)
 
                         if '貨運公司\n出貨地址' not in _temp_df.columns:
-                            # 是momo去識別化前的訂單
-
+                            print('不是momo去識別化後的訂單')
                             for each_row_index in range(_temp_df.shape[0]):
                                 _txn_id = _temp_df.loc[each_row_index, '訂單編號']
                                 _customer_name = _temp_df.loc[each_row_index, '訂購人姓名']
@@ -692,7 +692,6 @@ class ALICIA:
                                 _content = self._combine_columns([_temp_df.loc[each_row_index, '品名'],
                                                                 _temp_df.loc[each_row_index, '單品詳細']],
                                                                 ', ')
-
 
                                 _how_many = _temp_df.loc[each_row_index, '數量']
                                 _how_much = 0
@@ -728,7 +727,7 @@ class ALICIA:
                         else:
                             # 是momo去識別化後的訂單
                             _temp_df['貨運公司\n出貨地址'] = _temp_df['貨運公司\n出貨地址'].apply(lambda x: '(貨運公司出貨地址) ' +  x.replace('新竹貨運\n', ''))
-
+                            print('是momo去識別化後的訂單')
                             for each_row_index in range(_temp_df.shape[0]):
                                 _txn_id = _temp_df.loc[each_row_index, '訂單編號']
                                 _customer_name = _temp_df.loc[each_row_index, '訂購人姓名']
@@ -737,11 +736,19 @@ class ALICIA:
                                 _receiver_address = _temp_df.loc[each_row_index, '貨運公司\n出貨地址']
                                 _receiver_phone_nbr = ''
                                 _receiver_mobile = ''
-
                                 _content = self._combine_columns([_temp_df.loc[each_row_index, '品名'],
                                                                 _temp_df.loc[each_row_index, '單品詳細']],
                                                                 ', ')
-
+                                print(platform,
+                                        _file_created_date,
+                                        _txn_id,
+                                        _customer_name,
+                                        _receiver_name,
+                                        _paid_after_receiving,
+                                        _receiver_phone_nbr,
+                                        _receiver_mobile,
+                                        _receiver_address,
+                                        _content)
                                 _how_many = _temp_df.loc[each_row_index, '數量']
                                 _how_much = 0
                                 _remark = ''
@@ -753,6 +760,18 @@ class ALICIA:
                                 _subcontent = _temp_df.loc[each_row_index, '單品詳細']
                                 _shipping_link = ''
                                 # 寫入資料
+                                print(
+                                    _how_many,
+                                    _how_much,
+                                    _remark,
+                                    _shipping_id,
+                                    _last_charged_date,
+                                    _charged,
+                                    _ifsend,
+                                    _ifcancel,
+                                    _subcontent,
+                                    _shipping_link
+                                )
                                 self.aggregated_txns.loc[self.aggregated_txns.shape[0]] = [platform,
                                                                                         _file_created_date,
                                                                                         _txn_id,
@@ -1338,6 +1357,72 @@ class ALICIA:
                         exception_files.append(ntpath.split(txn_path)[1])                
                 return is_found, is_error, exception_files
 
+        
+        elif platform == '快車肉乾銷港':
+
+            if len(txn_paths) == 0:
+                print('未找到任何來自『' + platform + '』的交易資料。')
+                is_found = False
+                return is_found, is_error, exception_files
+            else:
+                for txn_path in txn_paths:
+                    try:
+                        _file_created_date = self._get_file_created_date(txn_path)
+                        _temp_df = self._clean_dataframe(pd.read_csv(txn_path))
+                        _temp_df.loc[:, '_temp_subcontent'] = _temp_df['Product Name'].apply(lambda x: x.split('-')[-1].strip() if '-' in x else x.strip())
+                        _temp_df.loc[:, 'customer_name'] = _temp_df['First Name'] + ' ' + _temp_df['Last Name']
+                        _temp_df.loc[:, '_temp_remark'] = _temp_df['Order Note'] + '; email:' + _temp_df['Buyer\'s Email Address']
+                        _temp_df['Shipping Address'] = _temp_df['Shipping Address'].apply(lambda x: x.replace('\n', ' '))
+
+                        for each_row_index in range(_temp_df.shape[0]):
+                            _txn_id = _temp_df.loc[each_row_index, 'Order#']
+                            _customer_name = _temp_df.loc[each_row_index, 'customer_name']
+                            _receiver_name = _temp_df.loc[each_row_index, 'customer_name']
+                            _paid_after_receiving = False
+                            _receiver_address = _temp_df.loc[each_row_index, 'Shipping Address']
+                            _receiver_phone_nbr = _temp_df.loc[each_row_index, 'Buyer\'s Contact Number']
+                            _receiver_mobile = _receiver_phone_nbr
+                            _content = _temp_df.loc[each_row_index, 'Product Name']
+                            _how_much = _temp_df.loc[each_row_index, 'Product Price'].astype(int)
+                            _how_many = _temp_df.loc[each_row_index, 'Quantity Ordered'].astype(int)
+
+                            _remark = _temp_df.loc[each_row_index, '_temp_remark']
+                            _shipping_id = ''
+                            _last_charged_date = ''
+                            _charged = False
+                            _ifsend = False
+                            _ifcancel = False
+                            _subcontent = _temp_df.loc[each_row_index, '_temp_subcontent']
+                            _shipping_link = ''
+                            
+                            # 寫入資料
+                            self.aggregated_txns.loc[self.aggregated_txns.shape[0]] = [platform,
+                                                                                    _file_created_date,
+                                                                                    _txn_id,
+                                                                                    _customer_name,
+                                                                                    _receiver_name,
+                                                                                    _paid_after_receiving,
+                                                                                    _receiver_phone_nbr,
+                                                                                    _receiver_mobile,
+                                                                                    _receiver_address,
+                                                                                    _content,
+                                                                                    _how_many,
+                                                                                    _how_much,
+                                                                                    _remark,
+                                                                                    _shipping_id,
+                                                                                    _last_charged_date,
+                                                                                    _charged,
+                                                                                    _ifsend,
+                                                                                    _ifcancel,
+                                                                                    _subcontent,
+                                                                                    _shipping_link]
+                    except Exception as e:
+                        print(e)
+                        is_error = True
+                        exception_files.append(ntpath.split(txn_path)[1])                
+                return is_found, is_error, exception_files
+        
+        
         elif platform == '博客來':
 
             if len(txn_paths) == 0:
@@ -1519,24 +1604,24 @@ class ALICIA:
 
 if __name__ == '__main__':
     import re, pandas as pd
-
-    # pattern = re.compile(r'.*export_[0-9]{2}\w{3}[0-9]{2}\s{0,2}.*xls$')
-    # print(re.search(pattern, 'export_28Jul20 (2).xls'))
+    os.chdir('/mnt/c/Users/User/Desktop/20200713_HP_Project')
+    pattern = re.compile(r'.{0,6}orders\s{0,1}[(]{0,1}\d{0,1}[)]{0,1}.csv')
+    print(re.search(pattern, ' 副本 orders (5).csv'))
 
     # os.chdir(os.path.dirname(__file__))
     #df = pd.read_csv('/mnt/c/Users/common tata/Desktop/happypi_0610_annie_upload_test_good_alicia_and_kash/order_manage/ALICIA/raw_txns/OrderData_43946 - 2019-11-12T092121.181(Friday).csv',
     #    encoding='big5', engine='python')
     #print(df.head())
-    os.chdir('/mnt/c/Users/User/Desktop/20200713_HP_Project')
     
-    a = ALICIA()
-    a.raw_txns_dir = 'test_folder'
-    a.decr_raw_txns_dir = 'test_folder'
     
-    a._integrate_with('LaNew')
-    print(a.aggregated_txns)
-    a.pre_clean_raw_txns()
-    print(a.aggregated_txns)
+    #a = ALICIA()
+    #a.raw_txns_dir = 'test_folder'
+    #a.decr_raw_txns_dir = 'test_folder'
+    
+    #a._integrate_with('MOMO')
+    #print(a.aggregated_txns)
+    #a.pre_clean_raw_txns()
+    #print(a.aggregated_txns)
 
 
     

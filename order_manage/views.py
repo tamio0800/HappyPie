@@ -270,7 +270,6 @@ def download_search_file(request):
     response = FileResponse(file_to_be_downloaded)
     return response
 
-
 # 把這段function拉出來以便其他也可以
 def wait_for_kashgari_model_done_parsing(signal='done_parsing'):
     is_done = 0
@@ -352,7 +351,7 @@ def ordertracking(request):
                                     })
 
                 platforms_found, platforms_not_found, after_alicia_exception_files = alicia._intergate_all_platforms()
-                # print(1111, platforms_found, platforms_not_found, after_alicia_exception_files)
+                print(1111, platforms_found, platforms_not_found, after_alicia_exception_files)
                 is_integrated_done = True
                 # 上面那行整合各平台交易資訊, 並回傳哪一些平台有找到, 哪一些沒有
 
@@ -392,7 +391,7 @@ def ordertracking(request):
             # print(df['規格'].tolist())
             df = alicia.combine_aggregated_txns_and_user_uploaded_aggregated_txns(
                 df, alicia.user_uploaded_aggregated_txns)
-            # print(df['規格'].tolist())
+
             # 將整理好的資料寫進資料庫
             model_writer = HISTORY_DATA_and_Subcontent_user_edit_record_db_writer(dataframe=df)
             model_writer.write_in_2diff_db()

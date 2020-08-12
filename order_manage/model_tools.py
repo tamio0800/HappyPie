@@ -123,15 +123,14 @@ class HISTORY_DATA_and_Subcontent_user_edit_record_db_writer:
             # 其中一個原因是2020.08.04時曉箐反映有時客戶指定到貨日期時，
             # 她們會如此註記 周文斌 >> 周文斌(12/25到貨)
             # (曉箐原話:) 廠商不看備註!!他們都是直接看收件人的名字跟商品內容
-            History_data.objects.filter(unique_id = ids).update(ifsend = self.dataframe[self.dataframe['unique_id'] == ids]['customer_name'].tolist()[0])
-            History_data.objects.filter(unique_id = ids).update(ifcancel = self.dataframe[self.dataframe['unique_id'] == ids]['receiver_name'].tolist()[0])
-            History_data.objects.filter(unique_id = ids).update(shipping_id = self.dataframe[self.dataframe['unique_id'] == ids]['content'].tolist()[0])
-            History_data.objects.filter(unique_id = ids).update(subcontent = self.dataframe[self.dataframe['unique_id'] == ids]['how_many'].tolist()[0])
-            History_data.objects.filter(unique_id = ids).update(shipping_id = self.dataframe[self.dataframe['unique_id'] == ids]['content'].tolist()[0])
-            History_data.objects.filter(unique_id = ids).update(subcontent = self.dataframe[self.dataframe['unique_id'] == ids]['how_many'].tolist()[0])
-            History_data.objects.filter(unique_id = ids).update(subcontent = self.dataframe[self.dataframe['unique_id'] == ids]['file_created_date'].tolist()[0])
+            History_data.objects.filter(unique_id = ids).update(customer_name = self.dataframe[self.dataframe['unique_id'] == ids]['customer_name'].tolist()[0])
+            History_data.objects.filter(unique_id = ids).update(receiver_name = self.dataframe[self.dataframe['unique_id'] == ids]['receiver_name'].tolist()[0])
+            History_data.objects.filter(unique_id = ids).update(content = self.dataframe[self.dataframe['unique_id'] == ids]['content'].tolist()[0])
+            History_data.objects.filter(unique_id = ids).update(how_many = self.dataframe[self.dataframe['unique_id'] == ids]['how_many'].tolist()[0])
+            History_data.objects.filter(unique_id = ids).update(content = self.dataframe[self.dataframe['unique_id'] == ids]['content'].tolist()[0])
+            History_data.objects.filter(unique_id = ids).update(how_many = self.dataframe[self.dataframe['unique_id'] == ids]['how_many'].tolist()[0])
+            History_data.objects.filter(unique_id = ids).update(file_created_date = self.dataframe[self.dataframe['unique_id'] == ids]['file_created_date'].tolist()[0])
             
-
             # 在這裡寫上產出貨運連結的程式碼
             _temp_logistic_company = None
             try:
@@ -168,14 +167,14 @@ class HISTORY_DATA_and_Subcontent_user_edit_record_db_writer:
         for ids in self.dataframe['unique_id']: 
             # 資料庫已有這筆資料
             # History_data 資料庫已有這筆資料
-            if History_data.objects.filter(unique_id = ids):
+            if len(History_data.objects.filter(unique_id = ids)) > 0:
             # 如果資料庫中的subcontent跟新來的df[subcontent]一致 更新特定column
                 if  History_data.objects.filter(unique_id = ids).filter(subcontent = self.dataframe[self.dataframe['unique_id'] == ids]['subcontent'].tolist()[0]):
                     History_data_update(ids)
                 # 如果資料庫中的subcontent跟新來的df[subcontent]不一致,表示user有修改過subcontent,
                 # 為了追蹤修改的軌跡把資料存到另一個DB:subcontent_user_edit_record
                 else: 
-                    # 如果這筆已經存在於修改規格紀錄DB, 表示use不是第一次改變subcontent, 修改規格紀錄DB只要update最新的就好
+                    # 如果這筆已經存在於修改規格紀錄DB, 表示user不是第一次改變subcontent, 修改規格紀錄DB只要update最新的就好
                     if Subcontent_user_edit_record.objects.filter(unique_id = ids):
                         Subcontent_user_edit_record.objects.filter(unique_id = ids).update(subcontent_user_edit = self.dataframe[self.dataframe['unique_id'] == ids]['subcontent'].tolist()[0])
                         print('update Subcontent_user_edit_record : '+ ids)
@@ -189,8 +188,6 @@ class HISTORY_DATA_and_Subcontent_user_edit_record_db_writer:
                                                     subcontent_user_edit = temp_user_edit).save()
                         print('add Subcontent_user_edit_record : '+ ids) 
                         History_data_update(ids) # 新增到追蹤DB之後也要更新歷史訂單DB
-
-
             # 資料庫沒有這筆資料，要新增
             else:
                 temp_platform = self.dataframe[self.dataframe['unique_id'] == ids]['platform'].tolist()[0]
