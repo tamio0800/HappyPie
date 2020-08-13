@@ -230,7 +230,7 @@ class ALICIA:
                  '台塑': re.compile(r'^Order_2[0-9]{16}[(]台塑[)]'),
                  '整合檔': re.compile(r'^20[0-9]{6}-[0-9]{6}_\S*整合檔\S*.xls[x]{0,1}'),
                  'LaNew': re.compile(r'.*_\w{5}_2[0-9]{3}[01][0-9][0123][0-9].xls[x]{0,1}'),
-                 '快車肉乾銷港': re.compile(r'.{0,6}orders\s{0,1}[(]{0,1}\d{0,1}[)]{0,1}.csv|.{0,6}orders\s{0,1}[(]{0,1}\d{0,1}[)]{0,1}.xls[x]{0,1}'),
+                 '快車肉乾銷港': re.compile(r'.{0,6}orders\s*[(]{0,1}\d*[)]{0,1}\s*.csv|.{0,6}orders\s*[(]{0,1}\d*[)]{0,1}\s*.xls[x]{0,1}'),
                 }
         # 我們把 "整合檔" 也當作一個平台來處理，只是它不需要被再度整合、也不需要丟進kashgari做分析
         # by Annie and Tamio @2020.06.24
@@ -1605,8 +1605,8 @@ class ALICIA:
 if __name__ == '__main__':
     import re, pandas as pd
     os.chdir('/mnt/c/Users/User/Desktop/20200713_HP_Project')
-    pattern = re.compile(r'.{0,6}orders\s{0,1}[(]{0,1}\d{0,1}[)]{0,1}.csv')
-    print(re.search(pattern, ' 副本 orders (5).csv'))
+    pattern = re.compile(r'.{0,6}orders\s*[(]{0,1}\d*[)]{0,1}\s*.csv|.{0,6}orders\s*[(]{0,1}\d*[)]{0,1}\s*.xls[x]{0,1}')
+    print(re.search(pattern, 'orders (15).csv'))
 
     # os.chdir(os.path.dirname(__file__))
     #df = pd.read_csv('/mnt/c/Users/common tata/Desktop/happypi_0610_annie_upload_test_good_alicia_and_kash/order_manage/ALICIA/raw_txns/OrderData_43946 - 2019-11-12T092121.181(Friday).csv',
