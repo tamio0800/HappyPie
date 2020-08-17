@@ -149,8 +149,8 @@ class ALICIA:
         def clean_number_like_columns(df):
             df['訂單編號'] = df['訂單編號'].apply(self.try_to_be_int_in_str)
             df['宅單'] = df['宅單'].apply(lambda x: re.sub(re.compile(r'[- －]'), '', str(x))).apply(self.try_to_be_int_in_str)
-            df['手機'] = df['手機'].apply(self.make_phone_and_mobile_number_clean)
-            df['電話'] = df['電話'].apply(self.make_phone_and_mobile_number_clean)
+            # df['手機'] = df['手機'].apply(self.make_phone_and_mobile_number_clean)
+            # df['電話'] = df['電話'].apply(self.make_phone_and_mobile_number_clean)
             return df
 
 
@@ -228,7 +228,7 @@ class ALICIA:
                  'Friday': re.compile(r'^OrderData_[0-9]{5} - 2[0-9]{3}-[0-9]{2}-\S+.csv'),
                  '博客來': re.compile(r'^take_order_2[0-9]{13}\s{0,2}[(]博客來[)].xls|^take_order_2[0-9]{13}\s{0,2}.xls'),
                  '台塑': re.compile(r'^Order_2[0-9]{16}[(]台塑[)]'),
-                 '整合檔': re.compile(r'^20[0-9]{6}-[0-9]{6}_\S*整合檔\S*.xls[x]{0,1}'),
+                 '整合檔': re.compile(r'.*20[0-9]{6}-[0-9]{6}_.*整合檔.*.xls[x]{0,1}'),
                  'LaNew': re.compile(r'.*_\w{5}_2[0-9]{3}[01][0-9][0123][0-9].xls[x]{0,1}'),
                  '快車肉乾銷港': re.compile(r'.{0,6}orders\s*[(]{0,1}\d*[)]{0,1}\s*.csv|.{0,6}orders\s*[(]{0,1}\d*[)]{0,1}\s*.xls[x]{0,1}'),
                 }
@@ -1505,7 +1505,7 @@ class ALICIA:
                         # 新增一些資料清理邏輯
                         _temp_df = self._clean_dataframe(pd.read_excel(txn_path), strip_only=True)
                         
-                        _temp_df['宅單'][~pd.isnull(_temp_df['宅單'])] = _temp_df['宅單'][~pd.isnull(_temp_df['宅單'])].apply(lambda x: str(x).replace('\'', ''))
+                        _temp_df['宅單'][~pd.isnull(_temp_df['宅單'])] = _temp_df['宅單'][~pd.isnull(_temp_df['宅單'])].apply(lambda x: str(x).replace('\'', '').replace('-', ''))
                         
                         _temp_df['貨到付款'][pd.isnull(_temp_df['貨到付款'])] = False
                         _temp_df['地址'][pd.isnull(_temp_df['地址'])] = ''

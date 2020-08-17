@@ -209,7 +209,16 @@ class HISTORY_DATA_and_Subcontent_user_edit_record_db_writer:
                 temp_ifsend = self.dataframe[self.dataframe['unique_id'] == ids]['ifsend'].tolist()[0]
                 temp_ifcancel = self.dataframe[self.dataframe['unique_id'] == ids]['ifcancel'].tolist()[0]
                 temp_subcontent = self.dataframe[self.dataframe['unique_id'] == ids]['subcontent'].tolist()[0]
-                temp_shipping_link = self.dataframe[self.dataframe['unique_id'] == ids]['shipping_link'].tolist()[0]
+                if not (temp_shipping_id == '' or pd.isnull(temp_shipping_id)):
+                    if len(_temp_shipping_id) == 10:
+                        # 新竹物流的貨運編號長度為10，黑貓的長度為12
+                        _temp_logistic_company = 'xinzhu'
+                    elif len(_temp_shipping_id) == 12:
+                        _temp_logistic_company = 'black_cat'
+                    
+                    temp_shipping_link = 'http://61.222.157.151/order_manage/edo_url/?shipping_number=' + str(_temp_shipping_id) + '&logistic_company=' + _temp_logistic_company
+                else:
+                    temp_shipping_link = self.dataframe[self.dataframe['unique_id'] == ids]['shipping_link'].tolist()[0]
                 temp_unique_id = self.dataframe[self.dataframe['unique_id'] == ids]['unique_id'].tolist()[0]
 
                 
