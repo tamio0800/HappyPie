@@ -470,7 +470,7 @@ class ALICIA:
                         _file_created_date = self._get_file_created_date(txn_path)
 
                         _temp_df = self._clean_dataframe(pd.read_excel(txn_path))
-
+                        
                         for each_row_index in range(_temp_df.shape[0]):
                             _txn_id = _temp_df.loc[each_row_index, '訂單編號']
                             _customer_name = _temp_df.loc[each_row_index, '備註(購買人資料)'].split('/')[0]
@@ -1502,10 +1502,22 @@ class ALICIA:
                         assert txn_path.endswith(criteria)
                         # 檢查是否為excel檔
 
+                        # 新增一些資料清理邏輯
+                        _temp_df = self._clean_dataframe(pd.read_excel(txn_path), strip_only=True)
+                        
+                        _temp_df['宅單'][~pd.isnull(_temp_df['宅單'])] = _temp_df['宅單'][~pd.isnull(_temp_df['宅單'])].apply(lambda x: str(x).replace('\'', ''))
+                        
+                        _temp_df['貨到付款'][pd.isnull(_temp_df['貨到付款'])] = False
+                        _temp_df['地址'][pd.isnull(_temp_df['地址'])] = ''
+                        _temp_df['金額'][pd.isnull(_temp_df['金額'])] = 0
+                        _temp_df['數量'][pd.isnull(_temp_df['數量'])] = 1
+                        _temp_df['已寄出'][pd.isnull(_temp_df['已寄出'])] = False
+                        _temp_df['已取消'][pd.isnull(_temp_df['已取消'])] = False
+
                         _file_created_date = self._get_file_created_date(txn_path)
                         self.user_uploaded_aggregated_txns = pd.concat([
                             self.user_uploaded_aggregated_txns,
-                            self._clean_dataframe(pd.read_excel(txn_path), strip_only=True)
+                            _temp_df
                         ], join='inner')
 
                         self.user_uploaded_aggregated_txns = self._clean_dataframe(

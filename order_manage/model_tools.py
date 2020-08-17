@@ -6,6 +6,7 @@ pd.options.mode.chained_assignment = None
 
 class HISTORY_DATA_and_Subcontent_user_edit_record_db_writer:
 
+
     def __init__(self, **kwargs):   
         if 'dataframe_path' in kwargs.keys():
             self.dataframe = pd.read_excel(kwargs['dataframe_path'])
@@ -41,6 +42,7 @@ class HISTORY_DATA_and_Subcontent_user_edit_record_db_writer:
             '貨運連結':'shipping_link',
             'unique_id':'unique_id',
         }
+
 
     def _check_dataframe(self):
         # 確認該dataframe符合我們的格式
@@ -98,8 +100,8 @@ class HISTORY_DATA_and_Subcontent_user_edit_record_db_writer:
                     mandarin_column_names.append(k)
                     break
         dataframe_tobe_returned.columns = mandarin_column_names
-
         return dataframe_tobe_returned
+
 
     def english_db_column_names_to_mandarin(self):
         mandarin_column_names = []
@@ -135,8 +137,6 @@ class HISTORY_DATA_and_Subcontent_user_edit_record_db_writer:
             _temp_logistic_company = None
             try:
                 _temp_shipping_id = self.dataframe[self.dataframe['unique_id'] == ids]['shipping_id'].tolist()[0]
-                # print('write_in_db-1', _temp_shipping_id, type(_temp_shipping_id), len(_temp_shipping_id))
-                # print('write_in_db-1.1', type(_temp_shipping_id))
                 if len(_temp_shipping_id) == 10:
                     # 新竹物流的貨運編號長度為10，黑貓的長度為12
                     _temp_logistic_company = 'xinzhu'
@@ -167,7 +167,7 @@ class HISTORY_DATA_and_Subcontent_user_edit_record_db_writer:
         for ids in self.dataframe['unique_id']: 
             # 資料庫已有這筆資料
             # History_data 資料庫已有這筆資料
-            if len(History_data.objects.filter(unique_id = ids)) > 0:
+            if History_data.objects.filter(unique_id = ids).count() > 0:
             # 如果資料庫中的subcontent跟新來的df[subcontent]一致 更新特定column
                 if  History_data.objects.filter(unique_id = ids).filter(subcontent = self.dataframe[self.dataframe['unique_id'] == ids]['subcontent'].tolist()[0]):
                     History_data_update(ids)
