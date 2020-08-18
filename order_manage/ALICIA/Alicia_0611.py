@@ -149,10 +149,9 @@ class ALICIA:
         def clean_number_like_columns(df):
             df['訂單編號'] = df['訂單編號'].apply(self.try_to_be_int_in_str)
             df['宅單'] = df['宅單'].apply(lambda x: re.sub(re.compile(r'[- －]'), '', str(x))).apply(self.try_to_be_int_in_str)
-            # df['手機'] = df['手機'].apply(self.make_phone_and_mobile_number_clean)
+            df['手機'] = df['手機'].apply(self.make_phone_and_mobile_number_clean)
             # df['電話'] = df['電話'].apply(self.make_phone_and_mobile_number_clean)
             return df
-
 
         if not_user_uploaded_df is not None:
             if user_uploaded_df is not None:
@@ -1513,6 +1512,7 @@ class ALICIA:
                         _temp_df['數量'][pd.isnull(_temp_df['數量'])] = 1
                         _temp_df['已寄出'][pd.isnull(_temp_df['已寄出'])] = False
                         _temp_df['已取消'][pd.isnull(_temp_df['已取消'])] = False
+                        _temp_df['規格'][pd.isnull(_temp_df['規格'])] = _temp_df['內容物'][pd.isnull(_temp_df['規格'])]
 
                         _file_created_date = self._get_file_created_date(txn_path)
                         self.user_uploaded_aggregated_txns = pd.concat([
@@ -1526,7 +1526,7 @@ class ALICIA:
                             to_database_format=True, 
                             dealing_columns=['貨到付款', '回押', '已寄出', '已取消']
                         )
-                            
+
                         # 將讀到的資料賦值予 self.user_uploaded_aggregated_txns
                         # 並且確認一下其欄位內容如同預期的一樣
 
@@ -1609,6 +1609,9 @@ class ALICIA:
                 raw_number = '0' + raw_number
             raw_number = raw_number[:2] + '-' + raw_number[2:6] + '-' + raw_number[6:]
             return raw_number
+        else:
+            return raw_number
+
     
 
 

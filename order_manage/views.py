@@ -301,6 +301,7 @@ def ordertracking(request):
         for _ in folder_list:
             alicia.delete_files_in_the_folder(_)
 
+
     if request.method == 'POST':
         st = time()
         if request.FILES.getlist("files"):
@@ -350,7 +351,11 @@ def ordertracking(request):
                                             'after_alicia_exception_files': []
                                     })
 
+                # 前面都只是在清理
+
                 platforms_found, platforms_not_found, after_alicia_exception_files = alicia._intergate_all_platforms()
+                # alicia.aggregated_txns.to_excel('01_step1_raw.xlsx')
+
                 print(1111, platforms_found, platforms_not_found, after_alicia_exception_files)
                 is_integrated_done = True
                 # 上面那行整合各平台交易資訊, 並回傳哪一些平台有找到, 哪一些沒有
@@ -359,7 +364,10 @@ def ordertracking(request):
                 if alicia.aggregated_txns.shape[0] > 0:
                     # 當alicia.aggregated_txns長度不為0時再進行以下動作，
                     # 反之代表user只上傳了整合訂單檔案。
+
+                    # 因為aggregated_txns只存放除了【整合訂單檔案】
                     alicia.pre_clean_raw_txns()
+                    # alicia.aggregated_txns.to_excel('02_step2_preclean.xlsx')
 
                     prod_ipt = alicia.aggregated_txns.loc[:, '規格'].tolist()
                     num_ipt = alicia.aggregated_txns.loc[:, '數量'].astype(str).tolist()
@@ -370,7 +378,10 @@ def ordertracking(request):
 
                     df = alicia.to_one_unique_id_df_after_kash(alicia.aggregated_txns)
                     df = df.drop(['unique_id'], axis=1)
+                    # df.aggregated_txns.to_excel('03_step3_df.xlsx')
                     alicia.remove_unique_id()
+                    # alicia.aggregated_txns.to_excel('04_step4.xlsx')
+                    del(df)
 
                     print('共花了', int(time()-st), '秒.', '\n分析了', df.shape[0], '筆交易.')
 
@@ -389,8 +400,12 @@ def ordertracking(request):
             
             # 整理一下，確認有沒有df這個檔案，以及處理user上傳整合檔該怎麼寫進DB中的問題
             # print(df['規格'].tolist())
+            alicia.user_uploaded_aggregated_txns.to_excel('05_step5_user_uploaded.xlsx')
+
             df = alicia.combine_aggregated_txns_and_user_uploaded_aggregated_txns(
                 df, alicia.user_uploaded_aggregated_txns)
+
+            # df.to_excel('06_step6_df2.xlsx')
 
             # 將整理好的資料寫進資料庫
             model_writer = HISTORY_DATA_and_Subcontent_user_edit_record_db_writer(dataframe=df)

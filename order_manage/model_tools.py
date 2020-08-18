@@ -6,7 +6,6 @@ pd.options.mode.chained_assignment = None
 
 class HISTORY_DATA_and_Subcontent_user_edit_record_db_writer:
 
-
     def __init__(self, **kwargs):   
         if 'dataframe_path' in kwargs.keys():
             self.dataframe = pd.read_excel(kwargs['dataframe_path'])
@@ -61,7 +60,7 @@ class HISTORY_DATA_and_Subcontent_user_edit_record_db_writer:
     def _make_dataframe_columns_to_match_db_columns(self):
         self.dataframe.columns = [self.column_names_dict[_] for _ in self.dataframe.columns]
         # 將DB Table的column name置換原本對應的中文column name
-        
+
         for each_col in self.dataframe.columns:
             try:
                 if each_col not in ['how_many','how_much']:
@@ -111,16 +110,16 @@ class HISTORY_DATA_and_Subcontent_user_edit_record_db_writer:
                     mandarin_column_names.append(k)
                     break
         self.dataframe.columns = mandarin_column_names
-        
+
 
     def write_in_2diff_db(self):
         # 這些是允許user修改的column
         def History_data_update(ids):
+            # the_order = History_data.objects.filter(unique_id = ids)
             History_data.objects.filter(unique_id = ids).update(ifsend = self.dataframe[self.dataframe['unique_id'] == ids]['ifsend'].tolist()[0])
             History_data.objects.filter(unique_id = ids).update(ifcancel = self.dataframe[self.dataframe['unique_id'] == ids]['ifcancel'].tolist()[0])
             History_data.objects.filter(unique_id = ids).update(shipping_id = self.dataframe[self.dataframe['unique_id'] == ids]['shipping_id'].tolist()[0])
             History_data.objects.filter(unique_id = ids).update(subcontent = self.dataframe[self.dataframe['unique_id'] == ids]['subcontent'].tolist()[0])
-            
             # 新增欄位，讓user可以修改的欄位增加
             # 其中一個原因是2020.08.04時曉箐反映有時客戶指定到貨日期時，
             # 她們會如此註記 周文斌 >> 周文斌(12/25到貨)
@@ -132,7 +131,7 @@ class HISTORY_DATA_and_Subcontent_user_edit_record_db_writer:
             History_data.objects.filter(unique_id = ids).update(content = self.dataframe[self.dataframe['unique_id'] == ids]['content'].tolist()[0])
             History_data.objects.filter(unique_id = ids).update(how_many = self.dataframe[self.dataframe['unique_id'] == ids]['how_many'].tolist()[0])
             History_data.objects.filter(unique_id = ids).update(file_created_date = self.dataframe[self.dataframe['unique_id'] == ids]['file_created_date'].tolist()[0])
-            
+            # print('History_data_update_1 Done')
             # 在這裡寫上產出貨運連結的程式碼
             _temp_logistic_company = None
             try:
@@ -145,6 +144,7 @@ class HISTORY_DATA_and_Subcontent_user_edit_record_db_writer:
                 # print('write_in_db-1.2', _temp_logistic_company)
             except:
                 pass
+            # print('History_data_update_2 Done')
             if _temp_logistic_company is not None:
                 # print('write_in_db-2', _temp_logistic_company)
                 #print(History_data.objects.filter(unique_id = ids).shipping_id)
@@ -155,16 +155,19 @@ class HISTORY_DATA_and_Subcontent_user_edit_record_db_writer:
                 History_data.objects.filter(unique_id = ids).update(shipping_id = _temp_shipping_id)
                 History_data.objects.filter(unique_id = ids).update(shipping_link='')
             # print('已更新history_data:'+ ids )
+            # print('History_data_update_3 Done')
 
         self._check_dataframe()
         self._make_dataframe_columns_to_match_db_columns()
-
+        # print('write_in_2diff_db_1 Done')
         # print(self.dataframe.head(1).T)
         # print(self.dataframe.info())
+        # print(self.dataframe.columns)
 
         # 如果合併訂單的 uni_id跟資料庫裡的一樣，表示資料已存在
         # 則接著更新寄出、取消狀態
         for ids in self.dataframe['unique_id']: 
+            # print('write_in_2diff_db_2', ids)
             # 資料庫已有這筆資料
             # History_data 資料庫已有這筆資料
             if History_data.objects.filter(unique_id = ids).count() > 0:
@@ -177,7 +180,7 @@ class HISTORY_DATA_and_Subcontent_user_edit_record_db_writer:
                     # 如果這筆已經存在於修改規格紀錄DB, 表示user不是第一次改變subcontent, 修改規格紀錄DB只要update最新的就好
                     if Subcontent_user_edit_record.objects.filter(unique_id = ids):
                         Subcontent_user_edit_record.objects.filter(unique_id = ids).update(subcontent_user_edit = self.dataframe[self.dataframe['unique_id'] == ids]['subcontent'].tolist()[0])
-                        print('update Subcontent_user_edit_record : '+ ids)
+                        # print('update Subcontent_user_edit_record : '+ ids)
                         History_data_update(ids) # 更新追蹤DB之後也要更新歷史訂單DB
                     # 如果這筆不存在於修改規格紀錄DB, 則新增
                     else: 
@@ -186,7 +189,7 @@ class HISTORY_DATA_and_Subcontent_user_edit_record_db_writer:
                         Subcontent_user_edit_record(unique_id = ids, 
                                                     subcontent_predict = temp_subcontent_predict,
                                                     subcontent_user_edit = temp_user_edit).save()
-                        print('add Subcontent_user_edit_record : '+ ids) 
+                        # print('add Subcontent_user_edit_record : '+ ids) 
                         History_data_update(ids) # 新增到追蹤DB之後也要更新歷史訂單DB
             # 資料庫沒有這筆資料，要新增
             else:
@@ -209,17 +212,22 @@ class HISTORY_DATA_and_Subcontent_user_edit_record_db_writer:
                 temp_ifsend = self.dataframe[self.dataframe['unique_id'] == ids]['ifsend'].tolist()[0]
                 temp_ifcancel = self.dataframe[self.dataframe['unique_id'] == ids]['ifcancel'].tolist()[0]
                 temp_subcontent = self.dataframe[self.dataframe['unique_id'] == ids]['subcontent'].tolist()[0]
+                temp_shipping_link = self.dataframe[self.dataframe['unique_id'] == ids]['shipping_link'].tolist()[0]
+
                 if not (temp_shipping_id == '' or pd.isnull(temp_shipping_id)):
-                    if len(_temp_shipping_id) == 10:
+                    _temp_logistic_company = None
+                    if len(temp_shipping_id) == 10:
                         # 新竹物流的貨運編號長度為10，黑貓的長度為12
                         _temp_logistic_company = 'xinzhu'
-                    elif len(_temp_shipping_id) == 12:
+                    elif len(temp_shipping_id) == 12:
                         _temp_logistic_company = 'black_cat'
                     
-                    temp_shipping_link = 'http://61.222.157.151/order_manage/edo_url/?shipping_number=' + str(_temp_shipping_id) + '&logistic_company=' + _temp_logistic_company
-                else:
-                    temp_shipping_link = self.dataframe[self.dataframe['unique_id'] == ids]['shipping_link'].tolist()[0]
-                temp_unique_id = self.dataframe[self.dataframe['unique_id'] == ids]['unique_id'].tolist()[0]
+                    if _temp_logistic_company is not None:
+                        temp_shipping_link = 'http://61.222.157.151/order_manage/edo_url/?shipping_number=' + str(temp_shipping_id) + '&logistic_company=' + _temp_logistic_company
+                    else:
+                        temp_shipping_link = self.dataframe[self.dataframe['unique_id'] == ids]['shipping_link'].tolist()[0]
+                
+                # temp_unique_id = self.dataframe[self.dataframe['unique_id'] == ids]['unique_id'].tolist()[0]
 
                 
                 # print('新增訂單 : '+ ids)
@@ -244,8 +252,6 @@ class HISTORY_DATA_and_Subcontent_user_edit_record_db_writer:
                             subcontent  = temp_subcontent  ,
                             shipping_link = temp_shipping_link).save()
         
-
-
 
 class HISTORY_DATA_db_writer:
 
@@ -297,7 +303,7 @@ class HISTORY_DATA_db_writer:
             assert sorted(list(self.dataframe.columns)) == sorted(list(self.column_names_dict.keys()))
 
         print('hddw1', 'check done.')
-            
+
 
     def _make_dataframe_columns_to_match_db_columns(self):
         self.dataframe.columns = [self.column_names_dict[_] for _ in self.dataframe.columns]
@@ -324,7 +330,7 @@ class HISTORY_DATA_db_writer:
         for _ in ['shipping_id']:
             self.dataframe[_] = self.dataframe[_].astype(str)
 
-        print('hddw2', 'make_dataframe_columns_to_match_db_columns done.')
+        print('hddw2 make_dataframe_columns_to_match_db_columns done.')
 
 
     def query_all_pending_txns(self):
