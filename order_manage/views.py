@@ -59,148 +59,6 @@ def kashgari_parsing(prod_ipt, num_ipt):
     return result
 
 
-class history_data(View):
-    download_folder = 'download_file'
-    
-    def get(self, request):
-
-        data= History_data.objects.filter(id=0)
-        if 'platform' in request.GET:
-            data = History_data.objects.all()
-
-            if request.GET['platform'] is not '':
-                data=data.filter(platform=request.GET['platform'])
-                print(data)
-
-            if request.GET["txn_id"] is not '':
-                data=data.filter(txn_id=request.GET["txn_id"])
-                print(data)
-
-            if request.GET["customer_name"] is not '':
-                data=data.filter(customer_name=request.GET["customer_name"])
-                print(data)
-
-            if request.GET["receiver_name"] is not '':
-                data=data.filter(receiver_name=request.GET["receiver_name"])
-                print(data)
-
-            if request.GET["receiver_phone_nbr"] is not '':
-                data=data.filter(receiver_phone_nbr=request.GET["receiver_phone_nbr"])
-                print(data)
-
-            if request.GET["receiver_mobile"] is not '':
-                data=data.filter(receiver_mobile=request.GET["receiver_mobile"])
-                print(data)
-
-            if request.GET["receiver_address"] is not '':
-                data=data.filter(receiver_address=request.GET["receiver_address"])
-                print(data)
-                #內容篩選未完成
-            if request.GET["content"] is not '':
-                data=data.filter(content=request.GET["content"])
-                print(data)
-
-            if request.GET["how_many"] is not '':
-                data=data.filter(how_many=int(request.GET["how_many"]))
-                print(data)
-            #金額篩選未完成
-            #if request.GET["how_much_min"] is not '':
-            #    data=data.filter(how_much=int(request.GET["how_much_min"]))
-            #    print(data)
-
-            #if request.GET["how_much_max"] is not '':
-            #    data=data.filter(how_much=int(request.GET["how_much_max"]))
-            #    print(data)
-
-            if request.GET["remark"] is not '':
-                data=data.filter(remark=request.GET["remark"])
-                print(data)
-
-            if request.GET["shipping_id"] is not '':
-                data=data.filter(shipping_id=request.GET["shipping_id"])
-                print(data)
-
-            if request.GET["subcontent"] is not '':
-                data=data.filter(subcontent=request.GET["subcontent"])
-                print(data)
-
-            if request.GET["ifsend"] is not '':
-                data=data.filter(ifsend=request.GET["ifsend"])
-                print(data)
-
-            if request.GET["ifcancel"] is not '':
-                data=data.filter(ifcancel=request.GET["ifcancel"])
-                print(data)
-                
-            if (request.GET["from_date"] is not '') & (request.GET["to_date"] is not ''):
-                from_day = request.GET["from_date"].split("/")[1]
-                from_month = request.GET["from_date"].split("/")[0]
-                from_year = request.GET["from_date"].split("/")[2]
-                from_date=from_year+'-'+from_month+'-'+from_day
-
-                to_day = request.GET["to_date"].split("/")[1]
-                to_month = request.GET["to_date"].split("/")[0]
-                to_year = request.GET["to_date"].split("/")[2]
-                to_date=to_year+'-'+to_month+'-'+to_day
-                print(from_date,to_date)
-                data=data.filter(file_created_date__range=[from_date,to_date])
-                
-            file_name=datetime.today().strftime("%Y%m%d-%H%M%S") +str(request.user)+ '_歷史查詢訂單資料整合檔.xlsx'
-            download_file=os.path.join(os.getcwd(),self.download_folder,file_name)
-            df = read_frame(data) 
-            
-            df_translate=HISTORY_DATA_and_Subcontent_user_edit_record_db_writer(dataframe=df.iloc[:,1:])
-            df_translate.english_db_column_names_to_mandarin()
-            df=df_translate.dataframe
-            print('create file'+file_name)
-            df.to_excel(download_file, index=False)
-            
-            return render(request, 'order_manage/orderhistory.html',{'data':data})
-
-        return render(request, 'order_manage/orderhistory.html',{'data':data})
-
-    
-    def post(self, request):
-            
-            data = History_data.objects.all()
-            
-            if 'ifsend,1' in request.POST:
-                df=read_frame(History_data.objects.filter(id=0))
-                #計算筆數
-                number=int((len(request.POST)+1)/2)
-                st = time()
-                for n in range(1,number):
-                    #抓出ID
-                    ifsend_data_id=request.POST['ifsend,'+str(n)].split(",")[0]
-                    print(ifsend_data_id)
-                    ifcancel_data_id=request.POST['ifcancel,'+str(n)].split(",")[0]
-                    #抓出VALUE
-                    ifsend_data_val=request.POST['ifsend,'+str(n)].split(",")[1]
-                    ifcancel_data_val=request.POST['ifcancel,'+str(n)].split(",")[1]
-                    #更新DATA
-                    #if (History_data.objects.filter(id =ifsend_data_id).('ifsend')) == ifsend_data_val:
-                    History_data.objects.filter(id =ifsend_data_id).update(ifsend=ifsend_data_val)
-                    #if (History_data.objects.filter(id =ifcancel_data_id).('ifcancel')) == ifcancel_data_val:
-                    History_data.objects.filter(id =ifcancel_data_id).update(ifcancel=ifcancel_data_val)
-                    
-                    df_add=read_frame(History_data.objects.filter(id=ifsend_data_id))
-                    df=df.append(df_add, ignore_index = True)
-
-                file_name=datetime.today().strftime("%Y%m%d-%H%M%S")+str(request.user) + '_歷史查詢訂單資料整合檔.xlsx'
-                download_file=os.path.join(os.getcwd(),self.download_folder,file_name)
-                df_translate=HISTORY_DATA_and_Subcontent_user_edit_record_db_writer(dataframe=df.iloc[:,1:])
-                df_translate.english_db_column_names_to_mandarin()
-                df=df_translate.dataframe
-                print('create file'+file_name)
-                df.to_excel(download_file, index=False)
-
-                print('共花了', int(time()-st), '秒.')
-                return HttpResponse(status=204)
-
-            else:
-                return render(request, 'order_manage/orderhistory.html',{'data':data})
-
-
 def to_download_file(request):
     # print('start 1')
     download_from_which_folder = 'download_file'
@@ -245,6 +103,7 @@ def to_download_file(request):
     response = prepare_download_link(download_from_which_folder)
     return response
 
+
 def download_search_file(request):
     download_folder = 'download_file'
     download_file=os.path.join(os.getcwd(),download_folder)
@@ -269,6 +128,7 @@ def download_search_file(request):
     
     response = FileResponse(file_to_be_downloaded)
     return response
+
 
 # 把這段function拉出來以便其他也可以
 def wait_for_kashgari_model_done_parsing(signal='done_parsing'):
@@ -301,16 +161,13 @@ def ordertracking(request):
         for _ in folder_list:
             alicia.delete_files_in_the_folder(_)
 
-
     if request.method == 'POST':
         st = time()
         if request.FILES.getlist("files"):
             # 先確認檔案符合條件
-
             alicia.wait_till_the_flag_comes_up(
                 'all_flags/ordetracking_function_is_not_running.flag',
                 'all_flags/ordetracking_function_is_running.flag')
-
             try:
                 # 為了避免發生錯誤時,flag沒有被改回來
 
@@ -356,7 +213,7 @@ def ordertracking(request):
                 platforms_found, platforms_not_found, after_alicia_exception_files = alicia._intergate_all_platforms()
                 # alicia.aggregated_txns.to_excel('01_step1_raw.xlsx')
 
-                print(1111, platforms_found, platforms_not_found, after_alicia_exception_files)
+                print('clean_temp_files_in_folders', platforms_found, platforms_not_found, after_alicia_exception_files)
                 is_integrated_done = True
                 # 上面那行整合各平台交易資訊, 並回傳哪一些平台有找到, 哪一些沒有
 
@@ -381,7 +238,6 @@ def ordertracking(request):
                     # df.aggregated_txns.to_excel('03_step3_df.xlsx')
                     alicia.remove_unique_id()
                     # alicia.aggregated_txns.to_excel('04_step4.xlsx')
-                    del(df)
 
                     print('共花了', int(time()-st), '秒.', '\n分析了', df.shape[0], '筆交易.')
 
@@ -587,3 +443,145 @@ def import_selfmade_txns(request):
         return render(request, 'order_manage/import_selfmade.html', locals())
     else:
         return render(request, 'order_manage/import_selfmade.html', locals())
+
+
+class history_data(View):
+    download_folder = 'download_file'
+    
+    def get(self, request):
+
+        data= History_data.objects.filter(id=0)
+        if 'platform' in request.GET:
+            data = History_data.objects.all()
+
+            if request.GET['platform'] is not '':
+                data=data.filter(platform=request.GET['platform'])
+                print(data)
+
+            if request.GET["txn_id"] is not '':
+                data=data.filter(txn_id=request.GET["txn_id"])
+                print(data)
+
+            if request.GET["customer_name"] is not '':
+                data=data.filter(customer_name=request.GET["customer_name"])
+                print(data)
+
+            if request.GET["receiver_name"] is not '':
+                data=data.filter(receiver_name=request.GET["receiver_name"])
+                print(data)
+
+            if request.GET["receiver_phone_nbr"] is not '':
+                data=data.filter(receiver_phone_nbr=request.GET["receiver_phone_nbr"])
+                print(data)
+
+            if request.GET["receiver_mobile"] is not '':
+                data=data.filter(receiver_mobile=request.GET["receiver_mobile"])
+                print(data)
+
+            if request.GET["receiver_address"] is not '':
+                data=data.filter(receiver_address=request.GET["receiver_address"])
+                print(data)
+                #內容篩選未完成
+            if request.GET["content"] is not '':
+                data=data.filter(content=request.GET["content"])
+                print(data)
+
+            if request.GET["how_many"] is not '':
+                data=data.filter(how_many=int(request.GET["how_many"]))
+                print(data)
+            #金額篩選未完成
+            #if request.GET["how_much_min"] is not '':
+            #    data=data.filter(how_much=int(request.GET["how_much_min"]))
+            #    print(data)
+
+            #if request.GET["how_much_max"] is not '':
+            #    data=data.filter(how_much=int(request.GET["how_much_max"]))
+            #    print(data)
+
+            if request.GET["remark"] is not '':
+                data=data.filter(remark=request.GET["remark"])
+                print(data)
+
+            if request.GET["shipping_id"] is not '':
+                data=data.filter(shipping_id=request.GET["shipping_id"])
+                print(data)
+
+            if request.GET["subcontent"] is not '':
+                data=data.filter(subcontent=request.GET["subcontent"])
+                print(data)
+
+            if request.GET["ifsend"] is not '':
+                data=data.filter(ifsend=request.GET["ifsend"])
+                print(data)
+
+            if request.GET["ifcancel"] is not '':
+                data=data.filter(ifcancel=request.GET["ifcancel"])
+                print(data)
+                
+            if (request.GET["from_date"] is not '') & (request.GET["to_date"] is not ''):
+                from_day = request.GET["from_date"].split("/")[1]
+                from_month = request.GET["from_date"].split("/")[0]
+                from_year = request.GET["from_date"].split("/")[2]
+                from_date=from_year+'-'+from_month+'-'+from_day
+
+                to_day = request.GET["to_date"].split("/")[1]
+                to_month = request.GET["to_date"].split("/")[0]
+                to_year = request.GET["to_date"].split("/")[2]
+                to_date=to_year+'-'+to_month+'-'+to_day
+                print(from_date,to_date)
+                data=data.filter(file_created_date__range=[from_date,to_date])
+                
+            file_name=datetime.today().strftime("%Y%m%d-%H%M%S") +str(request.user)+ '_歷史查詢訂單資料整合檔.xlsx'
+            download_file=os.path.join(os.getcwd(),self.download_folder,file_name)
+            df = read_frame(data) 
+            
+            df_translate=HISTORY_DATA_and_Subcontent_user_edit_record_db_writer(dataframe=df.iloc[:,1:])
+            df_translate.english_db_column_names_to_mandarin()
+            df=df_translate.dataframe
+            print('create file'+file_name)
+            df.to_excel(download_file, index=False)
+            
+            return render(request, 'order_manage/orderhistory.html',{'data':data})
+
+        return render(request, 'order_manage/orderhistory.html',{'data':data})
+
+    
+    def post(self, request):
+            
+            data = History_data.objects.all()
+            
+            if 'ifsend,1' in request.POST:
+                df=read_frame(History_data.objects.filter(id=0))
+                #計算筆數
+                number=int((len(request.POST)+1)/2)
+                st = time()
+                for n in range(1,number):
+                    #抓出ID
+                    ifsend_data_id=request.POST['ifsend,'+str(n)].split(",")[0]
+                    print(ifsend_data_id)
+                    ifcancel_data_id=request.POST['ifcancel,'+str(n)].split(",")[0]
+                    #抓出VALUE
+                    ifsend_data_val=request.POST['ifsend,'+str(n)].split(",")[1]
+                    ifcancel_data_val=request.POST['ifcancel,'+str(n)].split(",")[1]
+                    #更新DATA
+                    #if (History_data.objects.filter(id =ifsend_data_id).('ifsend')) == ifsend_data_val:
+                    History_data.objects.filter(id =ifsend_data_id).update(ifsend=ifsend_data_val)
+                    #if (History_data.objects.filter(id =ifcancel_data_id).('ifcancel')) == ifcancel_data_val:
+                    History_data.objects.filter(id =ifcancel_data_id).update(ifcancel=ifcancel_data_val)
+                    
+                    df_add=read_frame(History_data.objects.filter(id=ifsend_data_id))
+                    df=df.append(df_add, ignore_index = True)
+
+                file_name=datetime.today().strftime("%Y%m%d-%H%M%S")+str(request.user) + '_歷史查詢訂單資料整合檔.xlsx'
+                download_file=os.path.join(os.getcwd(),self.download_folder,file_name)
+                df_translate=HISTORY_DATA_and_Subcontent_user_edit_record_db_writer(dataframe=df.iloc[:,1:])
+                df_translate.english_db_column_names_to_mandarin()
+                df=df_translate.dataframe
+                print('create file'+file_name)
+                df.to_excel(download_file, index=False)
+
+                print('共花了', int(time()-st), '秒.')
+                return HttpResponse(status=204)
+
+            else:
+                return render(request, 'order_manage/orderhistory.html',{'data':data})

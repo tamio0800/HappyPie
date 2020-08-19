@@ -738,16 +738,6 @@ class ALICIA:
                                 _content = self._combine_columns([_temp_df.loc[each_row_index, '品名'],
                                                                 _temp_df.loc[each_row_index, '單品詳細']],
                                                                 ', ')
-                                print(platform,
-                                        _file_created_date,
-                                        _txn_id,
-                                        _customer_name,
-                                        _receiver_name,
-                                        _paid_after_receiving,
-                                        _receiver_phone_nbr,
-                                        _receiver_mobile,
-                                        _receiver_address,
-                                        _content)
                                 _how_many = _temp_df.loc[each_row_index, '數量']
                                 _how_much = 0
                                 _remark = ''
@@ -759,18 +749,6 @@ class ALICIA:
                                 _subcontent = _temp_df.loc[each_row_index, '單品詳細']
                                 _shipping_link = ''
                                 # 寫入資料
-                                print(
-                                    _how_many,
-                                    _how_much,
-                                    _remark,
-                                    _shipping_id,
-                                    _last_charged_date,
-                                    _charged,
-                                    _ifsend,
-                                    _ifcancel,
-                                    _subcontent,
-                                    _shipping_link
-                                )
                                 self.aggregated_txns.loc[self.aggregated_txns.shape[0]] = [platform,
                                                                                         _file_created_date,
                                                                                         _txn_id,
