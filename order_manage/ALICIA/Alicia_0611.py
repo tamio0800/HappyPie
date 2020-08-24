@@ -218,7 +218,7 @@ class ALICIA:
         # 建立各個平台文件的名稱規則, 以利於分辨每一份報表分屬於哪一些平台
         _temp = {'好吃市集': re.compile(r'^2[0-9]{3}-[0-9]{2}-[0-9]{2}_好吃市集_\S+'),
                  '生活市集': re.compile(r'^2[0-9]{3}-[0-9]{2}-[0-9]{2}_生活市集_\S+'),
-                 '樂天派官網': re.compile(r'.*export_[0-9]{2}\w{3}[0-9]{2}\s{0,2}.*xls[x]{0,1}$|.*2[0-9]{7}_export_default.*xls[x]{0,1}'),
+                 '樂天派官網': re.compile(r'.*export_[0-9]{2}\w{3}[0-9]{2}\s{0,2}.*xls[x]{0,1}$|.*2[0-9]{7}_export_default.xls[x]{0,1}'),
                  'MOMO': re.compile(r'[A-Z]\d+_\d_\d+_\d+_[20]\d+.xls|\S+\d+\s{0,2}[(]MOMO[)].xls|.*訂單查詢-第三方物流.*xls[x]{0,1}$|[A-Z]\d+_\d_\d+_[20]\d+.xls'),
                  '亞伯': re.compile(r'[a-z]\d+_PoDetail_\d+.xls|\S+PoDetail_\d+\s{0,2}[(]亞伯[)].xls|[a-z]\d+_shipmentReport_\d+.xls'),
                  '東森得易購': re.compile(r'^[a-z0-9]{8}_20\d+.xls'),
@@ -368,16 +368,31 @@ class ALICIA:
         return pandas_dataframe
 
 
-
-    def _combine_columns(self, combine_1_dim_array, linked):
+    def _combine_columns(self, combine_1_dim_array, linked, only_meaningful=False):
         _temp = ''
-        for _, _element in enumerate(combine_1_dim_array):
-            if not (pd.isnull(_element) or _element == '' or _element == '共同'):
-                if _ == 0:
-                    _temp += str(_element)
-                else:
-                    _temp += linked + str(_element)
-        return _temp
+        if not only_meaningful:
+            for _, _element in enumerate(combine_1_dim_array):
+                _element = _element.strip()
+                if not (pd.isnull(_element) or _element == '' or _element == '共同'):
+                    if _ == 0:
+                        _temp += str(_element)
+                    else:
+                        _temp += linked + str(_element)
+        else:
+            # 只回傳有意義的部份回去就好
+            # 先看看後面的元素有沒有包含重要資訊
+            # 以東森得易購為例(先開發它就好)，只要不是 "共同"或空白都是有意義的
+            for _, _element in enumerate(combine_1_dim_array[1:]):
+                _element = _element.strip()
+                if not (pd.isnull(_element) or _element == '' or _element == '共同'):
+                    if _ == 0:
+                        _temp += str(_element)
+                    else:
+                        _temp += linked + str(_element)
+            if len(_temp) == 0:
+                # 沒看到什麼重要的資訊
+                _temp = combine_1_dim_array[0].strip()
+        return _temp    
 
 
     def _get_file_created_date(self, file_path):
@@ -863,20 +878,6 @@ class ALICIA:
                         assert (txn_path.endswith('.xls') or txn_path.endswith('.xlsx') or txn_path.endswith('.xlsm'))
                         # 檢查是否為excel檔
                         _file_created_date = self._get_file_created_date(txn_path)
-
-                        #try:
-                            # 先輸入密碼試試
-                        #    _temp_df = self._turn_wb_into_dataframe(txn_path, 1, self.passwords['東森'])
-                        #except:
-                            # 改不輸入密碼試試
-                        #    _temp_df = self._turn_wb_into_dataframe(txn_path, 1, None)
-
-                        #try:
-                        #    _temp_df.shape  # 這行只是為了偵測有沒有成功從workbook轉成dataframe
-                        #except:
-                        #    print(txn_paths, '讀取失敗.')
-
-                        #_temp_df = self._clean_dataframe(_temp_df)
                         _temp_df = self._clean_dataframe(pd.read_excel(txn_path))
 
                         for each_row_index in range(_temp_df.shape[0]):
@@ -905,7 +906,8 @@ class ALICIA:
                             _subcontent = self._combine_columns([_temp_df.loc[each_row_index, '商品名稱'],
                                                             _temp_df.loc[each_row_index, '顏色'],
                                                             _temp_df.loc[each_row_index, '款式']],
-                                                            ', ')
+                                                            ', ', only_meaningful=True)
+                            # 根據20.08.21曉箐的說法，顏色跟款式不會同時有內容在裡面，而且這兩個欄位裡面樂天派不會放進空格。
                             _shipping_link = ''
                             # 寫入資料
                             self.aggregated_txns.loc[self.aggregated_txns.shape[0]] = [platform,
@@ -1598,13 +1600,10 @@ class ALICIA:
 if __name__ == '__main__':
     import re, pandas as pd
     os.chdir('/mnt/c/Users/User/Desktop/20200713_HP_Project')
-    pattern = re.compile(r'.{0,6}orders\s*[(]{0,1}\d*[)]{0,1}\s*.csv|.{0,6}orders\s*[(]{0,1}\d*[)]{0,1}\s*.xls[x]{0,1}')
-    print(re.search(pattern, 'orders (15).csv'))
+    # pattern = re.compile(r'.{0,6}orders\s*[(]{0,1}\d*[)]{0,1}\s*.csv|.{0,6}orders\s*[(]{0,1}\d*[)]{0,1}\s*.xls[x]{0,1}')
+    
 
-    # os.chdir(os.path.dirname(__file__))
-    #df = pd.read_csv('/mnt/c/Users/common tata/Desktop/happypi_0610_annie_upload_test_good_alicia_and_kash/order_manage/ALICIA/raw_txns/OrderData_43946 - 2019-11-12T092121.181(Friday).csv',
-    #    encoding='big5', engine='python')
-    #print(df.head())
+    
     
     
     #a = ALICIA()
