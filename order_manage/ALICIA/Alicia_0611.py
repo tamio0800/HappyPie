@@ -149,10 +149,9 @@ class ALICIA:
         def clean_number_like_columns(df):
             df['訂單編號'] = df['訂單編號'].apply(self.try_to_be_int_in_str)
             df['宅單'] = df['宅單'].apply(lambda x: re.sub(re.compile(r'[- －]'), '', str(x))).apply(self.try_to_be_int_in_str)
-            # df['手機'] = df['手機'].apply(self.make_phone_and_mobile_number_clean)
+            df['手機'] = df['手機'].apply(self.make_phone_and_mobile_number_clean)
             # df['電話'] = df['電話'].apply(self.make_phone_and_mobile_number_clean)
             return df
-
 
         if not_user_uploaded_df is not None:
             if user_uploaded_df is not None:
@@ -219,7 +218,7 @@ class ALICIA:
         # 建立各個平台文件的名稱規則, 以利於分辨每一份報表分屬於哪一些平台
         _temp = {'好吃市集': re.compile(r'^2[0-9]{3}-[0-9]{2}-[0-9]{2}_好吃市集_\S+'),
                  '生活市集': re.compile(r'^2[0-9]{3}-[0-9]{2}-[0-9]{2}_生活市集_\S+'),
-                 '樂天派官網': re.compile(r'.*export_[0-9]{2}\w{3}[0-9]{2}\s{0,2}.*xls[x]{0,1}$|.*2[0-9]{7}_export_default.*xls[x]{0,1}'),
+                 '樂天派官網': re.compile(r'.*export_[0-9]{2}\w{3}[0-9]{2}\s{0,2}.*xls[x]{0,1}$|.*2[0-9]{7}_export_default.xls[x]{0,1}'),
                  'MOMO': re.compile(r'[A-Z]\d+_\d_\d+_\d+_[20]\d+.xls|\S+\d+\s{0,2}[(]MOMO[)].xls|.*訂單查詢-第三方物流.*xls[x]{0,1}$|[A-Z]\d+_\d_\d+_[20]\d+.xls'),
                  '亞伯': re.compile(r'[a-z]\d+_PoDetail_\d+.xls|\S+PoDetail_\d+\s{0,2}[(]亞伯[)].xls|[a-z]\d+_shipmentReport_\d+.xls'),
                  '東森得易購': re.compile(r'^[a-z0-9]{8}_20\d+.xls'),
@@ -369,16 +368,31 @@ class ALICIA:
         return pandas_dataframe
 
 
-
-    def _combine_columns(self, combine_1_dim_array, linked):
+    def _combine_columns(self, combine_1_dim_array, linked, only_meaningful=False):
         _temp = ''
-        for _, _element in enumerate(combine_1_dim_array):
-            if not (pd.isnull(_element) or _element == '' or _element == '共同'):
-                if _ == 0:
-                    _temp += str(_element)
-                else:
-                    _temp += linked + str(_element)
-        return _temp
+        if not only_meaningful:
+            for _, _element in enumerate(combine_1_dim_array):
+                _element = str(_element).strip()
+                if not (pd.isnull(_element) or _element == '' or _element == '共同'):
+                    if _ == 0:
+                        _temp += str(_element)
+                    else:
+                        _temp += linked + str(_element)
+        else:
+            # 只回傳有意義的部份回去就好
+            # 先看看後面的元素有沒有包含重要資訊
+            # 以東森得易購為例(先開發它就好)，只要不是 "共同"或空白都是有意義的
+            for _, _element in enumerate(combine_1_dim_array[1:]):
+                _element = str(_element).strip()
+                if not (pd.isnull(_element) or _element == '' or _element == '共同'):
+                    if _ == 0:
+                        _temp += str(_element)
+                    else:
+                        _temp += linked + str(_element)
+            if len(_temp) == 0:
+                # 沒看到什麼重要的資訊
+                _temp = combine_1_dim_array[0].strip()
+        return _temp    
 
 
     def _get_file_created_date(self, file_path):
@@ -739,16 +753,6 @@ class ALICIA:
                                 _content = self._combine_columns([_temp_df.loc[each_row_index, '品名'],
                                                                 _temp_df.loc[each_row_index, '單品詳細']],
                                                                 ', ')
-                                print(platform,
-                                        _file_created_date,
-                                        _txn_id,
-                                        _customer_name,
-                                        _receiver_name,
-                                        _paid_after_receiving,
-                                        _receiver_phone_nbr,
-                                        _receiver_mobile,
-                                        _receiver_address,
-                                        _content)
                                 _how_many = _temp_df.loc[each_row_index, '數量']
                                 _how_much = 0
                                 _remark = ''
@@ -760,18 +764,6 @@ class ALICIA:
                                 _subcontent = _temp_df.loc[each_row_index, '單品詳細']
                                 _shipping_link = ''
                                 # 寫入資料
-                                print(
-                                    _how_many,
-                                    _how_much,
-                                    _remark,
-                                    _shipping_id,
-                                    _last_charged_date,
-                                    _charged,
-                                    _ifsend,
-                                    _ifcancel,
-                                    _subcontent,
-                                    _shipping_link
-                                )
                                 self.aggregated_txns.loc[self.aggregated_txns.shape[0]] = [platform,
                                                                                         _file_created_date,
                                                                                         _txn_id,
@@ -886,20 +878,6 @@ class ALICIA:
                         assert (txn_path.endswith('.xls') or txn_path.endswith('.xlsx') or txn_path.endswith('.xlsm'))
                         # 檢查是否為excel檔
                         _file_created_date = self._get_file_created_date(txn_path)
-
-                        #try:
-                            # 先輸入密碼試試
-                        #    _temp_df = self._turn_wb_into_dataframe(txn_path, 1, self.passwords['東森'])
-                        #except:
-                            # 改不輸入密碼試試
-                        #    _temp_df = self._turn_wb_into_dataframe(txn_path, 1, None)
-
-                        #try:
-                        #    _temp_df.shape  # 這行只是為了偵測有沒有成功從workbook轉成dataframe
-                        #except:
-                        #    print(txn_paths, '讀取失敗.')
-
-                        #_temp_df = self._clean_dataframe(_temp_df)
                         _temp_df = self._clean_dataframe(pd.read_excel(txn_path))
 
                         for each_row_index in range(_temp_df.shape[0]):
@@ -928,7 +906,8 @@ class ALICIA:
                             _subcontent = self._combine_columns([_temp_df.loc[each_row_index, '商品名稱'],
                                                             _temp_df.loc[each_row_index, '顏色'],
                                                             _temp_df.loc[each_row_index, '款式']],
-                                                            ', ')
+                                                            ', ', only_meaningful=True)
+                            # 根據20.08.21曉箐的說法，顏色跟款式不會同時有內容在裡面，而且這兩個欄位裡面樂天派不會放進空格。
                             _shipping_link = ''
                             # 寫入資料
                             self.aggregated_txns.loc[self.aggregated_txns.shape[0]] = [platform,
@@ -1369,7 +1348,10 @@ class ALICIA:
                     try:
                         _file_created_date = self._get_file_created_date(txn_path)
                         _temp_df = self._clean_dataframe(pd.read_csv(txn_path))
-                        _temp_df.loc[:, '_temp_subcontent'] = _temp_df['Product Name'].apply(lambda x: x.split('-')[-1].strip() if '-' in x else x.strip())
+                        # _temp_df.loc[:, '_temp_subcontent'] = _temp_df['Product Name'].apply(lambda x: x.split('-')[-1] if '-' in x else x.split(' ')[-2])
+                        # print('ali: spilt')
+                        _temp_df.loc[:, '_temp_subcontent'] = _temp_df['Product Name'].apply(lambda x: x.split('】')[-1].split('-')[-1].strip() if '-' in x else x.split('】')[-1].strip())
+                        #_temp_df.loc[:, '_temp_subcontent'] = _temp_df['Product Name'].apply(lambda x: x.split('-')[-1].strip() if '-' in x else x.split(' ')[-2])
                         _temp_df.loc[:, 'customer_name'] = _temp_df['First Name'] + ' ' + _temp_df['Last Name']
                         _temp_df.loc[:, '_temp_remark'] = _temp_df['Order Note'] + '; email:' + _temp_df['Buyer\'s Email Address']
                         _temp_df['Shipping Address'] = _temp_df['Shipping Address'].apply(lambda x: x.replace('\n', ' '))
@@ -1417,7 +1399,7 @@ class ALICIA:
                                                                                     _subcontent,
                                                                                     _shipping_link]
                     except Exception as e:
-                        print(e)
+                        print('Alicia Integrating', platform, e)
                         is_error = True
                         exception_files.append(ntpath.split(txn_path)[1])                
                 return is_found, is_error, exception_files
@@ -1513,6 +1495,7 @@ class ALICIA:
                         _temp_df['數量'][pd.isnull(_temp_df['數量'])] = 1
                         _temp_df['已寄出'][pd.isnull(_temp_df['已寄出'])] = False
                         _temp_df['已取消'][pd.isnull(_temp_df['已取消'])] = False
+                        _temp_df['規格'][pd.isnull(_temp_df['規格'])] = _temp_df['內容物'][pd.isnull(_temp_df['規格'])]
 
                         _file_created_date = self._get_file_created_date(txn_path)
                         self.user_uploaded_aggregated_txns = pd.concat([
@@ -1526,7 +1509,7 @@ class ALICIA:
                             to_database_format=True, 
                             dealing_columns=['貨到付款', '回押', '已寄出', '已取消']
                         )
-                            
+
                         # 將讀到的資料賦值予 self.user_uploaded_aggregated_txns
                         # 並且確認一下其欄位內容如同預期的一樣
 
@@ -1609,6 +1592,9 @@ class ALICIA:
                 raw_number = '0' + raw_number
             raw_number = raw_number[:2] + '-' + raw_number[2:6] + '-' + raw_number[6:]
             return raw_number
+        else:
+            return raw_number
+
     
 
 
@@ -1617,13 +1603,10 @@ class ALICIA:
 if __name__ == '__main__':
     import re, pandas as pd
     os.chdir('/mnt/c/Users/User/Desktop/20200713_HP_Project')
-    pattern = re.compile(r'.{0,6}orders\s*[(]{0,1}\d*[)]{0,1}\s*.csv|.{0,6}orders\s*[(]{0,1}\d*[)]{0,1}\s*.xls[x]{0,1}')
-    print(re.search(pattern, 'orders (15).csv'))
+    # pattern = re.compile(r'.{0,6}orders\s*[(]{0,1}\d*[)]{0,1}\s*.csv|.{0,6}orders\s*[(]{0,1}\d*[)]{0,1}\s*.xls[x]{0,1}')
+    
 
-    # os.chdir(os.path.dirname(__file__))
-    #df = pd.read_csv('/mnt/c/Users/common tata/Desktop/happypi_0610_annie_upload_test_good_alicia_and_kash/order_manage/ALICIA/raw_txns/OrderData_43946 - 2019-11-12T092121.181(Friday).csv',
-    #    encoding='big5', engine='python')
-    #print(df.head())
+    
     
     
     #a = ALICIA()

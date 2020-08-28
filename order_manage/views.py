@@ -47,6 +47,7 @@ def kashgari_parsing(prod_ipt, num_ipt):
         wait_for_kashgari_model_done_parsing()
         result = eval(kash.stdout.readline().decode().strip())
     except:
+        print('kashgari_parsing', 'return nothing.')
         result = []
         os.rename(
                   'all_flags/kashgari_model_is_running.flag',
@@ -359,16 +360,23 @@ def ordertracking(request):
                 if alicia.aggregated_txns.shape[0] > 0:
                     # 當alicia.aggregated_txns長度不為0時再進行以下動作，
                     # 反之代表user只上傳了整合訂單檔案。
+                    print('pre_clean_raw_txns Starts.')
                     alicia.pre_clean_raw_txns()
+                    print('pre_clean_raw_txns Successfully.')
 
                     prod_ipt = alicia.aggregated_txns.loc[:, '規格'].tolist()
                     num_ipt = alicia.aggregated_txns.loc[:, '數量'].astype(str).tolist()
 
+                    print('kashgari_parsing Starts.')
                     result = kashgari_parsing(prod_ipt, num_ipt)
+                    print('kashgari_parsing Successfully.')
 
                     alicia.aggregated_txns.loc[:, '規格'] = np.array(result)
 
+                    print('to_one_unique_id_df_after_kash Starts.')
                     df = alicia.to_one_unique_id_df_after_kash(alicia.aggregated_txns)
+                    print('to_one_unique_id_df_after_kash Successfully.')
+
                     df = df.drop(['unique_id'], axis=1)
                     alicia.remove_unique_id()
 
@@ -377,7 +385,7 @@ def ordertracking(request):
                 clean_temp_files_in_folders()
                 # 先清理一下遺留的檔案
             except Exception as e:
-                print(e)
+                print('view_functions', e)
                 os.rename(
                     'all_flags/ordetracking_function_is_running.flag',
                     'all_flags/ordetracking_function_is_not_running.flag')

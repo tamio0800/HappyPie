@@ -400,12 +400,14 @@ if __name__ == '__main__':
     #target = '4盒 15x9.5x12'
     
     print(kash.get_annotations(target))
-    # df = pd.read_excel('temp_files/20200803-150444_待處理訂單資料整合檔.xlsx')
-    # a, b = df['內容物'].apply(lambda x: x.strip().replace('\n', ' ')).tolist(), df['數量'].astype(str).tolist()
-    # final_outputs = kash.get_results_alicia(a, b)
-    # with open('temp_result.txt', 'w') as w:
-    #     for _ in final_outputs:
-    #         w.write(_ + '\n')
+
+    #df = pd.read_csv('test_folder/orders (19).csv')
+    #a = df['Product Name'].apply(lambda x: x.split('】')[-1].split('-')[-1].strip() if '-' in x else x.split('】')[-1].strip())
+    #b = df['Quantity Ordered'].astype(str).tolist()
+    #final_outputs = kash.get_results_alicia(a, b)
+    #with open('temp_result.txt', 'w') as w:
+    #    for _ in final_outputs:
+    #            w.write(_ + '\n')
 
     sleep(2)
     print('READY')
