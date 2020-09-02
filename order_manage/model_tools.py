@@ -373,23 +373,23 @@ class HISTORY_DATA_db_writer:
                 _temp_logistic_company = None
                 try:
                     _temp_shipping_id = self.dataframe[self.dataframe['unique_id'] == ids]['shipping_id'].tolist()[0]
-                    # print('write_in_db-1', _temp_shipping_id, type(_temp_shipping_id), len(_temp_shipping_id))
-                    # print('write_in_db-1.1', type(_temp_shipping_id))
+                    print('write_in_db-1', _temp_shipping_id, type(_temp_shipping_id), len(_temp_shipping_id))
+                    print('write_in_db-1.1', type(_temp_shipping_id))
                     if len(_temp_shipping_id) == 10:
                         # 新竹物流的貨運編號長度為10，黑貓的長度為12
                         _temp_logistic_company = 'xinzhu'
                     elif len(_temp_shipping_id) == 12:
                         _temp_logistic_company = 'black_cat'
-                    # print('write_in_db-1.2', _temp_logistic_company)
+                    print('write_in_db-1.2', _temp_logistic_company)
                 except:
                     pass
                 if _temp_logistic_company is not None:
-                    # print('write_in_db-2', _temp_logistic_company)
-                    #print(History_data.objects.filter(unique_id = ids).shipping_id)
+                    print('write_in_db-2', _temp_logistic_company)
+                    print(History_data.objects.filter(unique_id = ids).shipping_id)
                     History_data.objects.filter(unique_id = ids).update(shipping_id = _temp_shipping_id)
-                    #print(History_data.objects.filter(unique_id = ids).shipping_id)
+                    print(History_data.objects.filter(unique_id = ids).shipping_id)
                     History_data.objects.filter(unique_id = ids).update(shipping_link = 'http://61.222.157.151/order_manage/edo_url/?shipping_number=' + str(_temp_shipping_id) + '&logistic_company=' + _temp_logistic_company)
-                # print('已更新資料庫狀態:'+ ids )
+                print('已更新資料庫狀態:'+ ids )
             
             # 資料庫沒有這筆資料，要新增
             else:

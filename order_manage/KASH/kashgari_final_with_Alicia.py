@@ -414,7 +414,6 @@ if __name__ == '__main__':
 
     while(1):
         the_input = input()
-        # print('Subprocess Received: ', the_input)
         try:
             the_input = eval(the_input)
             # 如果輸入的是list型態, 則第一個元素為產品名稱list, 第二個元素為數量list

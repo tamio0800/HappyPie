@@ -1478,17 +1478,16 @@ class ALICIA:
                 is_found = False
                 return is_found, is_error, exception_files
             else:
+                print(txn_paths)
                 for txn_path in txn_paths:
                     try:
                         criteria = ('.xlsx', '.xlsm')
                         assert txn_path.endswith(criteria)
                         # 檢查是否為excel檔
-
                         # 新增一些資料清理邏輯
                         _temp_df = self._clean_dataframe(pd.read_excel(txn_path), strip_only=True)
-                        
+                        print('clean dataframe successfully.')
                         _temp_df['宅單'][~pd.isnull(_temp_df['宅單'])] = _temp_df['宅單'][~pd.isnull(_temp_df['宅單'])].apply(lambda x: str(x).replace('\'', '').replace('-', ''))
-                        
                         _temp_df['貨到付款'][pd.isnull(_temp_df['貨到付款'])] = False
                         _temp_df['地址'][pd.isnull(_temp_df['地址'])] = ''
                         _temp_df['金額'][pd.isnull(_temp_df['金額'])] = 0

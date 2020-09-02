@@ -15,21 +15,21 @@ from django_pandas.io import read_frame
 from .SHIPPING.Shipping_Manager import *
 
 
-kash = subprocess.Popen(['python3', os.path.join(os.getcwd(),'order_manage','KASH','kashgari_final_with_Alicia.py')],
-                        stdin=subprocess.PIPE, stdout=subprocess.PIPE)
-print('loading model.')
-is_ready = 0
-while(is_ready == 0):
-    try:
-       opt = kash.stdout.readline().decode().strip()
-       print(opt)
-       if opt == 'READY':
-           is_ready = 1   
-    except:
-        print('Wait for loading.')
-        sleep(2.5)
-        continue
-print('Model has loaded.')
+#kash = subprocess.Popen(['python3', os.path.join(os.getcwd(),'order_manage','KASH','kashgari_final_with_Alicia.py')],
+#                        stdin=subprocess.PIPE, stdout=subprocess.PIPE)
+#print('loading model.')
+#is_ready = 0
+#while(is_ready == 0):
+#    try:
+#       opt = kash.stdout.readline().decode().strip()
+#       print(opt)
+#       if opt == 'READY':
+#           is_ready = 1   
+#    except:
+#        print('Wait for loading.')
+#        sleep(2.5)
+#        continue
+#print('Model has loaded.')
 
 # 將利用kashgari來分析寫成一個函式方便使用
 def kashgari_parsing(prod_ipt, num_ipt):
@@ -222,16 +222,10 @@ def ordertracking(request):
                 if alicia.aggregated_txns.shape[0] > 0:
                     # 當alicia.aggregated_txns長度不為0時再進行以下動作，
                     # 反之代表user只上傳了整合訂單檔案。
-<<<<<<< HEAD
-                    print('pre_clean_raw_txns Starts.')
-                    alicia.pre_clean_raw_txns()
-                    print('pre_clean_raw_txns Successfully.')
-=======
 
                     # 因為aggregated_txns只存放除了【整合訂單檔案】
                     alicia.pre_clean_raw_txns()
                     # alicia.aggregated_txns.to_excel('02_step2_preclean.xlsx')
->>>>>>> 6a97f4e6cd5ce9d2f06f7fb348687d501cb922cd
 
                     prod_ipt = alicia.aggregated_txns.loc[:, '規格'].tolist()
                     num_ipt = alicia.aggregated_txns.loc[:, '數量'].astype(str).tolist()
