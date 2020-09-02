@@ -15,21 +15,21 @@ from django_pandas.io import read_frame
 from .SHIPPING.Shipping_Manager import *
 
 
-#kash = subprocess.Popen(['python3', os.path.join(os.getcwd(),'order_manage','KASH','kashgari_final_with_Alicia.py')],
-#                        stdin=subprocess.PIPE, stdout=subprocess.PIPE)
-#print('loading model.')
-#is_ready = 0
-#while(is_ready == 0):
-#    try:
-#       opt = kash.stdout.readline().decode().strip()
-#       print(opt)
-#       if opt == 'READY':
-#           is_ready = 1   
-#    except:
-#        print('Wait for loading.')
-#        sleep(2.5)
-#        continue
-#print('Model has loaded.')
+kash = subprocess.Popen(['python3', os.path.join(os.getcwd(),'order_manage','KASH','kashgari_final_with_Alicia.py')],
+                        stdin=subprocess.PIPE, stdout=subprocess.PIPE)
+print('loading model.')
+is_ready = 0
+while(is_ready == 0):
+    try:
+       opt = kash.stdout.readline().decode().strip()
+       print(opt)
+       if opt == 'READY':
+           is_ready = 1   
+    except:
+        print('Wait for loading.')
+        sleep(2.5)
+        continue
+print('Model has loaded.')
 
 # 將利用kashgari來分析寫成一個函式方便使用
 def kashgari_parsing(prod_ipt, num_ipt):
@@ -262,7 +262,7 @@ def ordertracking(request):
             
             # 整理一下，確認有沒有df這個檔案，以及處理user上傳整合檔該怎麼寫進DB中的問題
             # print(df['規格'].tolist())
-            alicia.user_uploaded_aggregated_txns.to_excel('05_step5_user_uploaded.xlsx')
+            # alicia.user_uploaded_aggregated_txns.to_excel('05_step5_user_uploaded.xlsx')
 
             df = alicia.combine_aggregated_txns_and_user_uploaded_aggregated_txns(
                 df, alicia.user_uploaded_aggregated_txns)
