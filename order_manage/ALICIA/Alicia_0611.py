@@ -572,15 +572,12 @@ class ALICIA:
             else:
                 for txn_path in txn_paths:
                     try:
-                        assert (txn_path.endswith('.xls') or txn_path.endswith('.xlsx') or txn_path.endswith('.xlsm'))
-                        # 檢查是否為excel檔
                         _file_created_date = self._get_file_created_date(txn_path)
-
                         _temp_df = self._clean_dataframe(pd.read_excel(txn_path))
-                        # _temp_df.drop(axis=0, index)
-
-                        # print(_temp_df.shape)
-                        # print(_temp_df.tail(1).T)
+                        print('Alicia intergrating with 樂天派官網')
+                        print('path:', txn_paths)
+                        print(_temp_df.shape)
+                        print(_temp_df.tail(1).T)
 
                         for each_row_index in range(_temp_df.shape[0]):
                             _txn_id = _temp_df.loc[each_row_index, '自訂編號']
@@ -590,7 +587,6 @@ class ALICIA:
                             _receiver_address = _temp_df.loc[each_row_index, '客戶地址']
                             _receiver_phone_nbr = _temp_df.loc[each_row_index, '客戶手機號碼']
                             _receiver_mobile = _receiver_phone_nbr
-
 
                             # 先簡單的把內容物直接塞到內容物, 數量塞到數量就好~~~
 
