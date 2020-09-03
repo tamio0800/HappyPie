@@ -414,10 +414,10 @@ if __name__ == '__main__':
 
     while(1):
         the_input = input()
-        with open('kash_with_alicia_log.txt', 'a') as w:
-            w.write('THE INPUT\n')
-            w.write(the_input)
-            w.write('\n\n')
+        #with open('kash_with_alicia_log.txt', 'a') as w:
+            #w.write('THE INPUT\n')
+            #w.write(the_input)
+            #w.write('\n\n')
         try:
             the_input = eval(the_input)
             # 如果輸入的是list型態, 則第一個元素為產品名稱list, 第二個元素為數量list
@@ -426,10 +426,10 @@ if __name__ == '__main__':
 
         if type(the_input) is list:
             # 代表輸入的其實是list >> 啟用list模式的kash_model
-            with open('kash_with_alicia_log.txt', 'a') as w:
-                w.write('List Detail\n')
-                w.write(the_input[0] + '  ,  ' + the_input[1] + '\n')
-                w.write('\n')
+            #with open('kash_with_alicia_log.txt', 'a') as w:
+                #w.write('List Detail\n')
+                #w.write(the_input[0] + '  ,  ' + the_input[1] + '\n')
+                #w.write('\n')
             final_outputs = kash.get_results_alicia(the_input[0], the_input[1])
             print('done_parsing')
             print(final_outputs)
