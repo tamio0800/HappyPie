@@ -45,7 +45,9 @@ class HISTORY_DATA_and_Subcontent_user_edit_record_db_writer:
 
     def _check_dataframe(self):
         # 確認該dataframe符合我們的格式
-        #print(self.dataframe.columns)
+        print('_check_dataframe')
+        print(self.dataframe.columns)
+        print(self.dataframe.head())
         if 'unique_id' not in self.dataframe.columns:
             assert len(self.dataframe.columns) == 20
             assert sorted(list(self.dataframe.columns)) == sorted(list(self.column_names_dict.keys())[:-1])
@@ -167,9 +169,9 @@ class HISTORY_DATA_and_Subcontent_user_edit_record_db_writer:
         self._check_dataframe()
         self._make_dataframe_columns_to_match_db_columns()
         print('write_in_2diff_db_1 Done')
-        # print(self.dataframe.head(1).T)
-        # print(self.dataframe.info())
-        # print(self.dataframe.columns)
+        print(self.dataframe.head(1).T)
+        print(self.dataframe.info())
+        print(self.dataframe.columns)
 
         # 如果合併訂單的 uni_id跟資料庫裡的一樣，表示資料已存在
         # 則接著更新寄出、取消狀態
