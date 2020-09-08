@@ -256,8 +256,8 @@ def second_clean(opt_prods, opt_nums, input_num, is_gift, multiple, prefix):
     opt_nums = han_num_and_units_pre_clean_trans(opt_nums)
     opt_nums = [str(_) for _ in opt_nums]
     has_num, has_unit = 0, 0
-    _temp_opt_nums = []
-    _opt_nums_units = []
+    _temp_opt_nums = []  # 這是用來暫存數量
+    _opt_nums_units = []  # 這是用來儲存量詞
     num_pattern = re.compile(r'\d+')
     unit_pattern = re.compile(r'\D+')
     print('sc1', opt_nums)
@@ -281,7 +281,6 @@ def second_clean(opt_prods, opt_nums, input_num, is_gift, multiple, prefix):
         _temp_opt_nums.append('1')
 
     assert len(_temp_opt_nums) == len(_opt_nums_units)
-
 
     print('sc3', _temp_opt_nums, _opt_nums_units, has_unit)
 

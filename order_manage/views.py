@@ -182,6 +182,7 @@ def ordertracking(request):
                     # 所有檔案都符合條件, 進行存檔
                     fs = FileSystemStorage()
                     for each_file in request.FILES.getlist("files"):
+                        print('each_file.name in VIEWS: ', each_file.name)
                         fs.save(each_file.name, each_file)
                         # 上傳的檔案將被存放在預設為 '/HAPPYPI_0610_ANNIE/temp_files/' 的資料夾中
                         # 注意! 上傳的檔案包括「需要解密」的檔案跟「不需要解密」的檔案
@@ -189,7 +190,6 @@ def ordertracking(request):
                     alicia.move_files_and_decrypt_them(folder_where_are_uploaded_files_be, 
                                                     folder_where_i_want_all_decrypted_files_be_at)
                     print('Has Successfully Decrypted And Moved All Files.')
-                    
                     pass
                 else:
                     # 上傳的檔案有問題, 需要做例外控管!!!
@@ -373,6 +373,7 @@ def import_selfmade_txns(request):
                 fs = FileSystemStorage()
                 for each_file in request.FILES.getlist("files"):
                     fs.save(each_file.name, each_file)
+                    print('each_file.name in VIEWS: ', each_file.name)
                     temp_df = pd.read_excel(os.path.join(folder_where_are_uploaded_files_be, each_file.name))
                     for each_column in must_columns:
                         assert each_column in temp_df.columns

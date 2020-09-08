@@ -106,8 +106,9 @@ class ALICIA:
         for each_file in os.listdir(folder_path):
             # 盡可能刪除裡面所有的檔案
             try:
-                os.unlink(os.path.join(folder_path, each_file))
-                print(each_file)
+                if not each_file.endswith('fortracked'):
+                    os.unlink(os.path.join(folder_path, each_file))
+                    print(each_file)
             except:
                 pass
 
@@ -126,6 +127,32 @@ class ALICIA:
 
             self.aggregated_txns.loc[:, 'unique_id'] = self.aggregated_txns['通路'] + '-' + \
                 self.aggregated_txns['訂單編號'].astype(str)
+        
+            # 針對亞伯做特殊處理
+            yabo_part = self.aggregated_txns[self.aggregated_txns['通路']=='亞伯']
+            non_yabo_part = self.aggregated_txns[~self.aggregated_txns.index.isin(yabo_part.index)]
+            if yabo_part.shape[0] > 0:
+                print('pre_clean_raw_txns 2:  Found Yabo!')
+                yabo_part.to_excel('pre_clean_raw_txns2.1_yabo_part.xlsx', index=False)
+                _temp_df = pd.DataFrame(columns=yabo_part.columns)
+                yabo_part.loc[:, 'unique_id'] = yabo_part['unique_id'].apply(lambda x: '-'.join(x.split('-')[:-1]))
+                # print('pre_clean_raw_txns 2.1: ', yabo_part.loc[:, 'unique_id'].unique().tolist())
+                # 將unique_id去掉(會員訂單編號的部分)，為了將同一筆訂單合併
+                for each_unique_id in yabo_part['unique_id'].unique().tolist():
+                    tdf_yabo_part = yabo_part[yabo_part['unique_id'] == each_unique_id]
+                    # print('pre_clean_raw_txns 2.1.1: ', tdf_yabo_part['規格'].unique().tolist())
+                    for each_unique_subcontent_under_the_id in tdf_yabo_part['規格'].unique().tolist():
+                       # 開始將內容填入_temp_df中
+                        _temp_df.loc[_temp_df.shape[0]] = \
+                            tdf_yabo_part[tdf_yabo_part['規格']==each_unique_subcontent_under_the_id].head(1).values[0]
+                        # 先拿第一排
+                        _temp_df.loc[_temp_df.shape[0] - 1, '數量'] = tdf_yabo_part[tdf_yabo_part['規格']==each_unique_subcontent_under_the_id]['數量'].astype(int).sum()
+                        # 計算數量加總
+            print('pre_clean_raw_txns 2.1: ', _temp_df.shape)
+            _temp_df.to_excel('pre_clean_raw_txns2.2_temp_df.xlsx', index=False)
+            self.aggregated_txns = pd.concat([non_yabo_part, _temp_df])  # 將兩者合併
+
+                
 
     def get_today(self, format='%Y%m%d'):
         return datetime.today().strftime(format)
@@ -570,9 +597,11 @@ class ALICIA:
                 is_found = False
                 return is_found, is_error, exception_files
             else:
+                print('_intergrate_with: ', platform, txn_paths)
                 for txn_path in txn_paths:
                     try:
                         _file_created_date = self._get_file_created_date(txn_path)
+                        print('before clean', pd.read_excel(txn_path).shape)
                         _temp_df = self._clean_dataframe(pd.read_excel(txn_path))
                         print('Alicia intergrating with 樂天派官網')
                         print('path:', txn_paths)
@@ -945,7 +974,9 @@ class ALICIA:
                         _file_created_date = self._get_file_created_date(txn_path)
                         _temp_df = self._clean_dataframe(pd.read_excel(txn_path))
                         for each_row_index in range(_temp_df.shape[0]):
-                            _txn_id = _temp_df.loc[each_row_index, '廠商訂單編號']
+                            _txn_id = self._combine_columns([_temp_df.loc[each_row_index, '廠商訂單編號'],
+                                                            _temp_df.loc[each_row_index, '會員訂單編號']],
+                                                            '-')
                             _customer_name = _temp_df.loc[each_row_index, '消費者']
                             _receiver_name = _temp_df.loc[each_row_index, '收貨人姓名']
                             _paid_after_receiving = False
@@ -956,7 +987,6 @@ class ALICIA:
                             except:
                                 _receiver_phone_nbr = _temp_df.loc[each_row_index, '收貨人聯絡電話']
                                 _receiver_mobile = _temp_df.loc[each_row_index, '收貨人聯絡電話']
-                            print(33333, _receiver_phone_nbr, _receiver_mobile)
                             _content = self._combine_columns([_temp_df.loc[each_row_index, '品名'],
                                                             _temp_df.loc[each_row_index, '選購規格']],
                                                             ', ')
@@ -977,27 +1007,6 @@ class ALICIA:
                             
                             _shipping_link = ''
                             # 寫入資料
-                            print(1111, [platform,
-                                        _file_created_date,
-                                        _txn_id,
-                                        _customer_name,
-                                        _receiver_name,
-                                        _paid_after_receiving,
-                                        _receiver_phone_nbr,
-                                        _receiver_mobile,
-                                        _receiver_address,
-                                        _content,
-                                        _how_many,
-                                        _how_much,
-                                        _remark,
-                                        _shipping_id,
-                                        _last_charged_date,
-                                        _charged,
-                                        _ifsend,
-                                        _ifcancel,
-                                        _subcontent,
-                                        _shipping_link])
-                            print(2222, self.aggregated_txns.shape)
                             self.aggregated_txns.loc[self.aggregated_txns.shape[0]] = [platform,
                                                                                     _file_created_date,
                                                                                     _txn_id,
@@ -1519,9 +1528,9 @@ class ALICIA:
         platforms_found, platforms_not_found, exception_files = [], [], []
         # 整合所有訂單後, 回傳有找到的平台跟沒有找到的, 以及有問題的檔案們
         for each_platform in self.platforms:
-            # print('b4', each_platform, self.aggregated_txns)
+            # print('_intergate_all_platforms b4', each_platform, self.aggregated_txns)
             is_found, _is_error, sub_exception_files = self._integrate_with(each_platform)
-            # print('after', is_found, _is_error, sub_exception_files, self.aggregated_txns)
+            # print('_intergate_all_platforms after', is_found, _is_error, sub_exception_files, self.aggregated_txns)
             if is_found:
                 platforms_found.append(each_platform)
                 # print(self.aggregated_txns)
