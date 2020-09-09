@@ -148,11 +148,10 @@ class ALICIA:
                         # 先拿第一排
                         _temp_df.loc[_temp_df.shape[0] - 1, '數量'] = tdf_yabo_part[tdf_yabo_part['規格']==each_unique_subcontent_under_the_id]['數量'].astype(int).sum()
                         # 計算數量加總
-            print('pre_clean_raw_txns 2.1: ', _temp_df.shape)
-            _temp_df.to_excel('pre_clean_raw_txns2.2_temp_df.xlsx', index=False)
-            self.aggregated_txns = pd.concat([non_yabo_part, _temp_df])  # 將兩者合併
+                print('pre_clean_raw_txns 2.1: ', _temp_df.shape)
+                _temp_df.to_excel('pre_clean_raw_txns2.2_temp_df.xlsx', index=False)
+                self.aggregated_txns = pd.concat([non_yabo_part, _temp_df])  # 將兩者合併
 
-                
 
     def get_today(self, format='%Y%m%d'):
         return datetime.today().strftime(format)
