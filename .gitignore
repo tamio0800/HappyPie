@@ -3,3 +3,4 @@
 *.xlsx
 *.xls
 *.csv
+db.sqlite3
