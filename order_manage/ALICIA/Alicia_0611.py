@@ -191,6 +191,11 @@ class ALICIA:
                 not_user_uploaded_df = \
                     not_user_uploaded_df[~not_user_uploaded_df.unique_id.isin(user_uploaded_df.unique_id)]
 
+                # 再增加一個條件以加速資料寫入的流程>> 1個月以前的交易不做更新(直接從這次的batch中排除)
+                not_user_uploaded_df = not_user_uploaded_df[
+                    pd.to_datetime(not_user_uploaded_df['抓單日']) > (pd.to_datetime(not_user_uploaded_df['抓單日'])  - pd.Timedelta(days=31))
+                ]
+                
                 _temp_df = pd.concat([not_user_uploaded_df, user_uploaded_df], join='inner').reset_index(drop=True)
                 return clean_number_like_columns(_temp_df)
             else:
@@ -324,6 +329,7 @@ class ALICIA:
             ]
         # 檢查輸入值是否為pandas dataframe CLASS
         for each_col in pandas_dataframe.columns:
+            print('ALICIA _clean_dataframe 1: ', each_col)
             if not strip_only:
                 if each_col not in columns_cannot_be_ffill:
                     pandas_dataframe.loc[:, each_col] = pandas_dataframe.loc[:, each_col].fillna(method='ffill')
@@ -331,13 +337,19 @@ class ALICIA:
                     # 將每個row由上往下最後一次看到的非null值分配給下方的null值
             else:
                 try:
-                    pandas_dataframe.loc[:, each_col] = pandas_dataframe.loc[:, each_col].apply(lambda x: x.strip())
+                    pandas_dataframe.loc[:, each_col] = pandas_dataframe.loc[:, each_col].apply(lambda x: x.strip() if not pd.isnull(x) else x)
                 except:
                     pass
 
             if make_null_be_nullstring:
                 pandas_dataframe[each_col][pd.isnull(pandas_dataframe[each_col])] = ''
                 pandas_dataframe[each_col] = pandas_dataframe[each_col].apply(lambda x: '' if x in ['nan', 'null', 'NULL', 'None', 'none', 'NONE'] else x)
+            
+            try:
+                pandas_dataframe.loc[:, each_col] = pandas_dataframe.loc[:, each_col].apply(lambda x: x if not pd.isnull(x) else x)
+            except Exception as e:
+                print(e)
+                pass
             
         # = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
         # 我想在這個函式裡加上一個功能，讓這個函式能夠處理如：將False轉成N，或null值轉成Flase等等的任務，       
@@ -504,12 +516,12 @@ class ALICIA:
             else:
                 
                 for txn_path in txn_paths:
+                    print('ALICIA: _integrate_with1 : ', txn_path)
                     try:
-                        assert (txn_path.endswith('.xls') or txn_path.endswith('.xlsx') or txn_path.endswith('.xlsm'))
-                        # 檢查是否為excel檔
                         _file_created_date = self._get_file_created_date(txn_path)
 
                         _temp_df = self._clean_dataframe(pd.read_excel(txn_path))
+                        print('ALICIA: _integrate_with2 : ', _temp_df.shape)
                         
                         for each_row_index in range(_temp_df.shape[0]):
                             _txn_id = _temp_df.loc[each_row_index, '訂單編號']

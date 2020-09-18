@@ -275,7 +275,7 @@ def ordertracking(request):
 
             # write_current_pending_txns_to_excel_file()
             # 似乎不需要在這裡就將資料寫出, 可以等待user按了下載再產出最新檔案就好
-
+            print('VIEWS HAS TAKEN(S) : ', time() - st)
             return render(request, 'order_manage/ordertracking.html', 
                       locals())
 
