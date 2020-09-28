@@ -153,6 +153,7 @@ def ordertracking(request):
     alicia = Alicia_0611.ALICIA()
     folder_where_are_uploaded_files_be = 'temp_files'
     folder_where_i_want_all_decrypted_files_be_at = 'order_manage/ALICIA/decrypt'
+
     alicia.raw_txns_dir = folder_where_i_want_all_decrypted_files_be_at
     alicia.decr_raw_txns_dir = folder_where_i_want_all_decrypted_files_be_at
 
@@ -181,9 +182,13 @@ def ordertracking(request):
                 if if_files_are_all_good:
                     # 所有檔案都符合條件, 進行存檔
                     fs = FileSystemStorage()
+                    fs_backup = FileSystemStorage(location='user_uploaded_files/')
+                    # 存放user上傳的訂單資料，以免未來需要做編輯 & 開發新功能
                     for each_file in request.FILES.getlist("files"):
                         print('each_file.name in VIEWS: ', each_file.name)
                         fs.save(each_file.name, each_file)
+                        fs_backup.save(alicia.get_today("%Y%m%d-%H%M%S") + '_' + each_file.name, each_file)
+
                         # 上傳的檔案將被存放在預設為 '/HAPPYPI_0610_ANNIE/temp_files/' 的資料夾中
                         # 注意! 上傳的檔案包括「需要解密」的檔案跟「不需要解密」的檔案
 

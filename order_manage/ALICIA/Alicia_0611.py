@@ -133,7 +133,7 @@ class ALICIA:
             non_yabo_part = self.aggregated_txns[~self.aggregated_txns.index.isin(yabo_part.index)]
             if yabo_part.shape[0] > 0:
                 print('pre_clean_raw_txns 2:  Found Yabo!')
-                yabo_part.to_excel('pre_clean_raw_txns2.1_yabo_part.xlsx', index=False)
+                #yabo_part.to_excel('pre_clean_raw_txns2.1_yabo_part.xlsx', index=False)
                 _temp_df = pd.DataFrame(columns=yabo_part.columns)
                 yabo_part.loc[:, 'unique_id'] = yabo_part['unique_id'].apply(lambda x: '-'.join(x.split('-')[:-1]))
                 # print('pre_clean_raw_txns 2.1: ', yabo_part.loc[:, 'unique_id'].unique().tolist())
@@ -149,7 +149,7 @@ class ALICIA:
                         _temp_df.loc[_temp_df.shape[0] - 1, '數量'] = tdf_yabo_part[tdf_yabo_part['規格']==each_unique_subcontent_under_the_id]['數量'].astype(int).sum()
                         # 計算數量加總
                 print('pre_clean_raw_txns 2.1: ', _temp_df.shape)
-                _temp_df.to_excel('pre_clean_raw_txns2.2_temp_df.xlsx', index=False)
+                #_temp_df.to_excel('pre_clean_raw_txns2.2_temp_df.xlsx', index=False)
                 self.aggregated_txns = pd.concat([non_yabo_part, _temp_df])  # 將兩者合併
 
 
@@ -723,7 +723,6 @@ class ALICIA:
                         #except:
                         #    print(txn_paths, '讀取失敗.')
 
-                
                         _temp_df = self._clean_dataframe(pd.read_excel(txn_path))
                         #_temp_df['訂單編號'] = _temp_df['訂單編號'].apply(lambda x: x.split('-')[0])
                         #_temp_df = self._clean_dataframe(_temp_df)
@@ -744,7 +743,7 @@ class ALICIA:
                                                                 ', ')
 
                                 _how_many = _temp_df.loc[each_row_index, '數量']
-                                _how_much = 0
+                                _how_much = _temp_df.loc[each_row_index, '進價(含稅)'].astype(int)
                                 _remark = ''
                                 _shipping_id = ''
                                 _last_charged_date = ''
@@ -790,7 +789,7 @@ class ALICIA:
                                                                 _temp_df.loc[each_row_index, '單品詳細']],
                                                                 ', ')
                                 _how_many = _temp_df.loc[each_row_index, '數量']
-                                _how_much = 0
+                                _how_much = _temp_df.loc[each_row_index, '進價(含稅)'].astype(int)
                                 _remark = ''
                                 _shipping_id = ''
                                 _last_charged_date = ''
@@ -865,7 +864,8 @@ class ALICIA:
 
                             _content = _temp_df.loc[each_row_index, '商品名稱']
                             _how_many = _temp_df.loc[each_row_index, '數量']
-                            _how_much = _temp_df.loc[each_row_index, '商品成本'].astype(int)
+                            # _how_much = _temp_df.loc[each_row_index, '商品成本'].astype(int)
+                            _how_much = _temp_df.loc[each_row_index, '成本小計'].astype(int)  # Jerry堅持要以總額來做紀錄  20.09.29
                             # _remark = _temp_df.loc[each_row_index, '購物車備註']
                             _remark = ''
                             _shipping_id = ''
@@ -1003,7 +1003,7 @@ class ALICIA:
                                                             ', ')
 
                             _how_many = _temp_df.loc[each_row_index, '數量'].astype(int)
-                            _how_much = 0
+                            _how_much = _temp_df.loc[each_row_index, '成本小計'].astype(int)
                             _remark = ''
                             _shipping_id = ''
                             _last_charged_date = ''
@@ -1085,7 +1085,7 @@ class ALICIA:
 
                             _content = _temp_df.loc[each_row_index, '商品名稱']
                             _how_many = _temp_df.loc[each_row_index, '數量'].astype(int)
-                            _how_much = _temp_df.loc[each_row_index, '單價'].astype(int)
+                            _how_much = _temp_df.loc[each_row_index, '進貨價'].astype(int)
                             _remark = _temp_df.loc[each_row_index, '備註/卡片內容']
                             _shipping_id = ''
                             _last_charged_date = ''
@@ -1162,7 +1162,11 @@ class ALICIA:
 
                             _content = _temp_df.loc[each_row_index, '商品名稱']
                             _how_many = _temp_df.loc[each_row_index, '數量'].astype(int)
-                            _how_much = _temp_df.loc[each_row_index, '單價'].astype(int)
+                            try:
+                                _how_much = _temp_df.loc[each_row_index, '成本價'].astype(int)
+                            except Exception as e:
+                                print(e)
+                                _how_much = _temp_df.loc[each_row_index, '進貨價'].astype(int)
                             _remark = _temp_df.loc[each_row_index, '備註/卡片內容']
                             _shipping_id = ''
                             _last_charged_date = ''
@@ -1308,13 +1312,17 @@ class ALICIA:
                             _receiver_mobile = _receiver_phone_nbr
                             _content = _temp_df.loc[each_row_index, '商品名稱'][1:]
 
-                        # 商品單價跟數量和在同一儲存格'商品單價(*數量)'，要做分開處理
-                            _temp_item = _temp_df.loc[each_row_index, '商品單價(*數量)']
+                        ## 商品單價跟數量和在同一儲存格'商品單價(*數量)'，要做分開處理
+                            #_temp_item = _temp_df.loc[each_row_index, '商品單價(*數量)']
+                            ## print(_temp_item)
+                            #_how_much = int(re.findall(r"^'\d+[(]",_temp_item)[0][1:-1])
+                            #_how_many = int(re.findall(r"[(]\d+[)$]",_temp_item)[0][1:-1])
+
+                        # 商品單價跟數量和在同一儲存格'提報成本(*數量)'，要做分開處理
+                            _temp_item = _temp_df.loc[each_row_index, '提報成本(*數量)']
                             # print(_temp_item)
-                            
                             _how_much = int(re.findall(r"^'\d+[(]",_temp_item)[0][1:-1])
                             _how_many = int(re.findall(r"[(]\d+[)$]",_temp_item)[0][1:-1])
-
 
                             _remark = _temp_df.loc[each_row_index, '訂單備註']
                             _shipping_id = ''
