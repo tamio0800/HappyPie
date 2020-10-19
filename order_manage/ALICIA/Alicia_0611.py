@@ -789,7 +789,11 @@ class ALICIA:
                                                                 _temp_df.loc[each_row_index, '單品詳細']],
                                                                 ', ')
                                 _how_many = _temp_df.loc[each_row_index, '數量']
-                                _how_much = _temp_df.loc[each_row_index, '進價(含稅)'].astype(int)
+                                try:
+                                    _how_much = _temp_df.loc[each_row_index, '進價(含稅)'].astype(int)
+                                    # 2020.10.19 MOMO has removed this column.
+                                except:
+                                    pass
                                 _remark = ''
                                 _shipping_id = ''
                                 _last_charged_date = ''
