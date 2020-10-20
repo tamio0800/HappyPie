@@ -10,7 +10,7 @@ class History_data(models.Model):
     platform = models.CharField(max_length = 20)
     file_created_date = models.DateField()
     txn_id = models.CharField(max_length = 60)
-    customer_name = models.CharField(max_length = 20,null = True)
+    customer_name = models.CharField(max_length = 20, null = True)
     receiver_name = models.CharField(max_length = 20, null = True,)
     paid_after_receiving = models.BooleanField(default = False)
     receiver_address = models.CharField(max_length = 60)

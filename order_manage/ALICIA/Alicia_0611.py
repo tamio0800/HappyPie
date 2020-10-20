@@ -112,21 +112,32 @@ class ALICIA:
             except:
                 pass
 
+    def force_float_to_be_int_and_to_string(self, target):
+            _result = target
+            try:
+                _result = str(int(target))
+            except:
+                _result = str(target)
+            return _result
+
     def pre_clean_raw_txns(self):
+
         if self.aggregated_txns.shape[0] > 0:
             # self.aggregated_txns 至少要有東西再清理
 
             # 以通路 + 編號 + 內容物作為暫時的unique_id,
             # 來作為A交易在昨天與今天一起被重複匯進來的處理機制
             self.aggregated_txns.loc[:, 'pre_clean_unique_id'] = self.aggregated_txns['通路'] + '-' + \
-                self.aggregated_txns['訂單編號'].astype(str) + '-' + \
+                self.aggregated_txns['訂單編號'].apply(self.force_float_to_be_int_and_to_string) + '-' + \
                 self.aggregated_txns['內容物']
+                # self.aggregated_txns['訂單編號'].astype(str) + '-' + \
+                
             self.aggregated_txns = self.aggregated_txns.drop_duplicates(subset='pre_clean_unique_id', keep='first')
             self.aggregated_txns = self.aggregated_txns.sort_values('pre_clean_unique_id').reset_index(drop=True)
             self.aggregated_txns = self.aggregated_txns.drop(['pre_clean_unique_id'], axis=1)
 
             self.aggregated_txns.loc[:, 'unique_id'] = self.aggregated_txns['通路'] + '-' + \
-                self.aggregated_txns['訂單編號'].astype(str)
+                self.aggregated_txns['訂單編號'].apply(self.force_float_to_be_int_and_to_string)
         
             # 針對亞伯做特殊處理
             yabo_part = self.aggregated_txns[self.aggregated_txns['通路']=='亞伯']
@@ -182,10 +193,10 @@ class ALICIA:
         if not_user_uploaded_df is not None:
             if user_uploaded_df is not None:
                 not_user_uploaded_df.loc[:, 'unique_id'] = \
-                    not_user_uploaded_df['通路'] + '-' + not_user_uploaded_df['訂單編號'].astype(str)
+                    not_user_uploaded_df['通路'] + '-' + not_user_uploaded_df['訂單編號'].apply(self.try_to_be_int_in_str)
 
                 user_uploaded_df.loc[:, 'unique_id'] = \
-                    user_uploaded_df['通路'] + '-' + user_uploaded_df['訂單編號'].astype(str)
+                    user_uploaded_df['通路'] + '-' + user_uploaded_df['訂單編號'].apply(self.try_to_be_int_in_str)
 
                 # 接著要整理一下，如果user_uploaded_df裡有的交易，就從not_user_uploaded_df中刪除
                 not_user_uploaded_df = \
@@ -441,7 +452,7 @@ class ALICIA:
         if self.aggregated_txns.shape[0]:
             # 上面那行代表 aggregated_txns dataframe裡面有資料
             self.aggregated_txns.loc[:, 'temp_unique_id'] = self.aggregated_txns['抓單日'] + '-' + \
-                                                       self.aggregated_txns['訂單編號'].astype(str) + '-' + \
+                                                       self.aggregated_txns['訂單編號'].apply(self.try_to_be_int_in_str) + '-' + \
                                                        self.aggregated_txns['通路']
                                                             
             #df.loc[:, 'temp_unique_id'] = df['抓單日'] + '-' + \
@@ -524,7 +535,7 @@ class ALICIA:
                         print('ALICIA: _integrate_with2 : ', _temp_df.shape)
                         
                         for each_row_index in range(_temp_df.shape[0]):
-                            _txn_id = _temp_df.loc[each_row_index, '訂單編號']
+                            _txn_id = _temp_df.loc[each_row_index, '訂單編號'].apply(self.try_to_be_int_in_str)
                             _customer_name = _temp_df.loc[each_row_index, '備註(購買人資料)'].split('/')[0]
                             _receiver_name = _temp_df.loc[each_row_index, '收件人'].split()[0].strip()
                             _paid_after_receiving = False
@@ -730,7 +741,7 @@ class ALICIA:
                         if '貨運公司\n出貨地址' not in _temp_df.columns:
                             print('不是momo去識別化後的訂單')
                             for each_row_index in range(_temp_df.shape[0]):
-                                _txn_id = _temp_df.loc[each_row_index, '訂單編號']
+                                _txn_id = _temp_df.loc[each_row_index, '訂單編號'].apply(self.try_to_be_int_in_str)
                                 _customer_name = _temp_df.loc[each_row_index, '訂購人姓名']
                                 _receiver_name = _temp_df.loc[each_row_index, '收件人姓名']
                                 _paid_after_receiving = False
@@ -778,7 +789,7 @@ class ALICIA:
                             _temp_df['貨運公司\n出貨地址'] = _temp_df['貨運公司\n出貨地址'].apply(lambda x: '(貨運公司出貨地址) ' +  x.replace('新竹貨運\n', ''))
                             print('是momo去識別化後的訂單')
                             for each_row_index in range(_temp_df.shape[0]):
-                                _txn_id = _temp_df.loc[each_row_index, '訂單編號']
+                                _txn_id = _temp_df.loc[each_row_index, '訂單編號'].apply(self.try_to_be_int_in_str)
                                 _customer_name = _temp_df.loc[each_row_index, '訂購人姓名']
                                 _receiver_name = _temp_df.loc[each_row_index, '收件人姓名']
                                 _paid_after_receiving = False
@@ -851,7 +862,7 @@ class ALICIA:
                         _temp_df = self._clean_dataframe(pd.read_html(txn_path, header=0)[0])
 
                         for each_row_index in range(_temp_df.shape[0]):
-                            _txn_id = _temp_df.loc[each_row_index, '訂單編號']
+                            _txn_id = _temp_df.loc[each_row_index, '訂單編號'].apply(self.try_to_be_int_in_str)
                             _customer_name = _temp_df.loc[each_row_index, '收件人姓名']
                             _receiver_name = _temp_df.loc[each_row_index, '收件人姓名']
                             _paid_after_receiving = False
@@ -989,8 +1000,8 @@ class ALICIA:
                         _file_created_date = self._get_file_created_date(txn_path)
                         _temp_df = self._clean_dataframe(pd.read_excel(txn_path))
                         for each_row_index in range(_temp_df.shape[0]):
-                            _txn_id = self._combine_columns([_temp_df.loc[each_row_index, '廠商訂單編號'],
-                                                            _temp_df.loc[each_row_index, '會員訂單編號']],
+                            _txn_id = self._combine_columns([_temp_df.loc[each_row_index, '廠商訂單編號'].apply(self.try_to_be_int_in_str),
+                                                            _temp_df.loc[each_row_index, '會員訂單編號'].apply(self.try_to_be_int_in_str)],
                                                             '-')
                             _customer_name = _temp_df.loc[each_row_index, '消費者']
                             _receiver_name = _temp_df.loc[each_row_index, '收貨人姓名']
@@ -1079,7 +1090,7 @@ class ALICIA:
 
 
                         for each_row_index in range(_temp_df.shape[0]):
-                            _txn_id = _temp_df.loc[each_row_index, '訂單編號']
+                            _txn_id = _temp_df.loc[each_row_index, '訂單編號'].apply(self.try_to_be_int_in_str)
                             _customer_name = _temp_df.loc[each_row_index, '訂購人姓名']
                             _receiver_name = _temp_df.loc[each_row_index, '收貨人姓名']
                             _paid_after_receiving = False
@@ -1156,7 +1167,7 @@ class ALICIA:
 
 
                         for each_row_index in range(_temp_df.shape[0]):
-                            _txn_id = _temp_df.loc[each_row_index, '訂單編號']
+                            _txn_id = _temp_df.loc[each_row_index, '訂單編號'].apply(self.try_to_be_int_in_str)
                             _customer_name = _temp_df.loc[each_row_index, '訂購人姓名']
                             _receiver_name = _temp_df.loc[each_row_index, '收貨人姓名']
                             _paid_after_receiving = False
@@ -1234,7 +1245,7 @@ class ALICIA:
                                                     _temp_df.loc[:, '地址'].apply(lambda x: '' if pd.isnull(x) else x)
 
                         for each_row_index in range(_temp_df.shape[0]):
-                            _txn_id = _temp_df.loc[each_row_index, '訂單編號']
+                            _txn_id = _temp_df.loc[each_row_index, '訂單編號'].apply(self.try_to_be_int_in_str)
                             _customer_name = _temp_df.loc[each_row_index, '收件人'] # 因為沒有客戶(購買者)欄位，故以收件人取代
                             _receiver_name = _temp_df.loc[each_row_index, '收件人']
                             _paid_after_receiving = False
@@ -1307,7 +1318,7 @@ class ALICIA:
                         for each_row_index in range(_temp_df.shape[0]):
                             # [1:-1]是要清除儲存裡最前的'符號
                             print(txn_path, each_row_index)
-                            _txn_id = _temp_df.loc[each_row_index, '訂單編號'][1:]
+                            _txn_id = _temp_df.loc[each_row_index, '訂單編號'][1:].apply(self.try_to_be_int_in_str)
                             _customer_name = _temp_df.loc[each_row_index, '收件人'][1:]
                             _receiver_name = _temp_df.loc[each_row_index, '收件人'][1:]
                             _paid_after_receiving = False
@@ -1450,7 +1461,7 @@ class ALICIA:
 
                         for each_row_index in range(_temp_df.shape[0]):
                             # [1:-1]是要清除儲存裡最前的'符號
-                            _txn_id = _temp_df.loc[each_row_index, '訂單編號']
+                            _txn_id = _temp_df.loc[each_row_index, '訂單編號'].apply(self.try_to_be_int_in_str)
                             _customer_name = _temp_df.loc[each_row_index, '收件人']
                             _receiver_name = _temp_df.loc[each_row_index, '收件人']
                             _paid_after_receiving = False
@@ -1524,7 +1535,6 @@ class ALICIA:
                         _temp_df['已取消'][pd.isnull(_temp_df['已取消'])] = False
                         _temp_df['規格'][pd.isnull(_temp_df['規格'])] = _temp_df['內容物'][pd.isnull(_temp_df['規格'])]
 
-                        _file_created_date = self._get_file_created_date(txn_path)
                         self.user_uploaded_aggregated_txns = pd.concat([
                             self.user_uploaded_aggregated_txns,
                             _temp_df
@@ -1595,10 +1605,8 @@ class ALICIA:
         
         if condition1 or condition2:
             return ''
-        try:
-            return str(round(int(float(target)), 0))
-        except:
-            return str(target)
+        
+        return self.force_float_to_be_int_and_to_string(target)
 
 
     def make_phone_and_mobile_number_clean(self, raw_number):
