@@ -200,7 +200,7 @@ class HISTORY_DATA_and_Subcontent_user_edit_record_db_writer:
 
         # 如果合併訂單的 uni_id跟資料庫裡的一樣，表示資料已存在
         # 則接著更新寄出、取消狀態
-        self.dataframe.to_excel("XXXXXXXXXXX.xlsx", index=False)
+        # self.dataframe.to_excel("XXXXXXXXXXX.xlsx", index=False)
         for each_id in self.dataframe['unique_id']: 
             print('write_in_2diff_db_2', each_id)
             df_correspondant_index = self.dataframe[self.dataframe['unique_id']==each_id].index[0]
@@ -210,7 +210,10 @@ class HISTORY_DATA_and_Subcontent_user_edit_record_db_writer:
             if history_data_object is not None:
                 # History_data 資料庫已有這筆資料
                 print('write_in_2diff_db_2.1: record(' + each_id + ') is in database.')
-                _shipping_link = self.generate_shipping_link(self.dataframe.loc[df_correspondant_index]['shipping_id'])
+                if not pd.isnull(self.dataframe.loc[df_correspondant_index]['shipping_link']) and len(self.dataframe.loc[df_correspondant_index]['shipping_link']) > 0:
+                    _shipping_link = self.dataframe.loc[df_correspondant_index]['shipping_link']
+                else:
+                    _shipping_link = self.generate_shipping_link(self.dataframe.loc[df_correspondant_index]['shipping_id'])
                 print('write_in_2diff_db_2.2: SHIPPING LINK  >>  ', _shipping_link)
                 print('write_in_2diff_db_2.3: df_correspondant_index  >>  ', df_correspondant_index)
                 print('write_in_2diff_db_2.4: txn_id  >>  ', self.dataframe.loc[df_correspondant_index]['txn_id'])
@@ -218,7 +221,7 @@ class HISTORY_DATA_and_Subcontent_user_edit_record_db_writer:
                 # 'receiver_address', 'receiver_phone_nbr', 'receiver_mobile', 'content', 'how_much', 
                 # 'how_many', 'remark', 'shipping_id', 'last_charged_date', 'charged', 'ifsend', 'ifcancel', 'subcontent']:
                 #     print('Test Column:  ', each_col)
-                #    print(self.dataframe.loc[df_correspondant_index][each_col])
+                #     print(self.dataframe.loc[df_correspondant_index][each_col])
 
                 history_data_object.txn_id = self.dataframe.loc[df_correspondant_index]['txn_id']
                 history_data_object.file_created_date = self.dataframe.loc[df_correspondant_index]['file_created_date']
@@ -305,6 +308,8 @@ class HISTORY_DATA_and_Subcontent_user_edit_record_db_writer:
                 temp_subcontent = self.dataframe.loc[df_correspondant_index]['subcontent']
                 temp_shipping_link = self.dataframe.loc[df_correspondant_index]['shipping_link']
 
+                print('write_in_2diff_db_2.2: Got all variables.')
+
                 if not (temp_shipping_id == '' or pd.isnull(temp_shipping_id)):
                     _temp_logistic_company = None
                     if len(temp_shipping_id) == 10:
@@ -316,31 +321,31 @@ class HISTORY_DATA_and_Subcontent_user_edit_record_db_writer:
                     if _temp_logistic_company is not None:
                         temp_shipping_link = 'http://61.222.157.151/order_manage/edo_url/?shipping_number=' + str(temp_shipping_id) + '&logistic_company=' + _temp_logistic_company
                     else:
-                        temp_shipping_link = self.dataframe.loc[df_correspondant_id]['shipping_link']
+                        temp_shipping_link = self.dataframe.loc[df_correspondant_index]['shipping_link']
                 
                 # temp_unique_id = self.dataframe[self.dataframe['unique_id'] == ids]['unique_id'].tolist()[0]
 
                 
                 # print('新增訂單 : '+ ids)
-                History_data(unique_id = each_id, platform = temp_platform, 
+                History_data.objects.create(unique_id = each_id, platform = temp_platform, 
                             file_created_date = temp_file_created_date,
                             txn_id = temp_txn_id  ,
-                            customer_name = temp_customer_name  ,
-                            receiver_name = temp_receiver_name  ,
+                            customer_name = temp_customer_name,
+                            receiver_name = temp_receiver_name,
                             paid_after_receiving  = temp_paid_after_receiving,
-                            receiver_phone_nbr = temp_receiver_phone_nbr ,
-                            receiver_mobile  = temp_receiver_mobile  ,
+                            receiver_phone_nbr = temp_receiver_phone_nbr,
+                            receiver_mobile  = temp_receiver_mobile,
                             receiver_address = temp_receiver_address,
                             content = temp_content ,
                             how_many = temp_how_many  ,
                             how_much  = temp_how_much,
-                            remark = temp_remark  ,
-                            shipping_id  = temp_shipping_id  ,
-                            last_charged_date  = temp_last_charged_date ,
-                            charged = temp_charged ,
-                            ifsend  = temp_ifsend , 
-                            ifcancel = temp_ifcancel  ,
-                            subcontent  = temp_subcontent  ,
+                            remark = temp_remark,
+                            shipping_id  = temp_shipping_id,
+                            last_charged_date  = temp_last_charged_date,
+                            charged = temp_charged,
+                            ifsend  = temp_ifsend, 
+                            ifcancel = temp_ifcancel,
+                            subcontent  = temp_subcontent,
                             shipping_link = temp_shipping_link).save()
         
 
