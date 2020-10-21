@@ -200,7 +200,7 @@ class HISTORY_DATA_and_Subcontent_user_edit_record_db_writer:
 
         # 如果合併訂單的 uni_id跟資料庫裡的一樣，表示資料已存在
         # 則接著更新寄出、取消狀態
-        # self.dataframe.to_excel("XXXXXXXXXXX.xlsx", index=False)
+        self.dataframe.to_excel("XXXXXX.xlsx", index=False)
         for each_id in self.dataframe['unique_id']: 
             print('write_in_2diff_db_2', each_id)
             df_correspondant_index = self.dataframe[self.dataframe['unique_id']==each_id].index[0]

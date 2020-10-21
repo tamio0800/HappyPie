@@ -535,7 +535,11 @@ class ALICIA:
                         print('ALICIA: _integrate_with2 : ', _temp_df.shape)
                         
                         for each_row_index in range(_temp_df.shape[0]):
-                            _txn_id = _temp_df.loc[each_row_index, '訂單編號'].apply(self.try_to_be_int_in_str)
+                            try:
+                                _txn_id = self.try_to_be_int_in_str(_temp_df.loc[each_row_index, '訂單編號'])
+                            except Exception as e:
+                                print(e)
+                                _txn_id = _temp_df.loc[each_row_index, '訂單編號']
                             _customer_name = _temp_df.loc[each_row_index, '備註(購買人資料)'].split('/')[0]
                             _receiver_name = _temp_df.loc[each_row_index, '收件人'].split()[0].strip()
                             _paid_after_receiving = False
@@ -631,7 +635,11 @@ class ALICIA:
                         print(_temp_df.tail(1).T)
 
                         for each_row_index in range(_temp_df.shape[0]):
-                            _txn_id = _temp_df.loc[each_row_index, '自訂編號']
+                            try:
+                                _txn_id = self.try_to_be_int_in_str(_temp_df.loc[each_row_index, '自訂編號'])
+                            except Exception as e:
+                                print(e)
+                                _txn_id = _temp_df.loc[each_row_index, '自訂編號']
                             _customer_name = _temp_df.loc[each_row_index, '客戶名稱']
                             _receiver_name = _temp_df.loc[each_row_index, '客戶名稱']
                             _paid_after_receiving = False
@@ -741,7 +749,11 @@ class ALICIA:
                         if '貨運公司\n出貨地址' not in _temp_df.columns:
                             print('不是momo去識別化後的訂單')
                             for each_row_index in range(_temp_df.shape[0]):
-                                _txn_id = _temp_df.loc[each_row_index, '訂單編號'].apply(self.try_to_be_int_in_str)
+                                try:
+                                    _txn_id = self.try_to_be_int_in_str(_temp_df.loc[each_row_index, '訂單編號'])
+                                except Exception as e:
+                                    print(e)
+                                    _txn_id = _temp_df.loc[each_row_index, '訂單編號']
                                 _customer_name = _temp_df.loc[each_row_index, '訂購人姓名']
                                 _receiver_name = _temp_df.loc[each_row_index, '收件人姓名']
                                 _paid_after_receiving = False
@@ -789,7 +801,11 @@ class ALICIA:
                             _temp_df['貨運公司\n出貨地址'] = _temp_df['貨運公司\n出貨地址'].apply(lambda x: '(貨運公司出貨地址) ' +  x.replace('新竹貨運\n', ''))
                             print('是momo去識別化後的訂單')
                             for each_row_index in range(_temp_df.shape[0]):
-                                _txn_id = _temp_df.loc[each_row_index, '訂單編號'].apply(self.try_to_be_int_in_str)
+                                try:
+                                    _txn_id = self.try_to_be_int_in_str(_temp_df.loc[each_row_index, '訂單編號'])
+                                except Exception as e:
+                                    print(e)
+                                    _txn_id = _temp_df.loc[each_row_index, '訂單編號']
                                 _customer_name = _temp_df.loc[each_row_index, '訂購人姓名']
                                 _receiver_name = _temp_df.loc[each_row_index, '收件人姓名']
                                 _paid_after_receiving = False
@@ -860,9 +876,14 @@ class ALICIA:
                         # 所以不能用pd.read_excel(), 要用pd.read_html()來開啟
 
                         _temp_df = self._clean_dataframe(pd.read_html(txn_path, header=0)[0])
+                        
 
                         for each_row_index in range(_temp_df.shape[0]):
-                            _txn_id = _temp_df.loc[each_row_index, '訂單編號'].apply(self.try_to_be_int_in_str)
+                            try:
+                                _txn_id = self.try_to_be_int_in_str(_temp_df.loc[each_row_index, '訂單編號'])
+                            except Exception as e:
+                                print(e)
+                                _txn_id = _temp_df.loc[each_row_index, '訂單編號']
                             _customer_name = _temp_df.loc[each_row_index, '收件人姓名']
                             _receiver_name = _temp_df.loc[each_row_index, '收件人姓名']
                             _paid_after_receiving = False
@@ -932,7 +953,11 @@ class ALICIA:
                         _temp_df = self._clean_dataframe(pd.read_excel(txn_path))
 
                         for each_row_index in range(_temp_df.shape[0]):
-                            _txn_id = _temp_df.loc[each_row_index, '訂單號碼']
+                            try:
+                                _txn_id = self.try_to_be_int_in_str(_temp_df.loc[each_row_index, '訂單號碼'])
+                            except Exception as e:
+                                print(e)
+                                _txn_id = _temp_df.loc[each_row_index, '訂單號碼']
                             _customer_name = _temp_df.loc[each_row_index, '客戶名稱']
                             _receiver_name = _temp_df.loc[each_row_index, '客戶名稱']
                             _paid_after_receiving = False
@@ -1000,9 +1025,15 @@ class ALICIA:
                         _file_created_date = self._get_file_created_date(txn_path)
                         _temp_df = self._clean_dataframe(pd.read_excel(txn_path))
                         for each_row_index in range(_temp_df.shape[0]):
-                            _txn_id = self._combine_columns([_temp_df.loc[each_row_index, '廠商訂單編號'].apply(self.try_to_be_int_in_str),
-                                                            _temp_df.loc[each_row_index, '會員訂單編號'].apply(self.try_to_be_int_in_str)],
-                                                            '-')
+                            try:
+                                _txn_id = self._combine_columns([self.try_to_be_int_in_str(_temp_df.loc[each_row_index, '廠商訂單編號']),
+                                                                self.try_to_be_int_in_str(_temp_df.loc[each_row_index, '會員訂單編號'])],
+                                                                '-')
+                            except Exception as e:
+                                print(e)
+                                _txn_id = self._combine_columns([_temp_df.loc[each_row_index, '廠商訂單編號'],
+                                                                _temp_df.loc[each_row_index, '會員訂單編號']],
+                                                                '-')
                             _customer_name = _temp_df.loc[each_row_index, '消費者']
                             _receiver_name = _temp_df.loc[each_row_index, '收貨人姓名']
                             _paid_after_receiving = False
@@ -1090,7 +1121,11 @@ class ALICIA:
 
 
                         for each_row_index in range(_temp_df.shape[0]):
-                            _txn_id = _temp_df.loc[each_row_index, '訂單編號'].apply(self.try_to_be_int_in_str)
+                            try:
+                                _txn_id = self.try_to_be_int_in_str(_temp_df.loc[each_row_index, '訂單編號'])
+                            except Exception as e:
+                                print(e)
+                                _txn_id = _temp_df.loc[each_row_index, '訂單編號']
                             _customer_name = _temp_df.loc[each_row_index, '訂購人姓名']
                             _receiver_name = _temp_df.loc[each_row_index, '收貨人姓名']
                             _paid_after_receiving = False
@@ -1167,7 +1202,11 @@ class ALICIA:
 
 
                         for each_row_index in range(_temp_df.shape[0]):
-                            _txn_id = _temp_df.loc[each_row_index, '訂單編號'].apply(self.try_to_be_int_in_str)
+                            try:
+                                _txn_id = self.try_to_be_int_in_str(_temp_df.loc[each_row_index, '訂單編號'])
+                            except Exception as e:
+                                print(e)
+                                _txn_id = _temp_df.loc[each_row_index, '訂單編號']
                             _customer_name = _temp_df.loc[each_row_index, '訂購人姓名']
                             _receiver_name = _temp_df.loc[each_row_index, '收貨人姓名']
                             _paid_after_receiving = False
@@ -1245,7 +1284,11 @@ class ALICIA:
                                                     _temp_df.loc[:, '地址'].apply(lambda x: '' if pd.isnull(x) else x)
 
                         for each_row_index in range(_temp_df.shape[0]):
-                            _txn_id = _temp_df.loc[each_row_index, '訂單編號'].apply(self.try_to_be_int_in_str)
+                            try:
+                                _txn_id = self.try_to_be_int_in_str(_temp_df.loc[each_row_index, '訂單編號'])
+                            except Exception as e:
+                                print(e)
+                                _txn_id = _temp_df.loc[each_row_index, '訂單編號']
                             _customer_name = _temp_df.loc[each_row_index, '收件人'] # 因為沒有客戶(購買者)欄位，故以收件人取代
                             _receiver_name = _temp_df.loc[each_row_index, '收件人']
                             _paid_after_receiving = False
@@ -1318,7 +1361,12 @@ class ALICIA:
                         for each_row_index in range(_temp_df.shape[0]):
                             # [1:-1]是要清除儲存裡最前的'符號
                             print(txn_path, each_row_index)
-                            _txn_id = _temp_df.loc[each_row_index, '訂單編號'][1:].apply(self.try_to_be_int_in_str)
+    
+                            try:
+                                _txn_id = self.try_to_be_int_in_str(_temp_df.loc[each_row_index, '訂單編號'][1:])
+                            except Exception as e:
+                                print(e)
+                                _txn_id = _temp_df.loc[each_row_index, '訂單編號'][1:]
                             _customer_name = _temp_df.loc[each_row_index, '收件人'][1:]
                             _receiver_name = _temp_df.loc[each_row_index, '收件人'][1:]
                             _paid_after_receiving = False
@@ -1396,7 +1444,12 @@ class ALICIA:
                         _temp_df['Shipping Address'] = _temp_df['Shipping Address'].apply(lambda x: x.replace('\n', ' '))
 
                         for each_row_index in range(_temp_df.shape[0]):
-                            _txn_id = _temp_df.loc[each_row_index, 'Order#']
+                            
+                            try:
+                                _txn_id = self.try_to_be_int_in_str(_temp_df.loc[each_row_index, 'Order#'])
+                            except Exception as e:
+                                print(e)
+                                _txn_id = _temp_df.loc[each_row_index, 'Order#']
                             _customer_name = _temp_df.loc[each_row_index, 'customer_name']
                             _receiver_name = _temp_df.loc[each_row_index, 'customer_name']
                             _paid_after_receiving = False
@@ -1461,7 +1514,11 @@ class ALICIA:
 
                         for each_row_index in range(_temp_df.shape[0]):
                             # [1:-1]是要清除儲存裡最前的'符號
-                            _txn_id = _temp_df.loc[each_row_index, '訂單編號'].apply(self.try_to_be_int_in_str)
+                            try:
+                                _txn_id = self.try_to_be_int_in_str(_temp_df.loc[each_row_index, '訂單編號'])
+                            except Exception as e:
+                                print(e)
+                                _txn_id = _temp_df.loc[each_row_index, '訂單編號']
                             _customer_name = _temp_df.loc[each_row_index, '收件人']
                             _receiver_name = _temp_df.loc[each_row_index, '收件人']
                             _paid_after_receiving = False
