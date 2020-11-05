@@ -25,6 +25,7 @@ class History_data(models.Model):
     charged = models.TextField(null = True)
     ifsend = models.BooleanField(default = False)
     ifcancel = models.BooleanField(default = False)
+    vendor = models.CharField(max_length=30, null=True, blank=True, default='')
     subcontent = models.TextField(null = True)
     shipping_link = models.TextField(null = True)
     unique_id = models.TextField(null = True)

@@ -30,6 +30,7 @@ class ALICIA:
         self.unique_aggregated_txns = self._build_aggregated_txns_table()    # 存放整合交易的TABLE
         self.log_content = []    # 存放使用紀錄, 目前(2020.04.02)還沒想到要怎麼做
         self.password_dict = self._get_passwords()  # 回傳密碼集
+        self.vendors = self._get_vendors()   # 回傳兩種型態的vendors
         
 
     def check_if_all_files_are_good_for_ALICIA_pipeline(self, file_list):
@@ -189,7 +190,6 @@ class ALICIA:
             df['手機'] = df['手機'].apply(self.make_phone_and_mobile_number_clean)
             # df['電話'] = df['電話'].apply(self.make_phone_and_mobile_number_clean)
             return df
-
         if not_user_uploaded_df is not None:
             if user_uploaded_df is not None:
                 not_user_uploaded_df.loc[:, 'unique_id'] = \
@@ -245,6 +245,8 @@ class ALICIA:
                         _temp_small_multi_df['備註'].tolist(), linked_symbol)
                 _temp_small_multi_df.loc[0, '規格'] = self._combine_columns(
                         _temp_small_multi_df['規格'].tolist(), ', ')
+                _temp_small_multi_df.loc[0, '供應商'] = self._combine_columns(
+                        list(set(_temp_small_multi_df['供應商'].tolist())), ', ')
                 try:
                     _temp_small_multi_df.loc[0, '金額'] = _temp_small_multi_df['金額'].astype(int).sum()
                 except:
@@ -270,7 +272,7 @@ class ALICIA:
                  '博客來': re.compile(r'^take_order_2[0-9]{13}\s{0,2}[(]博客來[)].xls|^take_order_2[0-9]{13}\s{0,2}.{0,6}.xls'),
                  '台塑': re.compile(r'^Order_2[0-9]{16}[(]台塑[)]'),
                  '整合檔': re.compile(r'.*20[0-9]{6}-[0-9]{6}_.*整合檔.*.xls[x]{0,1}'),
-                 'LaNew': re.compile(r'^(?!.*?take_order).*\w{5}_2[0-9]{3}[01][0-9][0123][0-9].{0,6}.xls[x]{0,1}'),
+                 'LaNew': re.compile(r'^(?!.*?take_order)\w{5}_2[0-9]{3}[01][0-9][0123][0-9].{0,6}.xls[x]{0,1}'),
                  '快車肉乾銷港': re.compile(r'.{0,6}orders\s*[(]{0,1}\d*[)]{0,1}\s*.csv|.{0,6}orders\s*[(]{0,1}\d*[)]{0,1}\s*.{0,6}.xls[x]{0,1}'),
                 }
         # 我們把 "整合檔" 也當作一個平台來處理，只是它不需要被再度整合、也不需要丟進kashgari做分析
@@ -310,6 +312,7 @@ class ALICIA:
         except:
             return False
 
+
     def _get_platforms(self):
         # 這樣寫是為了更好的管理平台名稱
         _temp = []
@@ -318,6 +321,52 @@ class ALICIA:
         return _temp
 
 
+    def _get_vendors(self):
+        # 這樣寫是為了更好的管理供應商名稱
+        # 回傳(a, b)兩個dicts, 都長得像這樣 >>
+        # {'堅果先生': ['堅果先生', 'MR.NUTS'],
+        # '拿破崙先生': ['拿破崙先生',]...}
+        _prior_temp = dict()
+        _minor_temp = dict()
+        for vendor_type in ['prior_vendors.txt', 'minor_vendors.txt']:
+            with open(os.path.join(self.data_path, vendor_type), 'r', errors='ignore') as r:
+                for each_row in r:
+                    contents = each_row.strip().split(',')
+                    if vendor_type == 'prior_vendors.txt':
+                        if len(contents) == 1:
+                            _prior_temp[contents[0]] = [contents[0],]
+                        else:
+                            _prior_temp[contents[0]] = contents
+                    else:
+                        if len(contents) == 1:
+                            _minor_temp[contents[0]] = [contents[0],]
+                        else:
+                            _minor_temp[contents[0]] = contents
+        return (_prior_temp, _minor_temp)
+
+    def who_is_vendor_from_this_product(self, product_name):
+        _prior_vendors, _minor_vendors = self.vendors
+        _result = list()
+        for k, v in _prior_vendors.items():
+            # 先檢查優先級別較高的供應商
+            check_if_product_name_contains_any_of_these_value = \
+                any(_ in product_name for _ in v)
+            if check_if_product_name_contains_any_of_these_value == True:
+                _result.append(k)
+        if len(_result) > 0:
+            return ','.join(_result)
+        else:
+            for k, v in _minor_vendors.items():
+                check_if_product_name_contains_any_of_these_value = \
+                    any(_ in product_name for _ in v)
+                if check_if_product_name_contains_any_of_these_value == True:
+                    _result.append(k)
+            # 萬一都沒檢查到...
+        if len(_result) > 0:
+            return ','.join(_result)
+        else:
+            return ''
+
     def _get_aggregated_txns_columns(self):
         # 這樣寫是為了更好的管理整合報表的欄位名稱
         _temp = []
@@ -325,11 +374,9 @@ class ALICIA:
             _temp.extend([_.strip() for _ in r])
         return _temp
 
-
     def _build_aggregated_txns_table(self):
         # 產製整合交易資料(原始訂單)的框架
         return pd.DataFrame(columns=self.aggregated_txns_columns)
-
 
     def _clean_dataframe(self, pandas_dataframe, strip_only=False, make_null_be_nullstring=False, **kwargs):
         assert type(pandas_dataframe) is pd.core.frame.DataFrame
@@ -527,12 +574,12 @@ class ALICIA:
             else:
                 
                 for txn_path in txn_paths:
-                    print('ALICIA: _integrate_with1 : ', txn_path)
+                    #print('ALICIA: _integrate_with1 : ', txn_path)
                     try:
                         _file_created_date = self._get_file_created_date(txn_path)
 
                         _temp_df = self._clean_dataframe(pd.read_excel(txn_path))
-                        print('ALICIA: _integrate_with2 : ', _temp_df.shape)
+                        #print('ALICIA: _integrate_with2 : ', _temp_df.shape)
                         
                         for each_row_index in range(_temp_df.shape[0]):
                             try:
@@ -557,7 +604,7 @@ class ALICIA:
                                                                 _temp_df.loc[each_row_index, '方案*組數']],', ').rsplit('*', 1)[0]
                                 _subcontent = self._combine_columns([_temp_df.loc[each_row_index, '檔次名稱'],
                                                                 _temp_df.loc[each_row_index, '方案*組數']],', ').rsplit('*', 1)[0]
-
+                            _vendor = self.who_is_vendor_from_this_product(_content)
                             _how_many = int(_temp_df.loc[each_row_index, '方案*組數'].split('*')[-1])
                             _how_much = None
                             _remark = self._combine_columns(['配送時段: ' + _temp_df.loc[each_row_index, '配送時段'],
@@ -568,12 +615,8 @@ class ALICIA:
                             _charged = False
                             _ifsend = False
                             _ifcancel = False
-
                             #temp_df = _clean_dataframe(pd.read_excel(txn_path))
-
                             _shipping_link = ''
-                            
-
                             # 寫入資料
                             self.aggregated_txns.loc[self.aggregated_txns.shape[0]] = [platform,
                                                                                     _file_created_date,
@@ -593,13 +636,13 @@ class ALICIA:
                                                                                     _charged,
                                                                                     _ifsend,
                                                                                     _ifcancel,
+                                                                                    _vendor,
                                                                                     _subcontent,
                                                                                     _shipping_link]
                     except Exception as e:
                         print(e)
                         is_error = True
                         exception_files.append(ntpath.split(txn_path)[1])
-                   
                     return is_found, is_error, exception_files
         
         elif platform == '樂天派官網':
@@ -617,7 +660,6 @@ class ALICIA:
                     if '豬肉' in target_string or '條子' in target_string:
                         target_string = re.sub(re.compile(r'[(]|[)]'), '', target_string)
                     return target_string
-
             if len(txn_paths) == 0:
                 print('未找到任何來自『' + platform + '』的交易資料。')
                 is_found = False
@@ -627,13 +669,12 @@ class ALICIA:
                 for txn_path in txn_paths:
                     try:
                         _file_created_date = self._get_file_created_date(txn_path)
-                        print('before clean', pd.read_excel(txn_path).shape)
+                        #print('before clean', pd.read_excel(txn_path).shape)
                         _temp_df = self._clean_dataframe(pd.read_excel(txn_path))
-                        print('Alicia intergrating with 樂天派官網')
-                        print('path:', txn_paths)
-                        print(_temp_df.shape)
-                        print(_temp_df.tail(1).T)
-
+                        #print('Alicia intergrating with 樂天派官網')
+                        #print('path:', txn_paths)
+                        #print(_temp_df.shape)
+                        #print(_temp_df.tail(1).T)
                         for each_row_index in range(_temp_df.shape[0]):
                             try:
                                 _txn_id = self.try_to_be_int_in_str(_temp_df.loc[each_row_index, '自訂編號'])
@@ -646,9 +687,7 @@ class ALICIA:
                             _receiver_address = _temp_df.loc[each_row_index, '客戶地址']
                             _receiver_phone_nbr = _temp_df.loc[each_row_index, '客戶手機號碼']
                             _receiver_mobile = _receiver_phone_nbr
-
                             # 先簡單的把內容物直接塞到內容物, 數量塞到數量就好~~~
-
                             # = = = = = = = = = = = = 以下為理想情況, 先不要這麼做, 太難太亂惹 = = = = = = = = = =
                             # 2020.04.04
                             # 官網商品欄位-購買數量有兩種形式:
@@ -656,27 +695,22 @@ class ALICIA:
                             #    【Just in bakery】法式冠軍招牌top3麵包組(蜂巢+脆片吐司+蜂蜜貝果)(口味:冠軍蜂巢*1+脆片吐司*1+蜂蜜貝果*2) - 2
                             # 2. 加購－【Just in bakery】蜂巢1個(數量:1) - 1
                             #    加購－穀粉_杏仁5包+芝麻5包(數量:1) - 2
-
                             # 針對第1種, 我們整理成兩個欄位(內容物 // 數量):
                             # 1.1 【KeyKey X 川子油蔥醬】配送台灣任選2罐組(260g/罐) - 辣味油蔥 // 2
                             # 1.2.1 【Just in bakery】法式冠軍招牌top3麵包組(蜂巢+脆片吐司+蜂蜜貝果) - 冠軍蜂巢 // 2
                             # 1.2.2 【Just in bakery】法式冠軍招牌top3麵包組(蜂巢+脆片吐司+蜂蜜貝果) - 脆片吐司 // 2
                             # 1.2.2 【Just in bakery】法式冠軍招牌top3麵包組(蜂巢+脆片吐司+蜂蜜貝果) - 蜂蜜貝果 // 4
-
                             # 針對第2種, 我們整理成兩個欄位(內容物 // 數量):
                             # 2.1 加購－【Just in bakery】蜂巢1個 // 1
                             # 2.2 加購－穀粉_杏仁5包+芝麻5包 // 2
                             # = = = = = = = = = = = = 以上為理想情況, 先不要這麼做, 太難太亂惹 = = = = = = = = = =
-
                         #  def _get_contents_and_quantity()
-
-
                             # temp_df = pd.read_excel('raw_txns/export_09Mar20 (樂天派官網).xls')
                             # temp_df = a._clean_dataframe(temp_df)
                             # temp_df.loc[1, '商品名稱'].split('(')[0].strip() + \
                             # ' - ' +
-
                             _content = _temp_df.loc[each_row_index, '商品名稱']
+                            _vendor = self.who_is_vendor_from_this_product(_content)
                             _how_many = _temp_df.loc[each_row_index, '購買數量'].astype(int)
                             _how_much = _temp_df.loc[each_row_index, '單價'].astype(int)
                             _remark = _temp_df.loc[each_row_index, '備註']
@@ -706,6 +740,7 @@ class ALICIA:
                                                                                     _charged,
                                                                                     _ifsend,
                                                                                     _ifcancel,
+                                                                                    _vendor,
                                                                                     _subcontent,
                                                                                     _shipping_link]
                     except Exception as e:
@@ -716,7 +751,6 @@ class ALICIA:
 
 
         elif platform == 'MOMO':
-
             if len(txn_paths) == 0:
                 print('未找到任何來自『' + platform + '』的交易資料。')
                 is_found = False
@@ -727,7 +761,6 @@ class ALICIA:
                         assert (txn_path.endswith('.xls') or txn_path.endswith('.xlsx') or txn_path.endswith('.xlsm'))
                         # 檢查是否為excel檔
                         _file_created_date = self._get_file_created_date(txn_path)
-
                         # 這裡解決了一個奇怪的bug, 就是不能用相對路徑的方式開啟excel物件by win32元件,
                         # 必須用絕對路徑它才找得到檔案, 故我把所有查找路徑的回傳值都改成絕對路徑
                         #try:
@@ -736,18 +769,15 @@ class ALICIA:
                         #except:
                             # 改不輸入密碼試試
                         #    _temp_df = self._turn_wb_into_dataframe(txn_path, 1, None)
-
                         #try:
                         #    _temp_df.shape  # 這行只是為了偵測有沒有成功從workbook轉成dataframe
                         #except:
                         #    print(txn_paths, '讀取失敗.')
-
                         _temp_df = self._clean_dataframe(pd.read_excel(txn_path))
                         #_temp_df['訂單編號'] = _temp_df['訂單編號'].apply(lambda x: x.split('-')[0])
                         #_temp_df = self._clean_dataframe(_temp_df)
-
                         if '貨運公司\n出貨地址' not in _temp_df.columns:
-                            print('不是momo去識別化後的訂單')
+                            # print('不是momo去識別化後的訂單')
                             for each_row_index in range(_temp_df.shape[0]):
                                 try:
                                     _txn_id = self.try_to_be_int_in_str(_temp_df.loc[each_row_index, '訂單編號'])
@@ -760,11 +790,10 @@ class ALICIA:
                                 _receiver_address = _temp_df.loc[each_row_index, '收件人地址']
                                 _receiver_phone_nbr = _temp_df.loc[each_row_index, '收件人電話']
                                 _receiver_mobile = _temp_df.loc[each_row_index, '收件人行動電話']
-
                                 _content = self._combine_columns([_temp_df.loc[each_row_index, '品名'],
                                                                 _temp_df.loc[each_row_index, '單品詳細']],
                                                                 ', ')
-
+                                _vendor = self.who_is_vendor_from_this_product(_content)
                                 _how_many = _temp_df.loc[each_row_index, '數量']
                                 _how_much = _temp_df.loc[each_row_index, '進價(含稅)'].astype(int)
                                 _remark = ''
@@ -794,12 +823,13 @@ class ALICIA:
                                                                                         _charged,
                                                                                         _ifsend,
                                                                                         _ifcancel,
+                                                                                        _vendor,
                                                                                         _subcontent,
                                                                                         _shipping_link]
                         else:
                             # 是momo去識別化後的訂單
                             _temp_df['貨運公司\n出貨地址'] = _temp_df['貨運公司\n出貨地址'].apply(lambda x: '(貨運公司出貨地址) ' +  x.replace('新竹貨運\n', ''))
-                            print('是momo去識別化後的訂單')
+                            #print('是momo去識別化後的訂單')
                             for each_row_index in range(_temp_df.shape[0]):
                                 try:
                                     _txn_id = self.try_to_be_int_in_str(_temp_df.loc[each_row_index, '訂單編號'])
@@ -815,6 +845,7 @@ class ALICIA:
                                 _content = self._combine_columns([_temp_df.loc[each_row_index, '品名'],
                                                                 _temp_df.loc[each_row_index, '單品詳細']],
                                                                 ', ')
+                                _vendor = self.who_is_vendor_from_this_product(_content)
                                 _how_many = _temp_df.loc[each_row_index, '數量']
                                 try:
                                     _how_much = _temp_df.loc[each_row_index, '進價(含稅)'].astype(int)
@@ -848,6 +879,7 @@ class ALICIA:
                                                                                         _charged,
                                                                                         _ifsend,
                                                                                         _ifcancel,
+                                                                                        _vendor,
                                                                                         _subcontent,
                                                                                         _shipping_link]
 
@@ -868,16 +900,11 @@ class ALICIA:
                     try:
                         assert (txn_path.endswith('.xls') or txn_path.endswith('.xlsx') or txn_path.endswith('.xlsm'))
                         # 檢查是否為excel檔
-
                         _file_created_date = self._get_file_created_date(txn_path)
-
                         # Yahoo購物中心的xls檔其實是html格式, 如果用notepad打開它:
                         # <meta http-equiv='Content-Type' content='text/html; charset=utf-8'>....
                         # 所以不能用pd.read_excel(), 要用pd.read_html()來開啟
-
                         _temp_df = self._clean_dataframe(pd.read_html(txn_path, header=0)[0])
-                        
-
                         for each_row_index in range(_temp_df.shape[0]):
                             try:
                                 _txn_id = self.try_to_be_int_in_str(_temp_df.loc[each_row_index, '訂單編號'])
@@ -890,15 +917,13 @@ class ALICIA:
                             _receiver_address = _temp_df.loc[each_row_index, '收件人地址']
                             _receiver_phone_nbr = _temp_df.loc[each_row_index, '收件人手機']
                             _receiver_mobile = _receiver_phone_nbr
-
                         #  def _get_contents_and_quantity()
-
                             # temp_df = pd.read_excel('raw_txns/export_09Mar20 (樂天派官網).xls')
                             # temp_df = a._clean_dataframe(temp_df)
                             # temp_df.loc[1, '商品名稱'].split('(')[0].strip() + \
                             # ' - ' +
-
                             _content = _temp_df.loc[each_row_index, '商品名稱']
+                            _vendor = self.who_is_vendor_from_this_product(_content)
                             _how_many = _temp_df.loc[each_row_index, '數量']
                             # _how_much = _temp_df.loc[each_row_index, '商品成本'].astype(int)
                             _how_much = _temp_df.loc[each_row_index, '成本小計'].astype(int)  # Jerry堅持要以總額來做紀錄  20.09.29
@@ -930,6 +955,7 @@ class ALICIA:
                                                                                     _charged,
                                                                                     _ifsend,
                                                                                     _ifcancel,
+                                                                                    _vendor,
                                                                                     _subcontent,
                                                                                     _shipping_link]
                     except Exception as e:
@@ -951,7 +977,6 @@ class ALICIA:
                         # 檢查是否為excel檔
                         _file_created_date = self._get_file_created_date(txn_path)
                         _temp_df = self._clean_dataframe(pd.read_excel(txn_path))
-
                         for each_row_index in range(_temp_df.shape[0]):
                             try:
                                 _txn_id = self.try_to_be_int_in_str(_temp_df.loc[each_row_index, '訂單號碼'])
@@ -964,13 +989,11 @@ class ALICIA:
                             _receiver_address = _temp_df.loc[each_row_index, '配送地址']
                             _receiver_phone_nbr = _temp_df.loc[each_row_index, '室內電話']
                             _receiver_mobile = _temp_df.loc[each_row_index, '客戶電話']
-
                             _content = self._combine_columns([_temp_df.loc[each_row_index, '商品名稱'],
                                                             _temp_df.loc[each_row_index, '顏色'],
                                                             _temp_df.loc[each_row_index, '款式']],
                                                             ', ')
-
-
+                            _vendor = self.who_is_vendor_from_this_product(_content)
                             _how_many = _temp_df.loc[each_row_index, '數量'].astype(int)
                             _how_much = _temp_df.loc[each_row_index, '成本'].astype(int)
                             _remark = ''
@@ -1004,6 +1027,7 @@ class ALICIA:
                                                                                     _charged,
                                                                                     _ifsend,
                                                                                     _ifcancel,
+                                                                                    _vendor,
                                                                                     _subcontent,
                                                                                     _shipping_link]
                     except Exception as e:
@@ -1047,7 +1071,7 @@ class ALICIA:
                             _content = self._combine_columns([_temp_df.loc[each_row_index, '品名'],
                                                             _temp_df.loc[each_row_index, '選購規格']],
                                                             ', ')
-
+                            _vendor = self.who_is_vendor_from_this_product(_content)
                             _how_many = _temp_df.loc[each_row_index, '數量'].astype(int)
                             _how_much = _temp_df.loc[each_row_index, '成本小計'].astype(int)
                             _remark = ''
@@ -1056,7 +1080,6 @@ class ALICIA:
                             _charged = False
                             _ifsend = False
                             _ifcancel = False
-                            
                             if not pd.isnull(_temp_df.loc[each_row_index, '選購規格']):
                                 _subcontent = _temp_df.loc[each_row_index, '選購規格']
                             else:
@@ -1082,6 +1105,7 @@ class ALICIA:
                                                                                     _charged,
                                                                                     _ifsend,
                                                                                     _ifcancel,
+                                                                                    _vendor,
                                                                                     _subcontent,
                                                                                     _shipping_link]
                 except Exception as e:
@@ -1092,7 +1116,6 @@ class ALICIA:
 
 
         elif platform == 'UDN':
-
             if len(txn_paths) == 0:
                 print('未找到任何來自『' + platform + '』的交易資料。')
                 is_found = False
@@ -1102,24 +1125,18 @@ class ALICIA:
                     try:
                         assert (txn_path.endswith('.xls') or txn_path.endswith('.xlsx') or txn_path.endswith('.xlsm'))
                         # 檢查是否為excel檔
-
                         _file_created_date = self._get_file_created_date(txn_path)
                         _temp_df = self._clean_dataframe(pd.read_excel(txn_path))
-
-
                     # UDN xls有兩種格式 一種第一行是英文標題另一種純中文，如果是英文標題則重讀檔並從第二行讀成標題
                         if '訂單編號' not in _temp_df.keys():
                             _temp_df = self._clean_dataframe(pd.read_excel(txn_path, skiprows = 1))
                             #temp_df = _clean_dataframe(pd.read_excel('raw_txns/Order_20191112092608071(UDN).xls', skiprows = 1))
-
                             # 英文標題的商品index 跟中文的有些不一致，統一改成中文名的為準
                             # 將配送備註與購買備註合併  lambda是為了讓na+str不會變成na
                             _temp_df.loc[:, '配送備註'] = _temp_df.loc[:, '配送備註'].apply(lambda x: '' if pd.isnull(x) else x) + \
                                                         '   ' + _temp_df.loc[:, '購買備註'].apply(lambda x: '' if pd.isnull(x) else x)
                             _temp_df = _temp_df.rename(columns = {'商品名稱+規格尺寸':'商品名稱','訂購數量':'數量',
                                                                 '原售價':'單價','配送備註':'備註/卡片內容'})
-
-
                         for each_row_index in range(_temp_df.shape[0]):
                             try:
                                 _txn_id = self.try_to_be_int_in_str(_temp_df.loc[each_row_index, '訂單編號'])
@@ -1132,8 +1149,8 @@ class ALICIA:
                             _receiver_address = _temp_df.loc[each_row_index, '收貨人地址']
                             _receiver_phone_nbr = _temp_df.loc[each_row_index, '收貨人手機']
                             _receiver_mobile = _receiver_phone_nbr
-
                             _content = _temp_df.loc[each_row_index, '商品名稱']
+                            _vendor = self.who_is_vendor_from_this_product(_content)
                             _how_many = _temp_df.loc[each_row_index, '數量'].astype(int)
                             _how_much = _temp_df.loc[each_row_index, '進貨價'].astype(int)
                             _remark = _temp_df.loc[each_row_index, '備註/卡片內容']
@@ -1163,6 +1180,7 @@ class ALICIA:
                                                                                     _charged,
                                                                                     _ifsend,
                                                                                     _ifcancel,
+                                                                                    _vendor,
                                                                                     _subcontent,
                                                                                     _shipping_link]
                     except Exception as e:
@@ -1173,7 +1191,6 @@ class ALICIA:
 
 
         elif platform == '台塑':
-
             if len(txn_paths) == 0:
                 print('未找到任何來自『' + platform + '』的交易資料。')
                 is_found = False
@@ -1183,23 +1200,18 @@ class ALICIA:
                     try:
                         assert (txn_path.endswith('.xls') or txn_path.endswith('.xlsx') or txn_path.endswith('.xlsm'))
                         # 檢查是否為excel檔
-
                         _file_created_date = self._get_file_created_date(txn_path)
                         _temp_df = self._clean_dataframe(pd.read_excel(txn_path))
-
-
                     # 台塑 xls有兩種格式 一種第一行是英文標題另一種純中文，如果是英文標題則重讀檔並從第二行讀成標題
                         if '訂單編號' not in _temp_df.keys():
                             _temp_df = self._clean_dataframe(pd.read_excel(txn_path, skiprows = 1))
                             #temp_df = _clean_dataframe(pd.read_excel('raw_txns/Order_20191112092608071(UDN).xls', skiprows = 1))
-
                             # 英文標題的商品index 跟中文的有些不一致，統一改成中文名的為準
                             # 將配送備註與購買備註合併  lambda是為了讓na+str不會變成na
                             _temp_df.loc[:, '配送備註'] = _temp_df.loc[:, '配送備註'].apply(lambda x: '' if pd.isnull(x) else x) + \
                                                         '   ' + _temp_df.loc[:, '購買備註'].apply(lambda x: '' if pd.isnull(x) else x)
                             _temp_df = _temp_df.rename(columns = {'商品名稱+規格尺寸':'商品名稱','訂購數量':'數量',
                                                                 '原售價':'單價','配送備註':'備註/卡片內容'})
-
 
                         for each_row_index in range(_temp_df.shape[0]):
                             try:
@@ -1213,8 +1225,8 @@ class ALICIA:
                             _receiver_address = _temp_df.loc[each_row_index, '收貨人地址']
                             _receiver_phone_nbr = _temp_df.loc[each_row_index, '收貨人手機']
                             _receiver_mobile = _receiver_phone_nbr
-
                             _content = _temp_df.loc[each_row_index, '商品名稱']
+                            _vendor = self.who_is_vendor_from_this_product(_content)
                             _how_many = _temp_df.loc[each_row_index, '數量'].astype(int)
                             try:
                                 _how_much = _temp_df.loc[each_row_index, '成本價'].astype(int)
@@ -1248,6 +1260,7 @@ class ALICIA:
                                                                                     _charged,
                                                                                     _ifsend,
                                                                                     _ifcancel,
+                                                                                    _vendor,
                                                                                     _subcontent,
                                                                                     _shipping_link]
                     except Exception as e:
@@ -1258,7 +1271,6 @@ class ALICIA:
 
 
         elif platform == 'LaNew':
-
             if len(txn_paths) == 0:
                 print('未找到任何來自『' + platform + '』的交易資料。')
                 is_found = False
@@ -1269,16 +1281,13 @@ class ALICIA:
                         _file_created_date = self._get_file_created_date(txn_path)
                         _temp_df = self._clean_dataframe(pd.read_excel(txn_path, skiprows = 1))
                         # print('try1', _temp_df.columns)
-
                         # LaNew第一行疑似為空白，因此預定從第二行開始讀起，萬一找不到【訂單編號】這一欄位，再從第一行讀起
                         if '訂單編號' not in _temp_df.columns:
                             _temp_df = self._clean_dataframe(pd.read_excel(txn_path))
                             # print('try2', _temp_df.columns)
-
                         # 將商品備註與訂單備註合併  lambda是為了讓na+str不會變成na
                         _temp_df.loc[:, '商品備註'] = _temp_df.loc[:, '商品備註'].apply(lambda x: '' if pd.isnull(x) else x) + \
                                                     '   ' + _temp_df.loc[:, '訂單備註'].apply(lambda x: '' if pd.isnull(x) else x)
-
                         # 將(配送方式)與(地址)結合>>
                         _temp_df.loc[:, '地址'] = _temp_df.loc[:, '配送方式'].apply(lambda x: '' if pd.isnull(x) or x=='' else '(' + x + ') ') + \
                                                     _temp_df.loc[:, '地址'].apply(lambda x: '' if pd.isnull(x) else x)
@@ -1295,8 +1304,8 @@ class ALICIA:
                             _receiver_address = _temp_df.loc[each_row_index, '地址']
                             _receiver_phone_nbr = _temp_df.loc[each_row_index, '收件人電話']
                             _receiver_mobile = _receiver_phone_nbr
-
                             _content = _temp_df.loc[each_row_index, '品名']
+                            _vendor = self.who_is_vendor_from_this_product(_content)
                             _how_many = _temp_df.loc[each_row_index, '數量'].astype(int)
                             _how_much = _temp_df.loc[each_row_index, '單價'].astype(int)
                             _remark = _temp_df.loc[each_row_index, '商品備註']
@@ -1326,6 +1335,7 @@ class ALICIA:
                                                                                     _charged,
                                                                                     _ifsend,
                                                                                     _ifcancel,
+                                                                                    _vendor,
                                                                                     _subcontent,
                                                                                     _shipping_link]
                     except Exception as e:
@@ -1346,22 +1356,18 @@ class ALICIA:
                     try:
                         assert (txn_path.endswith('.csv'))
                         # 檢查是否為csv檔
-
                         _file_created_date = self._get_file_created_date(txn_path)
                         #_temp_df = (pd.read_csv(r'raw_txns\OrderData_43946 - 2020-03-09T111005.304(Friday).csv',engine='python'))
                         _temp_df = self._clean_dataframe(pd.read_csv(txn_path, engine = 'python', encoding='big5'))
                         # 需使用big5編碼才能成功轉譯
-                        
                         #if len(_temp_df.columns)==24:
                         #    _temp_df.columns = ['訂單時間', '通知出貨時間', '通知退換貨時間', '訂單編號', '出貨單號', '商品名稱',
                         #                        '商品單價(*數量)', '配送方式', '訂單狀態', '收件人', '收件人地址', '收件人電話', '收件人手機', 
                         #                        '訂單備註', '搭配活動', '訂單類型', '應出貨日期', '規格名稱', '商品原廠型號', '退/換貨原因', 
                         #                        '規格條碼或編號', '規格序號', '提報成本(*數量)', '商品序號']
-
                         for each_row_index in range(_temp_df.shape[0]):
                             # [1:-1]是要清除儲存裡最前的'符號
-                            print(txn_path, each_row_index)
-    
+                            #print(txn_path, each_row_index)
                             try:
                                 _txn_id = self.try_to_be_int_in_str(_temp_df.loc[each_row_index, '訂單編號'][1:])
                             except Exception as e:
@@ -1374,19 +1380,17 @@ class ALICIA:
                             _receiver_phone_nbr = _temp_df.loc[each_row_index, '收件人手機'][1:]
                             _receiver_mobile = _receiver_phone_nbr
                             _content = _temp_df.loc[each_row_index, '商品名稱'][1:]
-
+                            _vendor = self.who_is_vendor_from_this_product(_content)
                         ## 商品單價跟數量和在同一儲存格'商品單價(*數量)'，要做分開處理
                             #_temp_item = _temp_df.loc[each_row_index, '商品單價(*數量)']
                             ## print(_temp_item)
                             #_how_much = int(re.findall(r"^'\d+[(]",_temp_item)[0][1:-1])
                             #_how_many = int(re.findall(r"[(]\d+[)$]",_temp_item)[0][1:-1])
-
                         # 商品單價跟數量和在同一儲存格'提報成本(*數量)'，要做分開處理
                             _temp_item = _temp_df.loc[each_row_index, '提報成本(*數量)']
                             # print(_temp_item)
                             _how_much = int(re.findall(r"^'\d+[(]",_temp_item)[0][1:-1])
                             _how_many = int(re.findall(r"[(]\d+[)$]",_temp_item)[0][1:-1])
-
                             _remark = _temp_df.loc[each_row_index, '訂單備註']
                             _shipping_id = ''
                             _last_charged_date = ''
@@ -1415,6 +1419,7 @@ class ALICIA:
                                                                                     _charged,
                                                                                     _ifsend,
                                                                                     _ifcancel,
+                                                                                    _vendor,
                                                                                     _subcontent,
                                                                                     _shipping_link]
                     except Exception as e:
@@ -1425,7 +1430,6 @@ class ALICIA:
 
         
         elif platform == '快車肉乾銷港':
-
             if len(txn_paths) == 0:
                 print('未找到任何來自『' + platform + '』的交易資料。')
                 is_found = False
@@ -1442,9 +1446,7 @@ class ALICIA:
                         _temp_df.loc[:, 'customer_name'] = _temp_df['First Name'] + ' ' + _temp_df['Last Name']
                         _temp_df.loc[:, '_temp_remark'] = _temp_df['Order Note'] + '; email:' + _temp_df['Buyer\'s Email Address']
                         _temp_df['Shipping Address'] = _temp_df['Shipping Address'].apply(lambda x: x.replace('\n', ' '))
-
                         for each_row_index in range(_temp_df.shape[0]):
-                            
                             try:
                                 _txn_id = self.try_to_be_int_in_str(_temp_df.loc[each_row_index, 'Order#'])
                             except Exception as e:
@@ -1457,9 +1459,9 @@ class ALICIA:
                             _receiver_phone_nbr = _temp_df.loc[each_row_index, 'Buyer\'s Contact Number']
                             _receiver_mobile = _receiver_phone_nbr
                             _content = _temp_df.loc[each_row_index, 'Product Name']
+                            _vendor = self.who_is_vendor_from_this_product(_content)
                             _how_much = _temp_df.loc[each_row_index, 'Product Price'].astype(int)
                             _how_many = _temp_df.loc[each_row_index, 'Quantity Ordered'].astype(int)
-
                             _remark = _temp_df.loc[each_row_index, '_temp_remark']
                             _shipping_id = ''
                             _last_charged_date = ''
@@ -1468,7 +1470,6 @@ class ALICIA:
                             _ifcancel = False
                             _subcontent = _temp_df.loc[each_row_index, '_temp_subcontent']
                             _shipping_link = ''
-                            
                             # 寫入資料
                             self.aggregated_txns.loc[self.aggregated_txns.shape[0]] = [platform,
                                                                                     _file_created_date,
@@ -1488,6 +1489,7 @@ class ALICIA:
                                                                                     _charged,
                                                                                     _ifsend,
                                                                                     _ifcancel,
+                                                                                    _vendor,
                                                                                     _subcontent,
                                                                                     _shipping_link]
                     except Exception as e:
@@ -1498,7 +1500,6 @@ class ALICIA:
         
         
         elif platform == '博客來':
-
             if len(txn_paths) == 0:
                 print('未找到任何來自『' + platform + '』的交易資料。')
                 is_found = False
@@ -1510,8 +1511,6 @@ class ALICIA:
                         # 檢查是否為excel檔
                         _file_created_date = self._get_file_created_date(txn_path)
                         _temp_df = self._clean_dataframe(pd.read_excel(txn_path))
-
-
                         for each_row_index in range(_temp_df.shape[0]):
                             # [1:-1]是要清除儲存裡最前的'符號
                             try:
@@ -1526,9 +1525,9 @@ class ALICIA:
                             _receiver_phone_nbr = _temp_df.loc[each_row_index, '聯絡電話']
                             _receiver_mobile = _receiver_phone_nbr
                             _content = _temp_df.loc[each_row_index, '商品名稱']
+                            _vendor = self.who_is_vendor_from_this_product(_content)
                             _how_much = _temp_df.loc[each_row_index, '進貨價'].astype(int)
                             _how_many = _temp_df.loc[each_row_index, '訂購量'].astype(int)
-
                             _remark = ''
                             _shipping_id = ''
                             _last_charged_date = ''
@@ -1537,7 +1536,6 @@ class ALICIA:
                             _ifcancel = False
                             _subcontent = _temp_df.loc[each_row_index, '商品名稱']
                             _shipping_link = ''
-                            
                             # 寫入資料
                             self.aggregated_txns.loc[self.aggregated_txns.shape[0]] = [platform,
                                                                                     _file_created_date,
@@ -1557,6 +1555,7 @@ class ALICIA:
                                                                                     _charged,
                                                                                     _ifsend,
                                                                                     _ifcancel,
+                                                                                    _vendor,
                                                                                     _subcontent,
                                                                                     _shipping_link]
                     except Exception as e:
@@ -1591,19 +1590,16 @@ class ALICIA:
                         _temp_df['已寄出'][pd.isnull(_temp_df['已寄出'])] = False
                         _temp_df['已取消'][pd.isnull(_temp_df['已取消'])] = False
                         _temp_df['規格'][pd.isnull(_temp_df['規格'])] = _temp_df['內容物'][pd.isnull(_temp_df['規格'])]
-
                         self.user_uploaded_aggregated_txns = pd.concat([
                             self.user_uploaded_aggregated_txns,
                             _temp_df
                         ], join='inner')
-
                         self.user_uploaded_aggregated_txns = self._clean_dataframe(
                             pandas_dataframe=self.user_uploaded_aggregated_txns,
                             strip_only=True,
                             to_database_format=True, 
                             dealing_columns=['貨到付款', '回押', '已寄出', '已取消']
                         )
-
                         # 將讀到的資料賦值予 self.user_uploaded_aggregated_txns
                         # 並且確認一下其欄位內容如同預期的一樣
 
@@ -1659,20 +1655,15 @@ class ALICIA:
     def try_to_be_int_in_str(self, target):
         condition1 = target is None or pd.isnull(target) or pd.isna(target)
         condition2 = target in ['nan', ' ']
-        
         if condition1 or condition2:
             return ''
-        
         return self.force_float_to_be_int_and_to_string(target)
-
 
     def make_phone_and_mobile_number_clean(self, raw_number):
         # 會回傳0911-111-111或是02-2222-2222 #222之類的格式    
-
         raw_number = self.try_to_be_int_in_str(raw_number)
         raw_number = re.sub(re.compile(r'[- －]'), '', raw_number)
         raw_number = raw_number.replace('#', ' #')
-        
         mobile_pattern = re.compile(r'^09.*|^9.*')
         if len(re.findall(mobile_pattern, raw_number)):
             if raw_number[0] == '9':
@@ -1687,20 +1678,16 @@ class ALICIA:
         else:
             return raw_number
 
-    
-
-
 
 
 if __name__ == '__main__':
     import re, pandas as pd
-    os.chdir('/mnt/c/Users/User/Desktop/20200713_HP_Project')
+    x = '加購－寬麵條(數量:1),\n蔣老爹 小資女獨享 水餃2包組(商品規格:麻辣餃x1+四季豆x1)\n紅30年的雞-阿雪手撕雞4盒(小盒)(顏色:4盒)'
+    ali = ALICIA()
+    #print(ali.vendors)
+    print(ali.who_is_vendor_from_this_product(x))
     # pattern = re.compile(r'.{0,6}orders\s*[(]{0,1}\d*[)]{0,1}\s*.csv|.{0,6}orders\s*[(]{0,1}\d*[)]{0,1}\s*.xls[x]{0,1}')
-    
-
-    
-    
-    
+        
     #a = ALICIA()
     #a.raw_txns_dir = 'test_folder'
     #a.decr_raw_txns_dir = 'test_folder'
@@ -1709,9 +1696,6 @@ if __name__ == '__main__':
     #print(a.aggregated_txns)
     #a.pre_clean_raw_txns()
     #print(a.aggregated_txns)
-
-
-    
 
 # MO的開檔密碼:happypi02
 # 東森解鎖:52464493

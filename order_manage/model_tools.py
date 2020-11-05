@@ -37,6 +37,7 @@ class HISTORY_DATA_and_Subcontent_user_edit_record_db_writer:
             '回押':'charged',
             '已寄出':'ifsend',
             '已取消':'ifcancel',
+            '供應商':'vendor',
             '規格':'subcontent',
             '貨運連結':'shipping_link',
             'unique_id':'unique_id',
@@ -47,13 +48,13 @@ class HISTORY_DATA_and_Subcontent_user_edit_record_db_writer:
         # 確認該dataframe符合我們的格式
         print('_check_dataframe')
         print(self.dataframe.columns)
-        print(self.dataframe.head())
+        print(self.dataframe.head(1).T)
         if 'unique_id' not in self.dataframe.columns:
-            assert len(self.dataframe.columns) == 20
+            assert len(self.dataframe.columns) == 21
             assert sorted(list(self.dataframe.columns)) == sorted(list(self.column_names_dict.keys())[:-1])
             self.dataframe.loc[:, 'unique_id'] = self.dataframe['通路'] + '-' + self.dataframe['訂單編號'].astype(str)
         else:
-            assert len(self.dataframe.columns) == 21
+            assert len(self.dataframe.columns) == 22
             assert sorted(list(self.dataframe.columns)) == sorted(list(self.column_names_dict.keys()))
 
         print('hddw1', 'check done.')
@@ -222,27 +223,31 @@ class HISTORY_DATA_and_Subcontent_user_edit_record_db_writer:
                 # 'how_many', 'remark', 'shipping_id', 'last_charged_date', 'charged', 'ifsend', 'ifcancel', 'subcontent']:
                 #     print('Test Column:  ', each_col)
                 #     print(self.dataframe.loc[df_correspondant_index][each_col])
+                for each_col in ['txn_id', 'customer_name', 'receiver_name', 'paid_after_receiving',
+                'receiver_address', 'receiver_phone_nbr', 'receiver_mobile', 'content', 'how_much', 
+                'how_many', 'remark', 'shipping_id', 'last_charged_date', 'charged', 'vendor',
+                'ifsend', 'ifcancel', 'subcontent']:
+                    setattr(history_data_object, each_col, self.dataframe.loc[df_correspondant_index][each_col])
+                # history_data_object.txn_id = self.dataframe.loc[df_correspondant_index]['txn_id']
+                # history_data_object.file_created_date = self.dataframe.loc[df_correspondant_index]['file_created_date']
+                # history_data_object.customer_name = self.dataframe.loc[df_correspondant_index]['customer_name']
+                # history_data_object.receiver_name = self.dataframe.loc[df_correspondant_index]['receiver_name']
+                # history_data_object.paid_after_receiving = self.dataframe.loc[df_correspondant_index]['paid_after_receiving']
+                # history_data_object.receiver_address = self.dataframe.loc[df_correspondant_index]['receiver_address']
+                # history_data_object.receiver_phone_nbr = self.dataframe.loc[df_correspondant_index]['receiver_phone_nbr']
+                # history_data_object.receiver_mobile = self.dataframe.loc[df_correspondant_index]['receiver_mobile']
+                # history_data_object.content = self.dataframe.loc[df_correspondant_index]['content']
+                # history_data_object.how_much = self.dataframe.loc[df_correspondant_index]['how_much']
+                # history_data_object.how_many = self.dataframe.loc[df_correspondant_index]['how_many']
+                # history_data_object.remark = self.dataframe.loc[df_correspondant_index]['remark']
+                # history_data_object.shipping_id = self.dataframe.loc[df_correspondant_index]['shipping_id']
+                # history_data_object.last_charged_date = self.dataframe.loc[df_correspondant_index]['last_charged_date']
+                # history_data_object.charged = self.dataframe.loc[df_correspondant_index]['charged']
+                # history_data_object.ifsend = self.dataframe.loc[df_correspondant_index]['ifsend']
+                # history_data_object.ifcancel = self.dataframe.loc[df_correspondant_index]['ifcancel']
+                # history_data_object.shipping_link = _shipping_link
+                history_data_object.save()
 
-                history_data_object.txn_id = self.dataframe.loc[df_correspondant_index]['txn_id']
-                history_data_object.file_created_date = self.dataframe.loc[df_correspondant_index]['file_created_date']
-                history_data_object.customer_name = self.dataframe.loc[df_correspondant_index]['customer_name']
-                history_data_object.receiver_name = self.dataframe.loc[df_correspondant_index]['receiver_name']
-                history_data_object.paid_after_receiving = self.dataframe.loc[df_correspondant_index]['paid_after_receiving']
-                history_data_object.receiver_address = self.dataframe.loc[df_correspondant_index]['receiver_address']
-                history_data_object.receiver_phone_nbr = self.dataframe.loc[df_correspondant_index]['receiver_phone_nbr']
-                history_data_object.receiver_mobile = self.dataframe.loc[df_correspondant_index]['receiver_mobile']
-                history_data_object.content = self.dataframe.loc[df_correspondant_index]['content']
-                history_data_object.how_much = self.dataframe.loc[df_correspondant_index]['how_much']
-                history_data_object.how_many = self.dataframe.loc[df_correspondant_index]['how_many']
-                history_data_object.remark = self.dataframe.loc[df_correspondant_index]['remark']
-                history_data_object.shipping_id = self.dataframe.loc[df_correspondant_index]['shipping_id']
-                history_data_object.last_charged_date = self.dataframe.loc[df_correspondant_index]['last_charged_date']
-                history_data_object.charged = self.dataframe.loc[df_correspondant_index]['charged']
-                history_data_object.ifsend = self.dataframe.loc[df_correspondant_index]['ifsend']
-                history_data_object.ifcancel = self.dataframe.loc[df_correspondant_index]['ifcancel']
-                history_data_object.shipping_link = _shipping_link
-
-            
                 print('write_in_2diff_db_2.4: history_data_object has updated.')
 
                 if history_data_object.subcontent != self.dataframe.loc[df_correspondant_index]['subcontent']:
@@ -258,7 +263,6 @@ class HISTORY_DATA_and_Subcontent_user_edit_record_db_writer:
                             subcontent_user_edit = _user_edited_subcontent
                         ).save()
                         history_data_object.subcontent = self.dataframe.loc[df_correspondant_index]['subcontent']
-
 
                 # if history_data_object.filter(subcontent = self.dataframe.loc[df_correspondant_id]['subcontent']).first() is not None:
                 # if History_data.objects.filter(unique_id = ids).filter(subcontent = self.dataframe.loc[df_correspondant_id]['subcontent']).count() == 1:
@@ -305,6 +309,7 @@ class HISTORY_DATA_and_Subcontent_user_edit_record_db_writer:
                 temp_charged = self.dataframe.loc[df_correspondant_index]['charged']
                 temp_ifsend = self.dataframe.loc[df_correspondant_index]['ifsend']
                 temp_ifcancel = self.dataframe.loc[df_correspondant_index]['ifcancel']
+                temp_vendor = self.dataframe.loc[df_correspondant_index]['vendor']
                 temp_subcontent = self.dataframe.loc[df_correspondant_index]['subcontent']
                 temp_shipping_link = self.dataframe.loc[df_correspondant_index]['shipping_link']
 
@@ -345,11 +350,12 @@ class HISTORY_DATA_and_Subcontent_user_edit_record_db_writer:
                             charged = temp_charged,
                             ifsend  = temp_ifsend, 
                             ifcancel = temp_ifcancel,
+                            vendor = temp_vendor,
                             subcontent  = temp_subcontent,
                             shipping_link = temp_shipping_link).save()
         
 
-class HISTORY_DATA_db_writer:
+'''class HISTORY_DATA_db_writer:
 
     def __init__(self, **kwargs):   
         if 'dataframe_path' in kwargs.keys():
@@ -534,7 +540,7 @@ class HISTORY_DATA_db_writer:
                             subcontent  = temp_subcontent  ,
                             shipping_link = temp_shipping_link).save()
 
-
+'''
 
 if __name__ == '__main__':
     model_writer = HISTORY_DATA_and_Subcontent_user_edit_record_db_writer(dataframe=alicia.aggregated_txns)
