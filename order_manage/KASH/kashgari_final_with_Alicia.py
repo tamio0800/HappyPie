@@ -16,9 +16,7 @@ class kashgari_model:
         # 下面這行是為了讓模型先跑一次
         self.model.predict(self.preclean_seq('無敵美味大漢堡'))
 
-
     def preclean_seq(self, target_strs):
-
         if type(target_strs) is str:
             return [[_ for _ in target_strs],]
 
@@ -28,7 +26,6 @@ class kashgari_model:
                 _temp.append([_ for _ in each_target_str])
             return _temp
 
-
     def get_annotations(self, target_str):
         _input = self.preclean_seq(target_str)
         print('get_annotations 1: ', _input, target_str)
@@ -36,19 +33,15 @@ class kashgari_model:
             _output = self.model.predict(_input)[0]
             print('get_annotations 1.1: ', _output)
         prods_index, nums_index = self.get_prod_and_num_index(target_str, _output)
-
         print('get_annotations 2: ', prods_index, nums_index)
         try:
             opt_prods, opt_nums =  self.match(prods_index, nums_index, target_str)
         except:
             opt_prods, opt_nums = 'None', 'None'
-
         return opt_prods, opt_nums
-
         # prods = str(self.get_prod(target_str, _output)).replace('[', '').replace(']', '').replace('\'', '')
         # nums = str(self.get_qnty(target_str, _output)).replace('[', '').replace(']', '').replace('\'', '')
         # return prods + '||||' + nums
-
 
     def get_prod(self, y, y_):
         prods = []
