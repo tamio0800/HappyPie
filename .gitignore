@@ -5,3 +5,4 @@
 *.csv
 *.sqlite3
 get_annotations_alicia_0.5_unique_contents.txt
+nohup.out
