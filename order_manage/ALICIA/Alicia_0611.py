@@ -246,7 +246,11 @@ class ALICIA:
                 _temp_small_multi_df.loc[0, '規格'] = self._combine_columns(
                         _temp_small_multi_df['規格'].tolist(), ', ')
                 _temp_small_multi_df.loc[0, '供應商'] = self._combine_columns(
-                        list(set(_temp_small_multi_df['供應商'].tolist())), ', ')
+                        list(
+                            filter(
+                                lambda x: len(x) > 0, 
+                                list(set(_temp_small_multi_df['供應商'].tolist())))
+                            ), ', ')
                 try:
                     _temp_small_multi_df.loc[0, '金額'] = _temp_small_multi_df['金額'].astype(int).sum()
                 except:
@@ -387,7 +391,7 @@ class ALICIA:
             ]
         # 檢查輸入值是否為pandas dataframe CLASS
         for each_col in pandas_dataframe.columns:
-            print('ALICIA _clean_dataframe 1: ', each_col)
+            # print('ALICIA _clean_dataframe 1: ', each_col)
             if not strip_only:
                 if each_col not in columns_cannot_be_ffill:
                     pandas_dataframe.loc[:, each_col] = pandas_dataframe.loc[:, each_col].fillna(method='ffill')
@@ -469,7 +473,7 @@ class ALICIA:
         if not only_meaningful:
             for _, _element in enumerate(combine_1_dim_array):
                 _element = str(_element).strip()
-                if not (pd.isnull(_element) or _element == '' or _element == '共同'):
+                if not (pd.isnull(_element) or len(_element) == 0 or _element == '共同'):
                     if _ == 0:
                         _temp += str(_element)
                     else:
@@ -480,7 +484,7 @@ class ALICIA:
             # 以東森得易購為例(先開發它就好)，只要不是 "共同"或空白都是有意義的
             for _, _element in enumerate(combine_1_dim_array[1:]):
                 _element = str(_element).strip()
-                if not (pd.isnull(_element) or _element == '' or _element == '共同'):
+                if not (pd.isnull(_element) or len(_element) == 0 or _element == '共同'):
                     if _ == 0:
                         _temp += str(_element)
                     else:
