@@ -159,37 +159,37 @@ class HISTORY_DATA_and_Subcontent_user_edit_record_db_writer:
             txn_object.receiver_name = self.dataframe.loc[df_correspondant_index]['receiver_name']
             txn_object.content = self.dataframe.loc[df_correspondant_index]['content']
             txn_object.how_many = self.dataframe.loc[df_correspondant_index]['how_many']
-            # txn_object.file_created_date = self.dataframe.loc[df_correspondant_index]['file_created_date']
-            print('History_data_update_1 Done: ', ids)
+            txn_object.file_created_date = self.dataframe.loc[df_correspondant_index]['file_created_date']
+            # print('History_data_update_1 Done: ', ids)
             # 在這裡寫上產出貨運連結的程式碼
             _temp_logistic_company = None
             try:
                 _temp_shipping_id = self.dataframe.loc[df_correspondant_index]['shipping_id']
-                print('write_in_db-1.2', _temp_shipping_id)
+                # print('write_in_db-1.2', _temp_shipping_id)
                 if len(_temp_shipping_id) == 10:
                     # 新竹物流的貨運編號長度為10，黑貓的長度為12
                     _temp_logistic_company = 'xinzhu'
                 elif len(_temp_shipping_id) == 12:
                     _temp_logistic_company = 'black_cat'
-                print('write_in_db-1.3', _temp_logistic_company)
+                # print('write_in_db-1.3', _temp_logistic_company)
             except:
                 pass
-            print('History_data_update_2 Done')
+            # print('History_data_update_2 Done')
             if _temp_logistic_company is not None:
                 #print(History_data.objects.filter(unique_id = ids).shipping_id)
-                print('History_data_update_3.1: ', _temp_shipping_id)
+                # print('History_data_update_3.1: ', _temp_shipping_id)
                 txn_object.shipping_id = _temp_shipping_id
                 # History_data.objects.filter(unique_id = ids).update(shipping_id = _temp_shipping_id)
                 #print(History_data.objects.filter(unique_id = ids).shipping_id)
                 txn_object.shipping_link = 'http://61.222.157.151/order_manage/edo_url/?shipping_number=' + str(_temp_shipping_id) + '&logistic_company=' + _temp_logistic_company
                 # History_data.objects.filter(unique_id = ids).update(shipping_link = 'http://61.222.157.151/order_manage/edo_url/?shipping_number=' + str(_temp_shipping_id) + '&logistic_company=' + _temp_logistic_company)
             elif _temp_logistic_company is None and len(_temp_shipping_id) > 0:
-                print('History_data_update_3.1: ', _temp_shipping_id)
+                # print('History_data_update_3.1: ', _temp_shipping_id)
                 txn_object.shipping_id = _temp_shipping_id
                 txn_object.shipping_link = ''
                 # History_data.objects.filter(unique_id = ids).update(shipping_link='')
-            print('已更新history_data:'+ ids )
-            print('History_data_update_3 Done')
+            # print('已更新history_data:'+ ids )
+            # print('History_data_update_3 Done')
             txn_object.save()
 
         self._check_dataframe()
@@ -201,23 +201,21 @@ class HISTORY_DATA_and_Subcontent_user_edit_record_db_writer:
 
         # 如果合併訂單的 uni_id跟資料庫裡的一樣，表示資料已存在
         # 則接著更新寄出、取消狀態
-        self.dataframe.to_excel("XXXXXX.xlsx", index=False)
+        # self.dataframe.to_excel("XXXXXX.xlsx", index=False)
         for each_id in self.dataframe['unique_id']: 
-            print('write_in_2diff_db_2', each_id)
+            # print('write_in_2diff_db_2', each_id)
             df_correspondant_index = self.dataframe[self.dataframe['unique_id']==each_id].index[0]
-            
-            
             history_data_object = History_data.objects.filter(unique_id = each_id).first()
             if history_data_object is not None:
                 # History_data 資料庫已有這筆資料
-                print('write_in_2diff_db_2.1: record(' + each_id + ') is in database.')
+                # print('write_in_2diff_db_2.1: record(' + each_id + ') is in database.')
                 if not pd.isnull(self.dataframe.loc[df_correspondant_index]['shipping_link']) and len(self.dataframe.loc[df_correspondant_index]['shipping_link']) > 0:
                     _shipping_link = self.dataframe.loc[df_correspondant_index]['shipping_link']
                 else:
                     _shipping_link = self.generate_shipping_link(self.dataframe.loc[df_correspondant_index]['shipping_id'])
-                print('write_in_2diff_db_2.2: SHIPPING LINK  >>  ', _shipping_link)
-                print('write_in_2diff_db_2.3: df_correspondant_index  >>  ', df_correspondant_index)
-                print('write_in_2diff_db_2.4: txn_id  >>  ', self.dataframe.loc[df_correspondant_index]['txn_id'])
+                # print('write_in_2diff_db_2.2: SHIPPING LINK  >>  ', _shipping_link)
+                # print('write_in_2diff_db_2.3: df_correspondant_index  >>  ', df_correspondant_index)
+                # print('write_in_2diff_db_2.4: txn_id  >>  ', self.dataframe.loc[df_correspondant_index]['txn_id'])
                 # for each_col in ['txn_id', 'customer_name', 'receiver_name', 'paid_after_receiving', 
                 # 'receiver_address', 'receiver_phone_nbr', 'receiver_mobile', 'content', 'how_much', 
                 # 'how_many', 'remark', 'shipping_id', 'last_charged_date', 'charged', 'ifsend', 'ifcancel', 'subcontent']:
@@ -226,7 +224,7 @@ class HISTORY_DATA_and_Subcontent_user_edit_record_db_writer:
                 for each_col in ['txn_id', 'customer_name', 'receiver_name', 'paid_after_receiving',
                 'receiver_address', 'receiver_phone_nbr', 'receiver_mobile', 'content', 'how_much', 
                 'how_many', 'remark', 'shipping_id', 'last_charged_date', 'charged', 'vendor',
-                'ifsend', 'ifcancel', 'subcontent']:
+                'ifsend', 'ifcancel', 'subcontent', 'file_created_date']:
                     setattr(history_data_object, each_col, self.dataframe.loc[df_correspondant_index][each_col])
                 # history_data_object.txn_id = self.dataframe.loc[df_correspondant_index]['txn_id']
                 # history_data_object.file_created_date = self.dataframe.loc[df_correspondant_index]['file_created_date']
@@ -248,7 +246,7 @@ class HISTORY_DATA_and_Subcontent_user_edit_record_db_writer:
                 # history_data_object.shipping_link = _shipping_link
                 history_data_object.save()
 
-                print('write_in_2diff_db_2.4: history_data_object has updated.')
+                # print('write_in_2diff_db_2.4: history_data_object has updated.')
 
                 if history_data_object.subcontent != self.dataframe.loc[df_correspondant_index]['subcontent']:
                     # 規格欄位有被修改過，需要更新追蹤user將規格從什麼改成什麼
@@ -290,7 +288,7 @@ class HISTORY_DATA_and_Subcontent_user_edit_record_db_writer:
             else:
 
                 # 資料庫沒有這筆資料，要新增
-                print('write_in_2diff_db_2.1: not in db.')
+                # print('write_in_2diff_db_2.1: not in db.')
                 temp_platform = self.dataframe.loc[df_correspondant_index]['platform']
                 temp_file_created_date = self.dataframe.loc[df_correspondant_index]['file_created_date']
                 temp_txn_id = self.dataframe.loc[df_correspondant_index]['txn_id']
@@ -313,7 +311,7 @@ class HISTORY_DATA_and_Subcontent_user_edit_record_db_writer:
                 temp_subcontent = self.dataframe.loc[df_correspondant_index]['subcontent']
                 temp_shipping_link = self.dataframe.loc[df_correspondant_index]['shipping_link']
 
-                print('write_in_2diff_db_2.2: Got all variables.')
+                # print('write_in_2diff_db_2.2: Got all variables.')
 
                 if not (temp_shipping_id == '' or pd.isnull(temp_shipping_id)):
                     _temp_logistic_company = None
