@@ -160,7 +160,7 @@ class ALICIA:
                         # 先拿第一排
                         _temp_df.loc[_temp_df.shape[0] - 1, '數量'] = tdf_yabo_part[tdf_yabo_part['規格']==each_unique_subcontent_under_the_id]['數量'].astype(int).sum()
                         # 計算數量加總
-                print('pre_clean_raw_txns 2.1: ', _temp_df.shape)
+                # print('pre_clean_raw_txns 2.1: ', _temp_df.shape)
                 #_temp_df.to_excel('pre_clean_raw_txns2.2_temp_df.xlsx', index=False)
                 self.aggregated_txns = pd.concat([non_yabo_part, _temp_df])  # 將兩者合併
 
@@ -188,7 +188,7 @@ class ALICIA:
             df['訂單編號'] = df['訂單編號'].apply(self.try_to_be_int_in_str)
             df['宅單'] = df['宅單'].apply(lambda x: re.sub(re.compile(r'[- －]'), '', str(x))).apply(self.try_to_be_int_in_str)
             df['手機'] = df['手機'].apply(self.make_phone_and_mobile_number_clean)
-            # df['電話'] = df['電話'].apply(self.make_phone_and_mobile_number_clean)
+            df['電話'] = df['電話'].apply(self.make_phone_and_mobile_number_clean)
             return df
         if not_user_uploaded_df is not None:
             if user_uploaded_df is not None:
@@ -242,7 +242,11 @@ class ALICIA:
                 _temp_small_multi_df.loc[0, '內容物'] = self._combine_columns(
                         _temp_small_multi_df['內容物'].tolist(), linked_symbol)
                 _temp_small_multi_df.loc[0, '備註'] = self._combine_columns(
-                        _temp_small_multi_df['備註'].tolist(), linked_symbol)
+                        list(
+                            filter(
+                                lambda x: pd.isnull(x) == False, 
+                                list(set(_temp_small_multi_df['備註'].tolist())))
+                            ), linked_symbol)
                 _temp_small_multi_df.loc[0, '規格'] = self._combine_columns(
                         _temp_small_multi_df['規格'].tolist(), ', ')
                 _temp_small_multi_df.loc[0, '供應商'] = self._combine_columns(
@@ -385,7 +389,7 @@ class ALICIA:
     def _clean_dataframe(self, pandas_dataframe, strip_only=False, make_null_be_nullstring=False, **kwargs):
         assert type(pandas_dataframe) is pd.core.frame.DataFrame
         columns_cannot_be_ffill = [
-            '載具編號', '備註', '轉帳帳號', '室內電話', '預計配送日', '買家備註', '賣家備註',
+            '載具編號', '備註', '轉帳帳號', '室內電話', '預計配送日', '買家備註', '賣家備註', '客服備註',
             '購物車備註', '商品屬性', '活動序號', '配送備註', '購買備註', '特標語', 'shipxrem', 'xrem', 'spslgn',
             '指交日期', 'sstockdat', '訂單備註', '搭配活動', '退/換貨原因', '宅單備註', '配送訊息', '約定配送日'
             ]
@@ -399,7 +403,8 @@ class ALICIA:
                     # 將每個row由上往下最後一次看到的非null值分配給下方的null值
             else:
                 try:
-                    pandas_dataframe.loc[:, each_col] = pandas_dataframe.loc[:, each_col].apply(lambda x: x.strip() if not pd.isnull(x) else x)
+                    pandas_dataframe.loc[:, each_col] = pandas_dataframe.loc[:, each_col].apply(lambda x: '' if pd.isnull(x) else x)
+                    # pandas_dataframe.loc[:, each_col] = pandas_dataframe.loc[:, each_col].apply(lambda x: x.strip() if not pd.isnull(x) else '')
                 except:
                     pass
 
