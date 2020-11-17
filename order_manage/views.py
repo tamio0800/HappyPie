@@ -227,31 +227,23 @@ def ordertracking(request):
                 if alicia.aggregated_txns.shape[0] > 0:
                     # 當alicia.aggregated_txns長度不為0時再進行以下動作，
                     # 反之代表user只上傳了整合訂單檔案。
-
                     # 因為aggregated_txns只存放除了【整合訂單檔案】
                     alicia.pre_clean_raw_txns()
                     # alicia.aggregated_txns.to_excel('02_step2_preclean.xlsx')
-
                     prod_ipt = alicia.aggregated_txns.loc[:, '規格'].tolist()
                     num_ipt = alicia.aggregated_txns.loc[:, '數量'].astype(str).tolist()
-
-                    print('kashgari_parsing Starts.')
+                    # print('kashgari_parsing Starts.')
                     result = kashgari_parsing(prod_ipt, num_ipt)
-                    print('kashgari_parsing Successfully.')
-
+                    # print('kashgari_parsing Successfully.')
                     alicia.aggregated_txns.loc[:, '規格'] = np.array(result)
-
-                    print('to_one_unique_id_df_after_kash Starts.')
+                    # print('to_one_unique_id_df_after_kash Starts.')
                     df = alicia.to_one_unique_id_df_after_kash(alicia.aggregated_txns)
-                    print('to_one_unique_id_df_after_kash Successfully.')
-
+                    # print('to_one_unique_id_df_after_kash Successfully.')
                     df = df.drop(['unique_id'], axis=1)
                     # df.aggregated_txns.to_excel('03_step3_df.xlsx')
                     alicia.remove_unique_id()
                     # alicia.aggregated_txns.to_excel('04_step4.xlsx')
-
                     print('共花了', int(time()-st), '秒.', '\n分析了', df.shape[0], '筆交易.')
-
                 clean_temp_files_in_folders()
                 # 先清理一下遺留的檔案
             except Exception as e:
@@ -259,7 +251,6 @@ def ordertracking(request):
                 os.rename(
                     'all_flags/ordetracking_function_is_running.flag',
                     'all_flags/ordetracking_function_is_not_running.flag')
-
             os.rename(
                     'all_flags/ordetracking_function_is_running.flag',
                     'all_flags/ordetracking_function_is_not_running.flag')
@@ -271,6 +262,8 @@ def ordertracking(request):
 
             df = alicia.combine_aggregated_txns_and_user_uploaded_aggregated_txns(
                 df, alicia.user_uploaded_aggregated_txns)
+                # 原來的df指的是user從各個平台下載下來的原始訂單資料，
+                # user_uploaded_aggregated_txns則是Alicia整合後的訂單再上傳
 
             # df.to_excel('06_step6_df2.xlsx')
 

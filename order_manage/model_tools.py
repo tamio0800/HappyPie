@@ -21,6 +21,8 @@ class HISTORY_DATA_and_Subcontent_user_edit_record_db_writer:
         self.column_names_dict = {
             '通路':'platform',
             '抓單日':'file_created_date',
+            '修訂出貨日':'edited_shipping_date',
+            '最終出貨日':'final_shipping_date',
             '訂單編號':'txn_id',
             '訂購人':'customer_name',
             '收件人':'receiver_name',
@@ -43,34 +45,38 @@ class HISTORY_DATA_and_Subcontent_user_edit_record_db_writer:
             'unique_id':'unique_id',
         }
 
+    def _check_if_has_value(self, target):
+        if pd.isnull(target) or target == '':
+            return False
+        else:
+            return True
 
     def _check_dataframe(self):
         # 確認該dataframe符合我們的格式
         print('_check_dataframe')
+        
         print(self.dataframe.columns)
         print(self.dataframe.head(1).T)
         if 'unique_id' not in self.dataframe.columns:
-            assert len(self.dataframe.columns) == 21
+            assert len(self.dataframe.columns) == 23
             assert sorted(list(self.dataframe.columns)) == sorted(list(self.column_names_dict.keys())[:-1])
             self.dataframe.loc[:, 'unique_id'] = self.dataframe['通路'] + '-' + self.dataframe['訂單編號'].astype(str)
         else:
-            assert len(self.dataframe.columns) == 22
+            assert len(self.dataframe.columns) == 24
             assert sorted(list(self.dataframe.columns)) == sorted(list(self.column_names_dict.keys()))
-
+        self.dataframe.sort_values(by='unique_id', inplace=True)
         print('hddw1', 'check done.')
             
 
     def _make_dataframe_columns_to_match_db_columns(self):
         self.dataframe.columns = [self.column_names_dict[_] for _ in self.dataframe.columns]
         # 將DB Table的column name置換原本對應的中文column name
-
         for each_col in self.dataframe.columns:
             try:
                 if each_col not in ['how_many','how_much']:
                     self.dataframe[each_col] = self.dataframe[each_col].apply(lambda x: x.strip())
             except:
                 pass
-
         self.dataframe.file_created_date = \
             pd.to_datetime(self.dataframe.file_created_date).dt.date.astype(str)
         self.dataframe.last_charged_date = \
@@ -159,7 +165,8 @@ class HISTORY_DATA_and_Subcontent_user_edit_record_db_writer:
             txn_object.receiver_name = self.dataframe.loc[df_correspondant_index]['receiver_name']
             txn_object.content = self.dataframe.loc[df_correspondant_index]['content']
             txn_object.how_many = self.dataframe.loc[df_correspondant_index]['how_many']
-            txn_object.file_created_date = self.dataframe.loc[df_correspondant_index]['file_created_date']
+            txn_object.file_created_date = self.dataframe.loc[df_correspondant_index]['edited_shipping_date']
+            # txn_object.file_created_date = self.dataframe.loc[df_correspondant_index]['file_created_date']
             # print('History_data_update_1 Done: ', ids)
             # 在這裡寫上產出貨運連結的程式碼
             _temp_logistic_company = None
@@ -221,30 +228,19 @@ class HISTORY_DATA_and_Subcontent_user_edit_record_db_writer:
                 # 'how_many', 'remark', 'shipping_id', 'last_charged_date', 'charged', 'ifsend', 'ifcancel', 'subcontent']:
                 #     print('Test Column:  ', each_col)
                 #     print(self.dataframe.loc[df_correspondant_index][each_col])
-                for each_col in ['txn_id', 'customer_name', 'receiver_name', 'paid_after_receiving',
-                'receiver_address', 'receiver_phone_nbr', 'receiver_mobile', 'content', 'how_much', 
-                'how_many', 'remark', 'shipping_id', 'last_charged_date', 'charged', 'vendor',
-                'ifsend', 'ifcancel', 'subcontent', 'file_created_date']:
-                    setattr(history_data_object, each_col, self.dataframe.loc[df_correspondant_index][each_col])
-                # history_data_object.txn_id = self.dataframe.loc[df_correspondant_index]['txn_id']
-                # history_data_object.file_created_date = self.dataframe.loc[df_correspondant_index]['file_created_date']
-                # history_data_object.customer_name = self.dataframe.loc[df_correspondant_index]['customer_name']
-                # history_data_object.receiver_name = self.dataframe.loc[df_correspondant_index]['receiver_name']
-                # history_data_object.paid_after_receiving = self.dataframe.loc[df_correspondant_index]['paid_after_receiving']
-                # history_data_object.receiver_address = self.dataframe.loc[df_correspondant_index]['receiver_address']
-                # history_data_object.receiver_phone_nbr = self.dataframe.loc[df_correspondant_index]['receiver_phone_nbr']
-                # history_data_object.receiver_mobile = self.dataframe.loc[df_correspondant_index]['receiver_mobile']
-                # history_data_object.content = self.dataframe.loc[df_correspondant_index]['content']
-                # history_data_object.how_much = self.dataframe.loc[df_correspondant_index]['how_much']
-                # history_data_object.how_many = self.dataframe.loc[df_correspondant_index]['how_many']
-                # history_data_object.remark = self.dataframe.loc[df_correspondant_index]['remark']
-                # history_data_object.shipping_id = self.dataframe.loc[df_correspondant_index]['shipping_id']
-                # history_data_object.last_charged_date = self.dataframe.loc[df_correspondant_index]['last_charged_date']
-                # history_data_object.charged = self.dataframe.loc[df_correspondant_index]['charged']
-                # history_data_object.ifsend = self.dataframe.loc[df_correspondant_index]['ifsend']
-                # history_data_object.ifcancel = self.dataframe.loc[df_correspondant_index]['ifcancel']
-                # history_data_object.shipping_link = _shipping_link
-                history_data_object.save()
+                try:
+                    for each_col in ['txn_id', 'customer_name', 'receiver_name', 'paid_after_receiving',
+                    'receiver_address', 'receiver_phone_nbr', 'receiver_mobile', 'content', 'how_much', 
+                    'how_many', 'remark', 'shipping_id', 'last_charged_date', 'charged', 'vendor',
+                    'ifsend', 'ifcancel', 'subcontent', 'edited_shipping_date']:
+                        setattr(history_data_object, each_col, self.dataframe.loc[df_correspondant_index][each_col])
+                        if each_col == 'edited_shipping_date' and \
+                        self._check_if_has_value(self.dataframe.loc[df_correspondant_index][each_col]):
+                            setattr(history_data_object, 'final_shipping_date', self.dataframe.loc[df_correspondant_index][each_col])
+                    history_data_object.save()
+                    print('Done written in database.')
+                except Exception as e:
+                    print('encounter exception: ', e)
 
                 # print('write_in_2diff_db_2.4: history_data_object has updated.')
 
@@ -261,36 +257,16 @@ class HISTORY_DATA_and_Subcontent_user_edit_record_db_writer:
                             subcontent_user_edit = _user_edited_subcontent
                         ).save()
                         history_data_object.subcontent = self.dataframe.loc[df_correspondant_index]['subcontent']
-
-                # if history_data_object.filter(subcontent = self.dataframe.loc[df_correspondant_id]['subcontent']).first() is not None:
-                # if History_data.objects.filter(unique_id = ids).filter(subcontent = self.dataframe.loc[df_correspondant_id]['subcontent']).count() == 1:
-                #     print('write_in_2diff_db_2.1.1: subcontent is same as df[subcontent]')
-                #     History_data_update(ids)
-                # 如果資料庫中的subcontent跟新來的df[subcontent]不一致,表示user有修改過subcontent,
-                # 為了追蹤修改的軌跡把資料存到另一個DB:subcontent_user_edit_record
-                # else: 
-                    # 如果這筆已經存在於修改規格紀錄DB, 表示user不是第一次改變subcontent, 修改規格紀錄DB只要update最新的就好
-                #    print('write_in_2diff_db_2.1.1: subcontent is different from df[subcontent]')
-                #    if Subcontent_user_edit_record.objects.filter(unique_id = ids).count() == 1:
-                #        Subcontent_user_edit_record.objects.filter(unique_id = ids).update(subcontent_user_edit = self.dataframe.loc[df_correspondant_id]['subcontent'])
-                #        print('update Subcontent_user_edit_record : '+ ids)
-                #        History_data_update(ids) # 更新追蹤DB之後也要更新歷史訂單DB
-                    # 如果這筆不存在於修改規格紀錄DB, 則新增
-                #     else: 
-                #         temp_subcontent_predict = History_data.objects.filter(unique_id = ids).values('subcontent') # 我們原本產出的規格
-                #         temp_user_edit = self.dataframe.loc[df_correspondant_id]['subcontent'] # user 新改的規格
-                #        Subcontent_user_edit_record(unique_id = ids, 
-                #                                     subcontent_predict = temp_subcontent_predict,
-                #                                     subcontent_user_edit = temp_user_edit).save()
-                      # print('add Subcontent_user_edit_record : '+ ids) 
-                #         History_data_update(ids) # 新增到追蹤DB之後也要更新歷史訂單DB
-            
             else:
-
                 # 資料庫沒有這筆資料，要新增
                 # print('write_in_2diff_db_2.1: not in db.')
                 temp_platform = self.dataframe.loc[df_correspondant_index]['platform']
                 temp_file_created_date = self.dataframe.loc[df_correspondant_index]['file_created_date']
+                temp_file_edited_shipping_date = self.dataframe.loc[df_correspondant_index]['edited_shipping_date']
+                if self._check_if_has_value(temp_file_edited_shipping_date):
+                    temp_file_final_shipping_date = temp_file_edited_shipping_date
+                else:
+                    temp_file_final_shipping_date = temp_file_created_date
                 temp_txn_id = self.dataframe.loc[df_correspondant_index]['txn_id']
                 temp_customer_name = self.dataframe.loc[df_correspondant_index]['customer_name']
                 temp_receiver_name = self.dataframe.loc[df_correspondant_index]['receiver_name']
@@ -332,6 +308,8 @@ class HISTORY_DATA_and_Subcontent_user_edit_record_db_writer:
                 # print('新增訂單 : '+ ids)
                 History_data.objects.create(unique_id = each_id, platform = temp_platform, 
                             file_created_date = temp_file_created_date,
+                            edited_shipping_date = temp_file_edited_shipping_date,
+                            final_shipping_date = temp_file_final_shipping_date,
                             txn_id = temp_txn_id  ,
                             customer_name = temp_customer_name,
                             receiver_name = temp_receiver_name,
@@ -339,8 +317,8 @@ class HISTORY_DATA_and_Subcontent_user_edit_record_db_writer:
                             receiver_phone_nbr = temp_receiver_phone_nbr,
                             receiver_mobile  = temp_receiver_mobile,
                             receiver_address = temp_receiver_address,
-                            content = temp_content ,
-                            how_many = temp_how_many  ,
+                            content = temp_content,
+                            how_many = temp_how_many ,
                             how_much  = temp_how_much,
                             remark = temp_remark,
                             shipping_id  = temp_shipping_id,

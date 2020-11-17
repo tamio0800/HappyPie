@@ -9,6 +9,8 @@ class Subcontent_user_edit_record(models.Model):
 class History_data(models.Model):
     platform = models.CharField(max_length = 20)
     file_created_date = models.DateField()
+    edited_shipping_date = models.DateField(null=True, blank=True)  # 修訂出貨日
+    final_shipping_date = models.DateField(null=True, blank=True)  # 最終出貨日
     txn_id = models.CharField(max_length = 60)
     customer_name = models.CharField(max_length = 20, null = True)
     receiver_name = models.CharField(max_length = 20, null = True,)
