@@ -14,6 +14,7 @@ import xlrd
 from datetime import datetime, timedelta
 import pyDes
 import base64
+from order_manage.models import History_data as history_data
 
 
 class ALICIA:
@@ -122,17 +123,14 @@ class ALICIA:
             return _result
 
     def pre_clean_raw_txns(self):
-
         if self.aggregated_txns.shape[0] > 0:
             # self.aggregated_txns 至少要有東西再清理
-
             # 以通路 + 編號 + 內容物作為暫時的unique_id,
             # 來作為A交易在昨天與今天一起被重複匯進來的處理機制
             self.aggregated_txns.loc[:, 'pre_clean_unique_id'] = self.aggregated_txns['通路'] + '-' + \
                 self.aggregated_txns['訂單編號'].apply(self.force_float_to_be_int_and_to_string) + '-' + \
                 self.aggregated_txns['內容物']
                 # self.aggregated_txns['訂單編號'].astype(str) + '-' + \
-                
             self.aggregated_txns = self.aggregated_txns.drop_duplicates(subset='pre_clean_unique_id', keep='first')
             self.aggregated_txns = self.aggregated_txns.sort_values('pre_clean_unique_id').reset_index(drop=True)
             self.aggregated_txns = self.aggregated_txns.drop(['pre_clean_unique_id'], axis=1)
@@ -184,21 +182,25 @@ class ALICIA:
             w.write('done!')
 
     def combine_aggregated_txns_and_user_uploaded_aggregated_txns(self, not_user_uploaded_df, user_uploaded_df):
+        # not_user_uploaded_df指的是user從各個平台下載下來的原始訂單資料，
+        # user_uploaded_df則是Alicia整合後的訂單再上傳
         def clean_number_like_columns(df):
-            df['訂單編號'] = df['訂單編號'].apply(self.try_to_be_int_in_str)
+            df['訂單編號'] = df['訂單編號'].apply(self.try_to_be_int_in_str).apply(lambda x: x.replace('\'', ''))
             df['宅單'] = df['宅單'].apply(lambda x: re.sub(re.compile(r'[- －]'), '', str(x))).apply(self.try_to_be_int_in_str)
             df['手機'] = df['手機'].apply(self.make_phone_and_mobile_number_clean)
             df['電話'] = df['電話'].apply(self.make_phone_and_mobile_number_clean)
             return df
         if not_user_uploaded_df is not None:
+            all_unique_ids = list(history_data.objects.values_list('unique_id', flat=True))
             if user_uploaded_df is not None:
                 not_user_uploaded_df.loc[:, 'unique_id'] = \
                     not_user_uploaded_df['通路'] + '-' + not_user_uploaded_df['訂單編號'].apply(self.try_to_be_int_in_str)
+                not_user_uploaded_df = not_user_uploaded_df[~not_user_uploaded_df.unique_id.isin(all_unique_ids)]
 
                 user_uploaded_df.loc[:, 'unique_id'] = \
                     user_uploaded_df['通路'] + '-' + user_uploaded_df['訂單編號'].apply(self.try_to_be_int_in_str)
 
-                # 接著要整理一下，如果user_uploaded_df裡有的交易，就從not_user_uploaded_df中刪除
+                #  接著要整理一下，如果user_uploaded_df裡有的交易，就從not_user_uploaded_df中刪除
                 not_user_uploaded_df = \
                     not_user_uploaded_df[~not_user_uploaded_df.unique_id.isin(user_uploaded_df.unique_id)]
 
@@ -206,10 +208,12 @@ class ALICIA:
                 not_user_uploaded_df = not_user_uploaded_df[
                     pd.to_datetime(not_user_uploaded_df['抓單日']) > (pd.to_datetime(not_user_uploaded_df['抓單日'])  - pd.Timedelta(days=31))
                 ]
-                
                 _temp_df = pd.concat([not_user_uploaded_df, user_uploaded_df], join='inner').reset_index(drop=True)
                 return clean_number_like_columns(_temp_df)
             else:
+                not_user_uploaded_df = not_user_uploaded_df[~(
+                    not_user_uploaded_df['通路'] + '-' + not_user_uploaded_df['訂單編號'].apply(self.try_to_be_int_in_str)
+                ).isin(all_unique_ids)]
                 return clean_number_like_columns(not_user_uploaded_df)
         else:
             if user_uploaded_df is not None:
@@ -308,7 +312,6 @@ class ALICIA:
                 # 有找到匹配的檔案名稱
                 _temp_paths.append(os.path.abspath(os.path.join(target_dir, _file)))
         return _temp_paths
-
 
     def _is_int(self, target):
         # 檢查是否輸入值為整數
@@ -472,7 +475,6 @@ class ALICIA:
 
         return pandas_dataframe
 
-
     def _combine_columns(self, combine_1_dim_array, linked, only_meaningful=False):
         _temp = ''
         if not only_meaningful:
@@ -629,6 +631,8 @@ class ALICIA:
                             # 寫入資料
                             self.aggregated_txns.loc[self.aggregated_txns.shape[0]] = [platform,
                                                                                     _file_created_date,
+                                                                                    None,
+                                                                                    None,
                                                                                     _txn_id,
                                                                                     _customer_name,
                                                                                     _receiver_name,
@@ -733,6 +737,8 @@ class ALICIA:
                             # 寫入資料
                             self.aggregated_txns.loc[self.aggregated_txns.shape[0]] = [platform,
                                                                                     _file_created_date,
+                                                                                    None,
+                                                                                    None,
                                                                                     _txn_id,
                                                                                     _customer_name,
                                                                                     _receiver_name,
@@ -816,6 +822,8 @@ class ALICIA:
                                 # 寫入資料
                                 self.aggregated_txns.loc[self.aggregated_txns.shape[0]] = [platform,
                                                                                         _file_created_date,
+                                                                                        None,
+                                                                                        None,
                                                                                         _txn_id,
                                                                                         _customer_name,
                                                                                         _receiver_name,
@@ -872,6 +880,8 @@ class ALICIA:
                                 # 寫入資料
                                 self.aggregated_txns.loc[self.aggregated_txns.shape[0]] = [platform,
                                                                                         _file_created_date,
+                                                                                        None,
+                                                                                        None,
                                                                                         _txn_id,
                                                                                         _customer_name,
                                                                                         _receiver_name,
@@ -948,6 +958,8 @@ class ALICIA:
                             # 寫入資料
                             self.aggregated_txns.loc[self.aggregated_txns.shape[0]] = [platform,
                                                                                     _file_created_date,
+                                                                                    None,
+                                                                                    None,
                                                                                     _txn_id,
                                                                                     _customer_name,
                                                                                     _receiver_name,
@@ -1020,6 +1032,8 @@ class ALICIA:
                             # 寫入資料
                             self.aggregated_txns.loc[self.aggregated_txns.shape[0]] = [platform,
                                                                                     _file_created_date,
+                                                                                    None,
+                                                                                    None,
                                                                                     _txn_id,
                                                                                     _customer_name,
                                                                                     _receiver_name,
@@ -1098,6 +1112,8 @@ class ALICIA:
                             # 寫入資料
                             self.aggregated_txns.loc[self.aggregated_txns.shape[0]] = [platform,
                                                                                     _file_created_date,
+                                                                                    None,
+                                                                                    None,
                                                                                     _txn_id,
                                                                                     _customer_name,
                                                                                     _receiver_name,
@@ -1173,6 +1189,8 @@ class ALICIA:
                             # 寫入資料
                             self.aggregated_txns.loc[self.aggregated_txns.shape[0]] = [platform,
                                                                                     _file_created_date,
+                                                                                    None,
+                                                                                    None,
                                                                                     _txn_id,
                                                                                     _customer_name,
                                                                                     _receiver_name,
@@ -1253,6 +1271,8 @@ class ALICIA:
                             # 寫入資料
                             self.aggregated_txns.loc[self.aggregated_txns.shape[0]] = [platform,
                                                                                     _file_created_date,
+                                                                                    None,
+                                                                                    None,
                                                                                     _txn_id,
                                                                                     _customer_name,
                                                                                     _receiver_name,
@@ -1328,6 +1348,8 @@ class ALICIA:
                             # 寫入資料
                             self.aggregated_txns.loc[self.aggregated_txns.shape[0]] = [platform,
                                                                                     _file_created_date,
+                                                                                    None,
+                                                                                    None,
                                                                                     _txn_id,
                                                                                     _customer_name,
                                                                                     _receiver_name,
@@ -1412,6 +1434,8 @@ class ALICIA:
                             # 寫入資料
                             self.aggregated_txns.loc[self.aggregated_txns.shape[0]] = [platform,
                                                                                     _file_created_date,
+                                                                                    None,
+                                                                                    None,
                                                                                     _txn_id,
                                                                                     _customer_name,
                                                                                     _receiver_name,
@@ -1482,6 +1506,8 @@ class ALICIA:
                             # 寫入資料
                             self.aggregated_txns.loc[self.aggregated_txns.shape[0]] = [platform,
                                                                                     _file_created_date,
+                                                                                    None,
+                                                                                    None,
                                                                                     _txn_id,
                                                                                     _customer_name,
                                                                                     _receiver_name,
@@ -1548,6 +1574,8 @@ class ALICIA:
                             # 寫入資料
                             self.aggregated_txns.loc[self.aggregated_txns.shape[0]] = [platform,
                                                                                     _file_created_date,
+                                                                                    None,
+                                                                                    None,
                                                                                     _txn_id,
                                                                                     _customer_name,
                                                                                     _receiver_name,
@@ -1611,7 +1639,6 @@ class ALICIA:
                         )
                         # 將讀到的資料賦值予 self.user_uploaded_aggregated_txns
                         # 並且確認一下其欄位內容如同預期的一樣
-
                     except Exception as e:
                         print(e)
                         is_error = True
