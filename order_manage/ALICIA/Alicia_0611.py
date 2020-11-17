@@ -123,17 +123,14 @@ class ALICIA:
             return _result
 
     def pre_clean_raw_txns(self):
-
         if self.aggregated_txns.shape[0] > 0:
             # self.aggregated_txns 至少要有東西再清理
-
             # 以通路 + 編號 + 內容物作為暫時的unique_id,
             # 來作為A交易在昨天與今天一起被重複匯進來的處理機制
             self.aggregated_txns.loc[:, 'pre_clean_unique_id'] = self.aggregated_txns['通路'] + '-' + \
                 self.aggregated_txns['訂單編號'].apply(self.force_float_to_be_int_and_to_string) + '-' + \
                 self.aggregated_txns['內容物']
                 # self.aggregated_txns['訂單編號'].astype(str) + '-' + \
-                
             self.aggregated_txns = self.aggregated_txns.drop_duplicates(subset='pre_clean_unique_id', keep='first')
             self.aggregated_txns = self.aggregated_txns.sort_values('pre_clean_unique_id').reset_index(drop=True)
             self.aggregated_txns = self.aggregated_txns.drop(['pre_clean_unique_id'], axis=1)
@@ -188,7 +185,7 @@ class ALICIA:
         # not_user_uploaded_df指的是user從各個平台下載下來的原始訂單資料，
         # user_uploaded_df則是Alicia整合後的訂單再上傳
         def clean_number_like_columns(df):
-            df['訂單編號'] = df['訂單編號'].apply(self.try_to_be_int_in_str)
+            df['訂單編號'] = df['訂單編號'].apply(self.try_to_be_int_in_str).apply(lambda x: x.replace('\'', ''))
             df['宅單'] = df['宅單'].apply(lambda x: re.sub(re.compile(r'[- －]'), '', str(x))).apply(self.try_to_be_int_in_str)
             df['手機'] = df['手機'].apply(self.make_phone_and_mobile_number_clean)
             df['電話'] = df['電話'].apply(self.make_phone_and_mobile_number_clean)
