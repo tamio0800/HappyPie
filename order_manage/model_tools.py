@@ -93,14 +93,9 @@ class HISTORY_DATA_and_Subcontent_user_edit_record_db_writer:
             # 將DB Table的column name置換原本對應的中文column name
             for each_col in self.dataframe.columns:
                 try:
-                    if each_col not in ['how_many','how_much']:
                         self.dataframe[each_col] = self.dataframe[each_col].apply(lambda x: x.strip())
                 except:
                     pass
-            self.dataframe.file_created_date = \
-                pd.to_datetime(self.dataframe.file_created_date).dt.date.astype(str)
-            self.dataframe.last_charged_date = \
-                self.dataframe.last_charged_date.apply(lambda x: '' if pd.isnull(x) else str(x))
 
             for _ in ['paid_after_receiving', 'ifsend', 'ifcancel', 'charged']:
                 self.dataframe[_] = self.dataframe[_].apply(lambda x: False if (pd.isnull(x) or x == 'FALSE' or x == 'N' or x == 0 or x == False or x is None) else True)
@@ -318,10 +313,6 @@ class HISTORY_DATA_and_Subcontent_user_edit_record_db_writer:
                         temp_shipping_link = 'http://61.222.157.151/order_manage/edo_url/?shipping_number=' + str(temp_shipping_id) + '&logistic_company=' + _temp_logistic_company
                     else:
                         temp_shipping_link = self.dataframe.loc[df_correspondant_index]['shipping_link']
-                    print('Done temp_shipping_id')
-                
-
-                print('新增訂單 : '+ each_id)
                 print('type of temp_file_created_date', type(temp_file_created_date), temp_file_created_date)
                 print('type of temp_file_edited_shipping_date', type(temp_file_edited_shipping_date), temp_file_edited_shipping_date)
                 print('type of temp_file_final_shipping_date', type(temp_file_final_shipping_date), temp_file_final_shipping_date)
