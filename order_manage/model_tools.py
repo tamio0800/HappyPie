@@ -47,7 +47,7 @@ class HISTORY_DATA_and_Subcontent_user_edit_record_db_writer:
         }
 
     def _check_if_has_value(self, target):
-        if pd.isnull(target) or target == '':
+        if pd.isnull(target) or pd.isna(target) or target == '':
             return False
         else:
             return True
@@ -122,7 +122,6 @@ class HISTORY_DATA_and_Subcontent_user_edit_record_db_writer:
         #    select * from order_manage_History_data where ifsend = FALSE and ifcancel = FALSE;\')
         pending_txns_objects = History_data.objects.filter(ifsend=False, ifcancel=False).order_by('final_shipping_date')
         dataframe_tobe_returned = read_frame(pending_txns_objects).drop(['unique_id', 'id'], axis=1)
-
         mandarin_column_names = []
         for each_eng_column in dataframe_tobe_returned.columns:
             for k, v in self.column_names_dict.items():
@@ -143,26 +142,25 @@ class HISTORY_DATA_and_Subcontent_user_edit_record_db_writer:
         self.dataframe.columns = mandarin_column_names
 
     def generate_shipping_link(self, shipping_id):
-        _temp_logistic_company = None
+        shipping_id = str(shipping_id).strip()
         if shipping_id is None or shipping_id == '':
             return ''
+        else:
+            _temp_logistic_company = None
+            # 給定一個暫存的物流公司名稱
         try:
-            _temp_shipping_id = shipping_id
-            if len(_temp_shipping_id) == 10:
+            if len(shipping_id) == 10:
                 # 新竹物流的貨運編號長度為10，黑貓的長度為12
                 _temp_logistic_company = 'xinzhu'
-            elif len(_temp_shipping_id) == 12:
+            elif len(shipping_id) == 12:
                 _temp_logistic_company = 'black_cat'
         except Exception as e:
             print('generate_shipping_link ERROR: ', e)
-            pass
+            return ''
         if _temp_logistic_company is not None:
-            shipping_link = 'http://61.222.157.151/order_manage/edo_url/?shipping_number=' + str(_temp_shipping_id) + '&logistic_company=' + _temp_logistic_company
-        #elif _temp_logistic_company is None and len(_temp_shipping_id) > 0:
-        #    shipping_link = ''
+            shipping_link = 'http://61.222.157.151/order_manage/edo_url/?shipping_number=' + str(shipping_id) + '&logistic_company=' + _temp_logistic_company
         else:
             shipping_link = ''
-        
         return shipping_link
 
 
@@ -203,18 +201,12 @@ class HISTORY_DATA_and_Subcontent_user_edit_record_db_writer:
                 pass
             # print('History_data_update_2 Done')
             if _temp_logistic_company is not None:
-                #print(History_data.objects.filter(unique_id = ids).shipping_id)
-                # print('History_data_update_3.1: ', _temp_shipping_id)
                 txn_object.shipping_id = _temp_shipping_id
-                # History_data.objects.filter(unique_id = ids).update(shipping_id = _temp_shipping_id)
-                #print(History_data.objects.filter(unique_id = ids).shipping_id)
                 txn_object.shipping_link = 'http://61.222.157.151/order_manage/edo_url/?shipping_number=' + str(_temp_shipping_id) + '&logistic_company=' + _temp_logistic_company
-                # History_data.objects.filter(unique_id = ids).update(shipping_link = 'http://61.222.157.151/order_manage/edo_url/?shipping_number=' + str(_temp_shipping_id) + '&logistic_company=' + _temp_logistic_company)
             elif _temp_logistic_company is None and len(_temp_shipping_id) > 0:
                 # print('History_data_update_3.1: ', _temp_shipping_id)
                 txn_object.shipping_id = _temp_shipping_id
                 txn_object.shipping_link = ''
-                # History_data.objects.filter(unique_id = ids).update(shipping_link='')
             # print('已更新history_data:'+ ids )
             # print('History_data_update_3 Done')
             txn_object.save()
@@ -233,49 +225,39 @@ class HISTORY_DATA_and_Subcontent_user_edit_record_db_writer:
         # 則接著更新寄出、取消狀態
         self.dataframe.to_excel("XXXXXX.xlsx", index=False)
         for each_id in self.dataframe['unique_id'].tolist(): 
-            print('write_in_2diff_db_2', each_id)
+            # print('write_in_2diff_db_2', each_id)
             df_correspondant_index = self.dataframe[self.dataframe['unique_id']==each_id].index[0]
-            print('write_in_2diff_db_2 ', 'found df_correspondant_index')
+            # print('write_in_2diff_db_2 ', 'found df_correspondant_index')
             history_data_object = History_data.objects.filter(unique_id = each_id).first()
-            print('history_data_object is None: ', history_data_object is None)
-
+            # print('history_data_object is None: ', history_data_object is None)
             if history_data_object is not None:
                 # History_data 資料庫已有這筆資料
                 print('write_in_2diff_db_2.1: record(' + each_id + ') is in database.')
-
-                if pd.isnull(self.dataframe.loc[df_correspondant_index]['shipping_link'])==False and len(self.dataframe.loc[df_correspondant_index]['shipping_link']) > 0:
+                if self._check_if_has_value(self.dataframe.loc[df_correspondant_index]['shipping_link']):
                     _shipping_link = self.dataframe.loc[df_correspondant_index]['shipping_link']
                 else:
                     _shipping_link = self.generate_shipping_link(self.dataframe.loc[df_correspondant_index]['shipping_id'])
-                # print('write_in_2diff_db_2.2: SHIPPING LINK  >>  ', _shipping_link)
-                # print('write_in_2diff_db_2.3: df_correspondant_index  >>  ', df_correspondant_index)
-                # print('write_in_2diff_db_2.4: txn_id  >>  ', self.dataframe.loc[df_correspondant_index]['txn_id'])
-                # for each_col in ['txn_id', 'customer_name', 'receiver_name', 'paid_after_receiving', 
-                # 'receiver_address', 'receiver_phone_nbr', 'receiver_mobile', 'content', 'how_much', 
-                # 'how_many', 'remark', 'shipping_id', 'last_charged_date', 'charged', 'ifsend', 'ifcancel', 'subcontent']:
-                #     print('Test Column:  ', each_col)
-                #    print(self.dataframe.loc[df_correspondant_index][each_col])
+                print('write_in_2diff_db_2.2: SHIPPING LINK  >>  ', _shipping_link)
+                print('write_in_2diff_db_2.3: df_correspondant_index  >>  ', df_correspondant_index)
                 try:
                     for each_col in ['txn_id', 'customer_name', 'receiver_name', 'paid_after_receiving',
                     'receiver_address', 'receiver_phone_nbr', 'receiver_mobile', 'content', 'how_much', 
                     'how_many', 'remark', 'shipping_id', 'last_charged_date', 'charged', 'vendor',
-                    'ifsend', 'ifcancel', 'subcontent', 'edited_shipping_date']:
+                    'ifsend', 'ifcancel', 'subcontent']:
                         setattr(history_data_object, each_col, self.dataframe.loc[df_correspondant_index][each_col])
-                        if each_col == 'edited_shipping_date' and \
-                        self._check_if_has_value(self.dataframe.loc[df_correspondant_index][each_col]):
-                            setattr(history_data_object, 'final_shipping_date', self.dataframe.loc[df_correspondant_index][each_col])
-                        if each_col == 'shipping_id' and \
-                        self._check_if_has_value(self.dataframe.loc[df_correspondant_index][each_col]):
-                            setattr(history_data_object, 'shipping_link', self.generate_shipping_link(self.dataframe.loc[df_correspondant_index][each_col]))
+                    
+                    if self._check_if_has_value(self.dataframe.loc[df_correspondant_index]['edited_shipping_date']):
+                        setattr(history_data_object, 'edited_shipping_date', self.dataframe.loc[df_correspondant_index]['edited_shipping_date'])
+                        setattr(history_data_object, 'final_shipping_date', self.dataframe.loc[df_correspondant_index]['edited_shipping_date'])
 
-                            
+                    setattr(history_data_object, 'shipping_link', _shipping_link)
+
                     history_data_object.save()
                     print('Done written in database.')
+
                 except Exception as e:
-                    print('encounter exception: ', e)
-
+                    print('encounter exception: ', e, each_col)
                 # print('write_in_2diff_db_2.4: history_data_object has updated.')
-
                 if history_data_object.subcontent != self.dataframe.loc[df_correspondant_index]['subcontent']:
                     # 規格欄位有被修改過，需要更新追蹤user將規格從什麼改成什麼
                     subcontent_edit_history_object = Subcontent_user_edit_record.objects.filter(unique_id=each_id).first()
@@ -332,12 +314,10 @@ class HISTORY_DATA_and_Subcontent_user_edit_record_db_writer:
                         _temp_logistic_company = 'xinzhu'
                     elif len(temp_shipping_id) == 12:
                         _temp_logistic_company = 'black_cat'
-                    
                     if _temp_logistic_company is not None:
                         temp_shipping_link = 'http://61.222.157.151/order_manage/edo_url/?shipping_number=' + str(temp_shipping_id) + '&logistic_company=' + _temp_logistic_company
                     else:
                         temp_shipping_link = self.dataframe.loc[df_correspondant_index]['shipping_link']
-                        
                     print('Done temp_shipping_id')
                 
 
@@ -345,14 +325,12 @@ class HISTORY_DATA_and_Subcontent_user_edit_record_db_writer:
                 print('type of temp_file_created_date', type(temp_file_created_date), temp_file_created_date)
                 print('type of temp_file_edited_shipping_date', type(temp_file_edited_shipping_date), temp_file_edited_shipping_date)
                 print('type of temp_file_final_shipping_date', type(temp_file_final_shipping_date), temp_file_final_shipping_date)
-                
-                
-                for each_ele in [each_id, temp_platform, temp_file_created_date, temp_file_edited_shipping_date,
+                '''for each_ele in [each_id, temp_platform, temp_file_created_date, temp_file_edited_shipping_date,
                 temp_file_edited_shipping_date, temp_file_final_shipping_date, temp_txn_id, temp_customer_name,
                 temp_receiver_name, temp_paid_after_receiving, temp_receiver_phone_nbr, temp_receiver_mobile,
                 temp_receiver_address, temp_content, temp_how_many, temp_how_much, temp_remark, temp_shipping_id,
                 temp_last_charged_date, temp_charged, temp_ifsend, temp_ifcancel, temp_vendor, temp_subcontent, temp_shipping_link]:
-                    print(str(each_ele), each_ele)
+                    print(str(each_ele), each_ele)'''
                 
                 #try:
                 History_data.objects.create(
