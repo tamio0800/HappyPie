@@ -69,7 +69,6 @@ def to_download_file(request):
         # print('write_current_pending_txns_to_excel_file 1')
         model_writer = HISTORY_DATA_and_Subcontent_user_edit_record_db_writer(dataframe=alicia.aggregated_txns)
         # print('write_current_pending_txns_to_excel_file 2')
-
         _df = model_writer.query_all_pending_txns()
         # print('write_current_pending_txns_to_excel_file 3')
         _df = alicia._clean_dataframe(
@@ -188,22 +187,17 @@ def ordertracking(request):
                         print('each_file.name in VIEWS: ', each_file.name)
                         fs.save(each_file.name, each_file)
                         fs_backup.save(alicia.get_today("%Y%m%d-%H%M%S") + '_' + each_file.name, each_file)
-
                         # 上傳的檔案將被存放在預設為 '/HAPPYPI_0610_ANNIE/temp_files/' 的資料夾中
                         # 注意! 上傳的檔案包括「需要解密」的檔案跟「不需要解密」的檔案
-
                     alicia.move_files_and_decrypt_them(folder_where_are_uploaded_files_be, 
                                                     folder_where_i_want_all_decrypted_files_be_at)
                     print('Has Successfully Decrypted And Moved All Files.')
-                    pass
                 else:
                     # 上傳的檔案有問題, 需要做例外控管!!!
                     upload_files_conditions = True
-
                     os.rename(
                             'all_flags/ordetracking_function_is_running.flag',
                             'all_flags/ordetracking_function_is_not_running.flag')
-                    
                     return render(request, 'order_manage/ordertracking.html', 
                                 context={
                                             'upload_files_conditions': upload_files_conditions,
@@ -213,9 +207,7 @@ def ordertracking(request):
                                             'platforms_not_found': [],
                                             'after_alicia_exception_files': []
                                     })
-
                 # 前面都只是在清理
-
                 platforms_found, platforms_not_found, after_alicia_exception_files = alicia._intergate_all_platforms()
                 # alicia.aggregated_txns.to_excel('01_step1_raw.xlsx')
 

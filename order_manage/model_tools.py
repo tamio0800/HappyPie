@@ -55,23 +55,25 @@ class HISTORY_DATA_and_Subcontent_user_edit_record_db_writer:
     def _check_dataframe(self):
         # 確認該dataframe符合我們的格式
         print('_check_dataframe')
-        
-        print(self.dataframe.columns)
+        print('self.dataframe.columns\n', self.dataframe.columns)
+        print('self.dataframe.shape', self.dataframe.shape)
         print(self.dataframe.head(1).T)
         try:
             if 'unique_id' not in self.dataframe.columns:
-                # print('_check_dataframe', len(self.dataframe.columns))
+                print('_check_dataframe: not having unique_id  >>', len(self.dataframe.columns))
                 assert len(self.dataframe.columns) == 23
-                # print('_check_dataframe', sorted(list(self.dataframe.columns)))
-                # print('_check_dataframe', list(self.column_names_dict.keys())[:-1])
-                assert sorted(list(self.dataframe.columns)) == sorted(list(self.column_names_dict.keys())[:-1])
-                
+                dataframe_columns = list(self.dataframe.columns)
+                columns_shoud_have = list(self.column_names_dict.keys())[:-1]
+                assert all([_ in columns_shoud_have for _ in dataframe_columns]) == True
                 self.dataframe.loc[:, 'unique_id'] = self.dataframe['通路'] + '-' + self.dataframe['訂單編號'].astype(str)
+                print(self.dataframe.columns)
+                print(self.dataframe.loc[:, 'unique_id'])
             else:
-                print('_check_dataframe', len(self.dataframe.columns))
+                print('_check_dataframe: having unique_id  >>', len(self.dataframe.columns))
                 assert len(self.dataframe.columns) == 24
                 assert sorted(list(self.dataframe.columns)) == sorted(list(self.column_names_dict.keys()))
             self.dataframe.sort_values(by=['unique_id'], inplace=True)
+            self.dataframe = self.dataframe.reset_index(drop=True)
         except Exception as e:
             print("Encountered Exception: ", e)
         print('hddw1', 'check done.')
@@ -81,8 +83,9 @@ class HISTORY_DATA_and_Subcontent_user_edit_record_db_writer:
         try:
             self.dataframe.columns = [self.column_names_dict[_] for _ in self.dataframe.columns]
             self.dataframe = self.dataframe[self.dataframe.file_created_date.notnull()]
-            self.dataframe.temp_file_edited_shipping_date = self.dataframe.temp_file_edited_shipping_date.apply(lambda x: None if x == '' else x)
-            self.dataframe.temp_file_final_shipping_date = self.dataframe.temp_file_final_shipping_date.apply(lambda x: None if x == '' else x)
+            print('hddw2 columns: ', self.dataframe.columns)
+            self.dataframe.edited_shipping_date = self.dataframe.edited_shipping_date.apply(lambda x: None if x == '' else x)
+            self.dataframe.final_shipping_date = self.dataframe.final_shipping_date.apply(lambda x: None if x == '' else x)
             # self.dataframe.unique_id = self.dataframe.unique_id.apply(lambda x: x.replace('\'', ''))
             # self.dataframe.txn_id = self.dataframe.txn_id.apply(lambda x: x.replace('\'', ''))
             self.dataframe.content = self.dataframe.content.apply(lambda x: x.replace('\'', ''))
@@ -143,7 +146,6 @@ class HISTORY_DATA_and_Subcontent_user_edit_record_db_writer:
         _temp_logistic_company = None
         if shipping_id is None or shipping_id == '':
             return ''
-        
         try:
             _temp_shipping_id = shipping_id
             if len(_temp_shipping_id) == 10:
@@ -154,7 +156,6 @@ class HISTORY_DATA_and_Subcontent_user_edit_record_db_writer:
         except Exception as e:
             print('generate_shipping_link ERROR: ', e)
             pass
-        
         if _temp_logistic_company is not None:
             shipping_link = 'http://61.222.157.151/order_manage/edo_url/?shipping_number=' + str(_temp_shipping_id) + '&logistic_company=' + _temp_logistic_company
         #elif _temp_logistic_company is None and len(_temp_shipping_id) > 0:
@@ -241,7 +242,8 @@ class HISTORY_DATA_and_Subcontent_user_edit_record_db_writer:
             if history_data_object is not None:
                 # History_data 資料庫已有這筆資料
                 print('write_in_2diff_db_2.1: record(' + each_id + ') is in database.')
-                if not pd.isnull(self.dataframe.loc[df_correspondant_index]['shipping_link']) and len(self.dataframe.loc[df_correspondant_index]['shipping_link']) > 0:
+
+                if pd.isnull(self.dataframe.loc[df_correspondant_index]['shipping_link'])==False and len(self.dataframe.loc[df_correspondant_index]['shipping_link']) > 0:
                     _shipping_link = self.dataframe.loc[df_correspondant_index]['shipping_link']
                 else:
                     _shipping_link = self.generate_shipping_link(self.dataframe.loc[df_correspondant_index]['shipping_id'])
@@ -262,6 +264,11 @@ class HISTORY_DATA_and_Subcontent_user_edit_record_db_writer:
                         if each_col == 'edited_shipping_date' and \
                         self._check_if_has_value(self.dataframe.loc[df_correspondant_index][each_col]):
                             setattr(history_data_object, 'final_shipping_date', self.dataframe.loc[df_correspondant_index][each_col])
+                        if each_col == 'shipping_id' and \
+                        self._check_if_has_value(self.dataframe.loc[df_correspondant_index][each_col]):
+                            setattr(history_data_object, 'shipping_link', self.generate_shipping_link(self.dataframe.loc[df_correspondant_index][each_col]))
+
+                            
                     history_data_object.save()
                     print('Done written in database.')
                 except Exception as e:
@@ -317,6 +324,7 @@ class HISTORY_DATA_and_Subcontent_user_edit_record_db_writer:
                 print('write_in_2diff_db_2.2: Got all variables.')
 
                 if not (temp_shipping_id == '' or pd.isnull(temp_shipping_id)):
+                    # 有shipping id資料
                     print('got temp_shipping_id')
                     _temp_logistic_company = None
                     if len(temp_shipping_id) == 10:
@@ -337,6 +345,8 @@ class HISTORY_DATA_and_Subcontent_user_edit_record_db_writer:
                 print('type of temp_file_created_date', type(temp_file_created_date), temp_file_created_date)
                 print('type of temp_file_edited_shipping_date', type(temp_file_edited_shipping_date), temp_file_edited_shipping_date)
                 print('type of temp_file_final_shipping_date', type(temp_file_final_shipping_date), temp_file_final_shipping_date)
+                
+                
                 for each_ele in [each_id, temp_platform, temp_file_created_date, temp_file_edited_shipping_date,
                 temp_file_edited_shipping_date, temp_file_final_shipping_date, temp_txn_id, temp_customer_name,
                 temp_receiver_name, temp_paid_after_receiving, temp_receiver_phone_nbr, temp_receiver_mobile,
@@ -349,7 +359,7 @@ class HISTORY_DATA_and_Subcontent_user_edit_record_db_writer:
                     unique_id = each_id, 
                     platform = temp_platform, 
                     file_created_date = temp_file_created_date,
-                    edited_shipping_date = None if temp_file_edited_shipping_date == '' else temp_file_edited_shipping_date,
+                    edited_shipping_date = None if temp_file_edited_shipping_date == '' or pd.isnull(temp_file_edited_shipping_date) else temp_file_edited_shipping_date,
                     final_shipping_date = temp_file_final_shipping_date,
                     txn_id = temp_txn_id,
                     customer_name = temp_customer_name,
