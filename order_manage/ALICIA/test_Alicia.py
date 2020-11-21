@@ -33,11 +33,18 @@ class TestALICIA(unittest.TestCase):
         self.assertGreater(len(platforms_found), 0)
         self.assertIn('樂天派官網', platforms_found)
         # 檢查是否有找到符合標準的訂單資料
-
-        
         self.assertGreater(self.alicia.aggregated_txns.shape[0], 0)
         # 檢查讀取到的內容
         self.alicia.aggregated_txns.to_excel('order_manage/ALICIA/test_temp_excel.xlsx')
+
+    def test_vendor_column_should_only_contain_one_value(self):
+        # 先測試這邊能不能讀到ALICIA在上一個測試儲存的資料
+        self.assertGreater(self.alicia.aggregated_txns.shape[0], 0)
+
+
+
+
+
 
 if __name__ == '__main__':
     unittest.main()
