@@ -14,7 +14,6 @@ import xlrd
 from datetime import datetime, timedelta
 import pyDes
 import base64
-from order_manage.models import History_data as history_data
 
 
 class ALICIA:
@@ -181,7 +180,7 @@ class ALICIA:
         with open(path_of_new_flag, 'w') as w:
             w.write('done!')
 
-    def combine_aggregated_txns_and_user_uploaded_aggregated_txns(self, not_user_uploaded_df, user_uploaded_df):
+    def combine_aggregated_txns_and_user_uploaded_aggregated_txns(self, not_user_uploaded_df, user_uploaded_df, history_data):
         # not_user_uploaded_df指的是user從各個平台下載下來的原始訂單資料，
         # user_uploaded_df則是Alicia整合後的訂單再上傳
         def clean_number_like_columns(df):

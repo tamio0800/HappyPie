@@ -253,7 +253,7 @@ def ordertracking(request):
             # alicia.user_uploaded_aggregated_txns.to_excel('05_step5_user_uploaded.xlsx')
 
             df = alicia.combine_aggregated_txns_and_user_uploaded_aggregated_txns(
-                df, alicia.user_uploaded_aggregated_txns)
+                df, alicia.user_uploaded_aggregated_txns, History_data)
                 # 原來的df指的是user從各個平台下載下來的原始訂單資料，
                 # user_uploaded_aggregated_txns則是Alicia整合後的訂單再上傳
 
