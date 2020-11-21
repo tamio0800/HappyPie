@@ -578,7 +578,7 @@ class ALICIA:
         if platform in ['好吃市集', '生活市集']:
 
             if len(txn_paths) == 0:
-                print('未找到任何來自『' + platform + '』的交易資料。')
+                # print('未找到任何來自『' + platform + '』的交易資料。')
                 is_found = False
                 return is_found, is_error, exception_files
             else:
@@ -673,7 +673,7 @@ class ALICIA:
                         target_string = re.sub(re.compile(r'[(]|[)]'), '', target_string)
                     return target_string
             if len(txn_paths) == 0:
-                print('未找到任何來自『' + platform + '』的交易資料。')
+                # print('未找到任何來自『' + platform + '』的交易資料。')
                 is_found = False
                 return is_found, is_error, exception_files
             else:
@@ -766,7 +766,7 @@ class ALICIA:
 
         elif platform == 'MOMO':
             if len(txn_paths) == 0:
-                print('未找到任何來自『' + platform + '』的交易資料。')
+                # print('未找到任何來自『' + platform + '』的交易資料。')
                 is_found = False
                 return is_found, is_error, exception_files
             else:
@@ -910,7 +910,7 @@ class ALICIA:
         elif platform == 'Yahoo購物中心':
 
             if len(txn_paths) == 0:
-                print('未找到任何來自『' + platform + '』的交易資料。')
+                # print('未找到任何來自『' + platform + '』的交易資料。')
                 is_found = False
                 return is_found, is_error, exception_files
             else:
@@ -987,7 +987,7 @@ class ALICIA:
 
         elif platform == '東森得易購':
             if len(txn_paths) == 0:
-                print('未找到任何來自『' + platform + '』的交易資料。')
+                # print('未找到任何來自『' + platform + '』的交易資料。')
                 is_found = False
                 return is_found, is_error, exception_files
             else:
@@ -1060,7 +1060,7 @@ class ALICIA:
 
         elif platform == '亞伯':
             if len(txn_paths) == 0:
-                print('未找到任何來自『' + platform + '』的交易資料。')
+                # print('未找到任何來自『' + platform + '』的交易資料。')
                 is_found = False
                 return is_found, is_error, exception_files
             else:
@@ -1141,7 +1141,7 @@ class ALICIA:
 
         elif platform == 'UDN':
             if len(txn_paths) == 0:
-                print('未找到任何來自『' + platform + '』的交易資料。')
+                # print('未找到任何來自『' + platform + '』的交易資料。')
                 is_found = False
                 return is_found, is_error, exception_files
             else:
@@ -1218,7 +1218,7 @@ class ALICIA:
 
         elif platform == '台塑':
             if len(txn_paths) == 0:
-                print('未找到任何來自『' + platform + '』的交易資料。')
+                # print('未找到任何來自『' + platform + '』的交易資料。')
                 is_found = False
                 return is_found, is_error, exception_files
             else:
@@ -1300,7 +1300,7 @@ class ALICIA:
 
         elif platform == 'LaNew':
             if len(txn_paths) == 0:
-                print('未找到任何來自『' + platform + '』的交易資料。')
+                # print('未找到任何來自『' + platform + '』的交易資料。')
                 is_found = False
                 return is_found, is_error, exception_files
             else:
@@ -1378,7 +1378,7 @@ class ALICIA:
         elif platform == 'Friday':
 
             if len(txn_paths) == 0:
-                print('未找到任何來自『' + platform + '』的交易資料。')
+                # print('未找到任何來自『' + platform + '』的交易資料。')
                 is_found = False
                 return is_found, is_error, exception_files
             else:
@@ -1463,7 +1463,7 @@ class ALICIA:
         
         elif platform == '快車肉乾銷港':
             if len(txn_paths) == 0:
-                print('未找到任何來自『' + platform + '』的交易資料。')
+                # print('未找到任何來自『' + platform + '』的交易資料。')
                 is_found = False
                 return is_found, is_error, exception_files
             else:
@@ -1535,7 +1535,7 @@ class ALICIA:
         
         elif platform == '博客來':
             if len(txn_paths) == 0:
-                print('未找到任何來自『' + platform + '』的交易資料。')
+                # print('未找到任何來自『' + platform + '』的交易資料。')
                 is_found = False
                 return is_found, is_error, exception_files
             else:
@@ -1605,7 +1605,7 @@ class ALICIA:
             # 因此不需要多做甚麼資料整理，但仍然要清一下各個column，免得有多餘的空白或跳行。
 
             if len(txn_paths) == 0:
-                print('未找到任何來自『' + platform + '』的交易資料。')
+                # print('未找到任何來自『' + platform + '』的交易資料。')
                 is_found = False
                 return is_found, is_error, exception_files
             else:
