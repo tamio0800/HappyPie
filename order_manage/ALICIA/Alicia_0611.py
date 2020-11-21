@@ -1645,13 +1645,13 @@ class ALICIA:
                 return is_found, is_error, exception_files
 
 
-    def _intergate_all_platforms(self):
+    def _integrate_all_platforms(self):
         platforms_found, platforms_not_found, exception_files = [], [], []
         # 整合所有訂單後, 回傳有找到的平台跟沒有找到的, 以及有問題的檔案們
         for each_platform in self.platforms:
-            # print('_intergate_all_platforms b4', each_platform, self.aggregated_txns)
+            # print('_integrate_all_platforms b4', each_platform, self.aggregated_txns)
             is_found, _is_error, sub_exception_files = self._integrate_with(each_platform)
-            # print('_intergate_all_platforms after', is_found, _is_error, sub_exception_files, self.aggregated_txns)
+            # print('_integrate_all_platforms after', is_found, _is_error, sub_exception_files, self.aggregated_txns)
             if is_found:
                 platforms_found.append(each_platform)
                 # print(self.aggregated_txns)

@@ -208,10 +208,10 @@ def ordertracking(request):
                                             'after_alicia_exception_files': []
                                     })
                 # 前面都只是在清理
-                platforms_found, platforms_not_found, after_alicia_exception_files = alicia._intergate_all_platforms()
+                platforms_found, platforms_not_found, after_alicia_exception_files = alicia._integrate_all_platforms()
                 # alicia.aggregated_txns.to_excel('01_step1_raw.xlsx')
 
-                print('clean_temp_files_in_folders', platforms_found, platforms_not_found, after_alicia_exception_files)
+                # print('clean_temp_files_in_folders', platforms_found, platforms_not_found, after_alicia_exception_files)
                 is_integrated_done = True
                 # 上面那行整合各平台交易資訊, 並回傳哪一些平台有找到, 哪一些沒有
 
