@@ -22,14 +22,16 @@ class History_data(models.Model):
     how_much = models.IntegerField(default = False)
     how_many = models.IntegerField(default = False)
     remark = models.TextField(null = True)
-    shipping_id = models.TextField(null = True)
+    room_temperature_shipping_id = models.TextField(null = True, default='')
+    low_temperature_shipping_id = models.TextField(null = True, default='')
     last_charged_date = models.TextField(null = True)
     charged = models.TextField(null = True)
     ifsend = models.BooleanField(default = False)
     ifcancel = models.BooleanField(default = False)
     vendor = models.CharField(max_length=30, null=True, blank=True, default='')
     subcontent = models.TextField(null = True)
-    shipping_link = models.TextField(null = True)
+    room_temperature_shipping_link = models.TextField(null = True, default='')
+    low_temperature_shipping_link = models.TextField(null = True, default='')
     unique_id = models.TextField(null = True)
      
     # 為了使回傳platform名稱而不是object
