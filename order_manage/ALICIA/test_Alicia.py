@@ -109,7 +109,7 @@ class TestALICIA(unittest.TestCase):
         f'\nmax_num: {max_amount_of_vendors}\nmin_num: {min_amount_of_vendors}')
 
 
-    def test_restruct_TO_ONE_UNIQUE_ID_DF_AFTER_KASH(self):
+    '''def test_check_columns_after_TO_ONE_UNIQUE_ID_DF_AFTER_KASH(self):
         # 嘗試在這邊重構此一函式，將原來的txn_id分拆成:
         # txn_id >> 原始收到的txn_id長相，中文改名叫『原始訂單編號』
         # alicia_txn_id >> 經過【分拆供應商】後，我們給每一個row一個對應id based on txn_id，中文名叫『Alicia訂單編號』
@@ -117,17 +117,38 @@ class TestALICIA(unittest.TestCase):
         self.alicia._integrate_all_platforms()
         print('Before combine shape: ', self.alicia.aggregated_txns.shape)
         self.alicia.pre_clean_raw_txns()
+        
+        dataframe_after_parsing = \
+            self.alicia.to_one_unique_id_df_after_kash(self.alicia.aggregated_txns)
+        print('dataframe_after_parsing shape: ', dataframe_after_parsing.shape)
+
+        # 首先測試裡面應該有 "txn_id(原始訂單編號)", "alicia_txn_id(Alicia訂單編號)"欄位
+        # self.assertIn('原始訂單編號', dataframe_after_parsing.columns)
+        # self.assertIn('Alicia訂單編號', dataframe_after_parsing.columns)
+        self.assertIn('供應商', dataframe_after_parsing.columns)'''
+
+    
+    def test_each_alicia_txn_id_mapping_to_one_vendor_after_TO_ONE_UNIQUE_ID_DF_AFTER_KASH(self):
+        # 測試unique(txn_id + vendor).count()在餵入此函示前後一致
+        
+        self.alicia._integrate_all_platforms()
+        self.alicia.pre_clean_raw_txns()
+        befor_txn_id_vendor_codes = \
+            self.alicia.aggregated_txns['訂單編號'] + '-' + self.alicia.aggregated_txns['供應商']
 
         dataframe_after_parsing = \
             self.alicia.to_one_unique_id_df_after_kash(self.alicia.aggregated_txns)
-        
-        print('dataframe_after_parsing shape: ', dataframe_after_parsing.shape)
 
+        self.alicia.aggregated_txns.to_excel('order_manage/ALICIA/dataframe_before_parsing.xlsx', index=False)
         dataframe_after_parsing.to_excel('order_manage/ALICIA/dataframe_after_parsing.xlsx', index=False)
 
-        # 首先測試裡面應該有 "txn_id(原始訂單編號)", "alicia_txn_id(Alicia訂單編號)"欄位
-        self.assertIn('原始訂單編號', dataframe_after_parsing.columns)
-        self.assertIn('Alicia訂單編號', dataframe_after_parsing.columns)
+        after_txn_id_vendor_codes = \
+            dataframe_after_parsing['訂單編號'] + '-' + dataframe_after_parsing['供應商']
+        
+        self.assertEqual(len(set(befor_txn_id_vendor_codes)),
+        len(set(after_txn_id_vendor_codes)))
+
+
         
     
 

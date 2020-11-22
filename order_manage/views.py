@@ -228,7 +228,7 @@ def ordertracking(request):
 
                     dataframe_after_parsing = alicia.to_one_unique_id_df_after_kash(alicia.aggregated_txns)
                     dataframe_after_parsing = dataframe_after_parsing.drop(['unique_id'], axis=1)
-                    
+
                     alicia.remove_unique_id()
                     print('共花了', int(time()-st), '秒.', '\n分析了', dataframe_after_parsing.shape[0], '筆交易.')
                 clean_temp_files_in_folders()
@@ -255,7 +255,8 @@ def ordertracking(request):
             # df.to_excel('06_step6_df2.xlsx')
 
             # 將整理好的資料寫進資料庫
-            model_writer = HISTORY_DATA_and_Subcontent_user_edit_record_db_writer(dataframe=df)
+            print('將整理好的資料寫進資料庫...')
+            model_writer = HISTORY_DATA_and_Subcontent_user_edit_record_db_writer(dataframe=dataframe_after_parsing)
             model_writer.write_in_2diff_db()
 
             # write_current_pending_txns_to_excel_file()

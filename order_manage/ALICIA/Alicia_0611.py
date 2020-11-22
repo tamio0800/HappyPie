@@ -128,13 +128,15 @@ class ALICIA:
             # 來作為A交易在昨天與今天一起被重複匯進來的處理機制
             self.aggregated_txns.loc[:, 'pre_clean_unique_id'] = self.aggregated_txns['通路'] + '-' + \
                 self.aggregated_txns['訂單編號'].apply(self.force_float_to_be_int_and_to_string) + '-' + \
-                self.aggregated_txns['內容物']
+                self.aggregated_txns['供應商'] + '-' + self.aggregated_txns['內容物']
                 # self.aggregated_txns['訂單編號'].astype(str) + '-' + \
             self.aggregated_txns = self.aggregated_txns.drop_duplicates(subset='pre_clean_unique_id', keep='first')
             self.aggregated_txns = self.aggregated_txns.sort_values('pre_clean_unique_id').reset_index(drop=True)
             self.aggregated_txns = self.aggregated_txns.drop(['pre_clean_unique_id'], axis=1)
 
+            # >> 以通路 + 供應商 + 編號 作為unique_id  2020.11.22
             self.aggregated_txns.loc[:, 'unique_id'] = self.aggregated_txns['通路'] + '-' + \
+                self.aggregated_txns['供應商'] + '-' + \
                 self.aggregated_txns['訂單編號'].apply(self.force_float_to_be_int_and_to_string)
         
             # 針對亞伯做特殊處理
@@ -197,10 +199,12 @@ class ALICIA:
         if not_user_uploaded_df is not None:
             if user_uploaded_df is not None:
                 not_user_uploaded_df.loc[:, 'unique_id'] = \
-                    not_user_uploaded_df['通路'] + '-' + not_user_uploaded_df['訂單編號'].apply(self.try_to_be_int_in_str)
+                    not_user_uploaded_df['通路'] + '-' + not_user_uploaded_df['供應商'] + '-' + \
+                        not_user_uploaded_df['訂單編號'].apply(self.try_to_be_int_in_str)
 
                 user_uploaded_df.loc[:, 'unique_id'] = \
-                    user_uploaded_df['通路'] + '-' + user_uploaded_df['訂單編號'].apply(self.try_to_be_int_in_str)
+                    user_uploaded_df['通路'] + '-' + user_uploaded_df['供應商'] + '-' + \
+                    user_uploaded_df['訂單編號'].apply(self.try_to_be_int_in_str)
 
                 #  接著要整理一下，如果user_uploaded_df裡有的交易，就從not_user_uploaded_df中刪除
                 not_user_uploaded_df = \
@@ -233,16 +237,18 @@ class ALICIA:
         
         assert dataframe_with_unique_id_column.shape[0] > 0
         # dataframe至少要有東西再丟進來清理
-        dataframe_with_unique_id_column.loc[:, 'Alicia訂單編號'] = ''
-        # 新增『Alicia訂單編號』欄位
+        '''dataframe_with_unique_id_column.loc[:, 'Alicia訂單編號'] = ''
+        # 新增『Alicia訂單編號』欄位, 再將此欄位放到『訂單編號後面』
         dataframe_with_unique_id_column = dataframe_with_unique_id_column[
             ['通路', '抓單日', '修訂出貨日', '最終出貨日', '訂單編號', 'Alicia訂單編號', '訂購人', 
             '收件人', '貨到付款', '電話', '手機', '地址', '內容物', '數量', '金額', '備註', '宅單', 
             '最後回押日', '回押', '已寄出', '已取消', '供應商', '規格', '貨運連結', 'unique_id']
-        ]  # 將此欄位放到『訂單編號後面』
+        ]'''
+        # dataframe_with_unique_id_column.rename(columns={'訂單編號': '原始訂單編號'}, inplace=True)
 
-        dataframe_with_unique_id_column.rename(columns={'訂單編號': '原始訂單編號'}, inplace=True)
-
+        #if dataframe_with_unique_id_column.shape[0] != \
+        #    len(set(dataframe_with_unique_id_column['原始訂單編號'] + '-' + dataframe_with_unique_id_column['供應商'])):
+            
         if dataframe_with_unique_id_column.shape[0] != len(dataframe_with_unique_id_column.unique_id.unique()):
             # dataframe 長度與 其中的 unique_id 長度不同, 代表需要進行整合歸戶(unique_id)
             _temp_df = dataframe_with_unique_id_column[dataframe_with_unique_id_column.unique_id.apply(
