@@ -149,6 +149,18 @@ class TestALICIA(unittest.TestCase):
         len(set(after_txn_id_vendor_codes)))
 
 
+    def test_if_2_shipping_id_columns_in_dataframe(self):
+        # 測試 常溫宅單編號、低溫宅單編號、常溫貨運連結、低溫貨運連結 兩個欄位，是否有在aggregated_txns裡
+        # 常溫宅單編號  >>  room_temperature_shipping_id
+        # 低溫宅單編號  >>  low_temperature_shipping_id
+        # 常溫貨運連結  >>  room_temperature_shipping_link
+        # 低溫貨運連結  >>  low_temperature_shipping_link
+        self.assertIn('常溫宅單編號', self.alicia.aggregated_txns.columns)
+        self.assertIn('低溫宅單編號', self.alicia.aggregated_txns.columns)
+        self.assertIn('常溫貨運連結', self.alicia.aggregated_txns.columns)
+        self.assertIn('低溫貨運連結', self.alicia.aggregated_txns.columns)
+
+
         
     
 

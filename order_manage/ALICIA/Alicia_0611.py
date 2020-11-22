@@ -192,7 +192,8 @@ class ALICIA:
         # user_uploaded_df則是Alicia整合後的訂單再上傳
         def clean_number_like_columns(df):
             df['訂單編號'] = df['訂單編號'].apply(self.try_to_be_int_in_str).apply(lambda x: x.replace('\'', ''))
-            df['宅單'] = df['宅單'].apply(lambda x: re.sub(re.compile(r'[- －]'), '', str(x))).apply(self.try_to_be_int_in_str)
+            df['常溫宅單編號'] = df['常溫宅單編號'].apply(lambda x: re.sub(re.compile(r'[- －]'), '', str(x))).apply(self.try_to_be_int_in_str)
+            df['低溫宅單編號'] = df['低溫宅單編號'].apply(lambda x: re.sub(re.compile(r'[- －]'), '', str(x))).apply(self.try_to_be_int_in_str)
             df['手機'] = df['手機'].apply(self.make_phone_and_mobile_number_clean)
             df['電話'] = df['電話'].apply(self.make_phone_and_mobile_number_clean)
             return df
@@ -700,10 +701,6 @@ class ALICIA:
                         _file_created_date = self._get_file_created_date(txn_path)
                         #print('before clean', pd.read_excel(txn_path).shape)
                         _temp_df = self._clean_dataframe(pd.read_excel(txn_path))
-                        #print('Alicia intergrating with 樂天派官網')
-                        #print('path:', txn_paths)
-                        #print(_temp_df.shape)
-                        #print(_temp_df.tail(1).T)
                         for each_row_index in range(_temp_df.shape[0]):
                             try:
                                 _txn_id = self.try_to_be_int_in_str(_temp_df.loc[each_row_index, '自訂編號'])
@@ -743,13 +740,15 @@ class ALICIA:
                             _how_many = _temp_df.loc[each_row_index, '購買數量'].astype(int)
                             _how_much = _temp_df.loc[each_row_index, '單價'].astype(int)
                             _remark = _temp_df.loc[each_row_index, '備註']
-                            _shipping_id = ''
+                            _room_temperature_shipping_id = ''
+                            _low_temperature_shipping_id = ''
                             _last_charged_date = ''
                             _charged = False
                             _ifsend = False
                             _ifcancel = False
                             _subcontent = to_get_subcontent(_temp_df.loc[each_row_index, '商品名稱'])
-                            _shipping_link = ''
+                            _room_temperature_shipping_link = ''
+                            _low_temperature_shipping_link = ''
                             # 寫入資料
                             self.aggregated_txns.loc[self.aggregated_txns.shape[0]] = [platform,
                                                                                     _file_created_date,
@@ -766,14 +765,16 @@ class ALICIA:
                                                                                     _how_many,
                                                                                     _how_much,
                                                                                     _remark,
-                                                                                    _shipping_id,
+                                                                                    _room_temperature_shipping_id,
+                                                                                    _low_temperature_shipping_id,
                                                                                     _last_charged_date,
                                                                                     _charged,
                                                                                     _ifsend,
                                                                                     _ifcancel,
                                                                                     _vendor,
                                                                                     _subcontent,
-                                                                                    _shipping_link]
+                                                                                    _room_temperature_shipping_link,
+                                                                                    _low_temperature_shipping_link,]
                     except Exception as e:
                         print(e)
                         is_error = True
