@@ -5,7 +5,7 @@ from django.contrib.auth.decorators import login_required
 
 urlpatterns = [
     # 正式上傳要合併訂單檔案的地方
-    url(r'^ordertracking/$', views.ordertracking,name='ordertracking'),
+    url(r'^ordertracking/$', views.ordertracking, name='ordertracking'),
     url(r'^orderhistory/$', login_required(login_url = '/accounts/login/')(views.history_data.as_view())),
     path('to_download_file/', views.to_download_file, name='downloadfile'),
     path('download_search_file/', views.download_search_file, name='downloadsearchfile'),

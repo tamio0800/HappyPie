@@ -1,4 +1,4 @@
-{% extends 'base_layout.html' %} {% block content %}{% load static %}
+{% extends 'base_layout.html' %}{% block content %}{% load static %}
 <div class="container col-10 offset-1" style="font-family: Microsoft Yahei;">
     <div class="row mt-5 ">
         <div class=" col-6">
@@ -52,7 +52,7 @@
                 <p class="lead">
                 <form method="post" enctype="multipart/form-data" action="">
                     {% csrf_token %}
-                    <input id="files" type="file" multiple name="files" accept=".xls,.xlsx,.csv,.xlsm,.xlsb" />
+                    <input name="files" id="files" type="file" multiple name="files" accept=".xls,.xlsx,.csv,.xlsm,.xlsb" />
                     <br>
                     <div class="row mt-3">
                         <div class="col-5 ">
