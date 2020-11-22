@@ -35,14 +35,16 @@ class HISTORY_DATA_and_Subcontent_user_edit_record_db_writer:
             '數量':'how_many',
             '金額':'how_much',
             '備註':'remark',
-            '宅單':'shipping_id',
+            '常溫宅單編號': 'room_temperature_shipping_id',
+            '低溫宅單編號': 'low_temperature_shipping_id',
             '最後回押日':'last_charged_date',
             '回押':'charged',
             '已寄出':'ifsend',
             '已取消':'ifcancel',
             '供應商':'vendor',
             '規格':'subcontent',
-            '貨運連結':'shipping_link',
+            '常溫貨運連結':'room_temperature_shipping_link',
+            '低溫貨運連結':'low_temperature_shipping_link',
             'unique_id':'unique_id',
         }
 
@@ -61,7 +63,7 @@ class HISTORY_DATA_and_Subcontent_user_edit_record_db_writer:
         try:
             if 'unique_id' not in self.dataframe.columns:
                 print('_check_dataframe: not having unique_id  >>', len(self.dataframe.columns))
-                assert len(self.dataframe.columns) == 23
+                assert len(self.dataframe.columns) == 25
                 dataframe_columns = list(self.dataframe.columns)
                 columns_shoud_have = list(self.column_names_dict.keys())[:-1]
                 assert all([_ in columns_shoud_have for _ in dataframe_columns]) == True
@@ -70,7 +72,7 @@ class HISTORY_DATA_and_Subcontent_user_edit_record_db_writer:
                 print(self.dataframe.loc[:, 'unique_id'])
             else:
                 print('_check_dataframe: having unique_id  >>', len(self.dataframe.columns))
-                assert len(self.dataframe.columns) == 24
+                assert len(self.dataframe.columns) == 26
                 assert sorted(list(self.dataframe.columns)) == sorted(list(self.column_names_dict.keys()))
             self.dataframe.sort_values(by=['unique_id'], inplace=True)
             self.dataframe = self.dataframe.reset_index(drop=True)
@@ -168,7 +170,8 @@ class HISTORY_DATA_and_Subcontent_user_edit_record_db_writer:
             # get txn_object to prevent from looping ORM filtering. 
             txn_object.ifsend = self.dataframe.loc[df_correspondant_index]['ifsend']
             txn_object.ifcancel = self.dataframe.loc[df_correspondant_index]['ifcancel']
-            txn_object.shipping_id = self.dataframe.loc[df_correspondant_index]['shipping_id']
+            txn_object.room_temperature_shipping_id = self.dataframe.loc[df_correspondant_index]['room_temperature_shipping_id']
+            txn_object.low_temperature_shipping_id = self.dataframe.loc[df_correspondant_index]['low_temperature_shipping_id']
             txn_object.subcontent = self.dataframe.loc[df_correspondant_index]['subcontent']
             # 新增欄位，讓user可以修改的欄位增加
             # 其中一個原因是2020.08.04時曉箐反映有時客戶指定到貨日期時，
@@ -183,7 +186,18 @@ class HISTORY_DATA_and_Subcontent_user_edit_record_db_writer:
             # print('History_data_update_1 Done: ', ids)
             # 在這裡寫上產出貨運連結的程式碼
             _temp_logistic_company = None
-            try:
+            
+            txn_object.room_temperature_shipping_link = self.generate_shipping_link(
+                self.dataframe.loc[df_correspondant_index]['room_temperature_shipping_id']
+            )
+
+            txn_object.low_temperature_shipping_link = self.generate_shipping_link(
+                self.dataframe.loc[df_correspondant_index]['low_temperature_shipping_id']
+            )
+
+            txn_object.save()
+
+            '''try:
                 _temp_shipping_id = self.dataframe.loc[df_correspondant_index]['shipping_id']
                 # print('write_in_db-1.2', _temp_shipping_id)
                 if len(_temp_shipping_id) == 10:
@@ -194,6 +208,7 @@ class HISTORY_DATA_and_Subcontent_user_edit_record_db_writer:
                 # print('write_in_db-1.3', _temp_logistic_company)
             except:
                 pass
+
             # print('History_data_update_2 Done')
             if _temp_logistic_company is not None:
                 txn_object.shipping_id = _temp_shipping_id
@@ -203,8 +218,8 @@ class HISTORY_DATA_and_Subcontent_user_edit_record_db_writer:
                 txn_object.shipping_id = _temp_shipping_id
                 txn_object.shipping_link = ''
             # print('已更新history_data:'+ ids )
-            # print('History_data_update_3 Done')
-            txn_object.save()
+            # print('History_data_update_3 Done')'''
+            
 
         self._check_dataframe()
         self._make_dataframe_columns_to_match_db_columns()
@@ -218,7 +233,7 @@ class HISTORY_DATA_and_Subcontent_user_edit_record_db_writer:
         #print('self.dataframe[unique_id]', self.dataframe['unique_id'])
         # 如果合併訂單的 uni_id跟資料庫裡的一樣，表示資料已存在
         # 則接著更新寄出、取消狀態
-        self.dataframe.to_excel("XXXXXX.xlsx", index=False)
+        # self.dataframe.to_excel("XXXXXX.xlsx", index=False)
         for each_id in self.dataframe['unique_id'].tolist(): 
             # print('write_in_2diff_db_2', each_id)
             df_correspondant_index = self.dataframe[self.dataframe['unique_id']==each_id].index[0]
@@ -226,26 +241,35 @@ class HISTORY_DATA_and_Subcontent_user_edit_record_db_writer:
             history_data_object = History_data.objects.filter(unique_id = each_id).first()
             # print('history_data_object is None: ', history_data_object is None)
             if history_data_object is not None:
-                # History_data 資料庫已有這筆資料
+                ## History_data 資料庫已有這筆資料
+
                 print('write_in_2diff_db_2.1: record(' + each_id + ') is in database.')
-                if self._check_if_has_value(self.dataframe.loc[df_correspondant_index]['shipping_link']):
-                    _shipping_link = self.dataframe.loc[df_correspondant_index]['shipping_link']
+                if self._check_if_has_value(self.dataframe.loc[df_correspondant_index]['room_temperature_shipping_link']):
+                    _room_temperature_shipping_link = self.dataframe.loc[df_correspondant_index]['room_temperature_shipping_link']
                 else:
-                    _shipping_link = self.generate_shipping_link(self.dataframe.loc[df_correspondant_index]['shipping_id'])
-                print('write_in_2diff_db_2.2: SHIPPING LINK  >>  ', _shipping_link)
-                print('write_in_2diff_db_2.3: df_correspondant_index  >>  ', df_correspondant_index)
+                    _room_temperature_shipping_link = self.generate_shipping_link(self.dataframe.loc[df_correspondant_index]['room_temperature_shipping_id'])
+
+                if self._check_if_has_value(self.dataframe.loc[df_correspondant_index]['low_temperature_shipping_link']):
+                    _low_temperature_shipping_link = self.dataframe.loc[df_correspondant_index]['low_temperature_shipping_link']
+                else:
+                    _low_temperature_shipping_link = self.generate_shipping_link(self.dataframe.loc[df_correspondant_index]['low_temperature_shipping_id'])
+
+
+                # print('write_in_2diff_db_2.2: SHIPPING LINK  >>  ', _shipping_link)
+                # print('write_in_2diff_db_2.3: df_correspondant_index  >>  ', df_correspondant_index)
                 try:
                     for each_col in ['txn_id', 'customer_name', 'receiver_name', 'paid_after_receiving',
                     'receiver_address', 'receiver_phone_nbr', 'receiver_mobile', 'content', 'how_much', 
-                    'how_many', 'remark', 'shipping_id', 'last_charged_date', 'charged', 'vendor',
-                    'ifsend', 'ifcancel', 'subcontent']:
+                    'how_many', 'remark', 'room_temperature_shipping_id', 'low_temperature_shipping_id', 
+                    'last_charged_date', 'charged', 'vendor', 'ifsend', 'ifcancel', 'subcontent']:
                         setattr(history_data_object, each_col, self.dataframe.loc[df_correspondant_index][each_col])
                     
                     if self._check_if_has_value(self.dataframe.loc[df_correspondant_index]['edited_shipping_date']):
                         setattr(history_data_object, 'edited_shipping_date', self.dataframe.loc[df_correspondant_index]['edited_shipping_date'])
                         setattr(history_data_object, 'final_shipping_date', self.dataframe.loc[df_correspondant_index]['edited_shipping_date'])
 
-                    setattr(history_data_object, 'shipping_link', _shipping_link)
+                    setattr(history_data_object, 'room_temperature_shipping_link', _room_temperature_shipping_link)
+                    setattr(history_data_object, 'low_temperature_shipping_link', _low_temperature_shipping_link)
 
                     history_data_object.save()
                     print('Done written in database.')
@@ -288,19 +312,24 @@ class HISTORY_DATA_and_Subcontent_user_edit_record_db_writer:
                 temp_how_many = self.dataframe.loc[df_correspondant_index]['how_many']
                 temp_how_much = self.dataframe.loc[df_correspondant_index]['how_much']
                 temp_remark = self.dataframe.loc[df_correspondant_index]['remark']
-                temp_shipping_id = self.dataframe.loc[df_correspondant_index]['shipping_id']
+                temp_room_temperature_shipping_id = self.dataframe.loc[df_correspondant_index]['room_temperature_shipping_id']
+                temp_low_temperature_shipping_id = self.dataframe.loc[df_correspondant_index]['low_temperature_shipping_id']
                 temp_last_charged_date = self.dataframe.loc[df_correspondant_index]['last_charged_date']
                 temp_charged = self.dataframe.loc[df_correspondant_index]['charged']
                 temp_ifsend = self.dataframe.loc[df_correspondant_index]['ifsend']
                 temp_ifcancel = self.dataframe.loc[df_correspondant_index]['ifcancel']
                 temp_vendor = self.dataframe.loc[df_correspondant_index]['vendor']
                 temp_subcontent = self.dataframe.loc[df_correspondant_index]['subcontent']
-                temp_shipping_link = self.dataframe.loc[df_correspondant_index]['shipping_link']
+                # temp_room_temperature_shipping_link = self.dataframe.loc[df_correspondant_index]['room_temperature_shipping_link']
+                # temp_low_temperature_shipping_link = self.dataframe.loc[df_correspondant_index]['low_temperature_shipping_link']
                 #print('write_in_2diff_db_2.1: ', 'Done written others.')
-
+                temp_room_temperature_shipping_link = self.generate_shipping_link(temp_room_temperature_shipping_id)
+                temp_low_temperature_shipping_link = self.generate_shipping_link(temp_low_temperature_shipping_id)
                 print('write_in_2diff_db_2.2: Got all variables.')
 
-                if not (temp_shipping_id == '' or pd.isnull(temp_shipping_id)):
+
+
+                '''if not (temp_shipping_id == '' or pd.isnull(temp_shipping_id)):
                     # 有shipping id資料
                     print('got temp_shipping_id')
                     _temp_logistic_company = None
@@ -312,7 +341,7 @@ class HISTORY_DATA_and_Subcontent_user_edit_record_db_writer:
                     if _temp_logistic_company is not None:
                         temp_shipping_link = 'http://61.222.157.151/order_manage/edo_url/?shipping_number=' + str(temp_shipping_id) + '&logistic_company=' + _temp_logistic_company
                     else:
-                        temp_shipping_link = self.dataframe.loc[df_correspondant_index]['shipping_link']
+                        temp_shipping_link = self.dataframe.loc[df_correspondant_index]['shipping_link']'''
                 print('type of temp_file_created_date', type(temp_file_created_date), temp_file_created_date)
                 print('type of temp_file_edited_shipping_date', type(temp_file_edited_shipping_date), temp_file_edited_shipping_date)
                 print('type of temp_file_final_shipping_date', type(temp_file_final_shipping_date), temp_file_final_shipping_date)
@@ -341,14 +370,16 @@ class HISTORY_DATA_and_Subcontent_user_edit_record_db_writer:
                     how_many = temp_how_many ,
                     how_much  = temp_how_much,
                     remark = temp_remark,
-                    shipping_id  = temp_shipping_id,
+                    room_temperature_shipping_id = temp_room_temperature_shipping_id,
+                    low_temperature_shipping_id = temp_low_temperature_shipping_id,
                     last_charged_date  = temp_last_charged_date,
                     charged = temp_charged,
                     ifsend  = temp_ifsend, 
                     ifcancel = temp_ifcancel,
                     vendor = temp_vendor,
                     subcontent  = temp_subcontent,
-                    shipping_link = temp_shipping_link
+                    room_temperature_shipping_link = temp_room_temperature_shipping_link,
+                    low_temperature_shipping_link = temp_low_temperature_shipping_link,
                     ).save()
                 print('Done 新增訂單 : '+ each_id)
                 #except Exception as e:

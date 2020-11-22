@@ -149,9 +149,30 @@ class TestALICIA(unittest.TestCase):
         len(set(after_txn_id_vendor_codes)))
 
 
-        
-    
+    def test_if_2_shipping_id_columns_in_dataframe(self):
+        # 測試 常溫宅單編號、低溫宅單編號、常溫貨運連結、低溫貨運連結 兩個欄位，是否有在aggregated_txns裡
+        # 常溫宅單編號  >>  room_temperature_shipping_id
+        # 低溫宅單編號  >>  low_temperature_shipping_id
+        # 常溫貨運連結  >>  room_temperature_shipping_link
+        # 低溫貨運連結  >>  low_temperature_shipping_link
+        self.assertIn('常溫宅單編號', self.alicia.aggregated_txns.columns)
+        self.assertIn('低溫宅單編號', self.alicia.aggregated_txns.columns)
+        self.assertIn('常溫貨運連結', self.alicia.aggregated_txns.columns)
+        self.assertIn('低溫貨運連結', self.alicia.aggregated_txns.columns)
 
+    def test_aggregate_elements_in_subcontent_function(self):
+        # 用來測試將『同一個「自訂訂單編號」中相同的品項合併』的函式
+        # 這個函式理論上收到「abc*1x, ccd*12x, abc*3x, ccd*1g」後，應該產出:
+        # 「abc*4x, ccd*12x, ccd*1g」
+        test_string = 'abc*1x, ccd*12x, abc*3x, ccd*1g, xxc*99ss, xxc*4ss'
+        real_aggregated_txn_in_list = ['abc*4x', 'ccd*12x', 'ccd*1g', 'xxc*103ss']
+        calc_aggregated_txn = self.alicia.aggregate_elements_in_subcontent(test_string)
+        self.assertTrue(
+            all([_.strip() in real_aggregated_txn_in_list for _ in calc_aggregated_txn.split(',')]),
+            calc_aggregated_txn
+        )
+
+        
 
 
 if __name__ == '__main__':
