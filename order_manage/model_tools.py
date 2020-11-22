@@ -37,14 +37,15 @@ class HISTORY_DATA_and_Subcontent_user_edit_record_db_writer:
             '備註':'remark',
             '常溫宅單編號': 'room_temperature_shipping_id',
             '低溫宅單編號': 'low_temperature_shipping_id',
+            '常溫貨運連結':'room_temperature_shipping_link',
+            '低溫貨運連結':'low_temperature_shipping_link',
             '最後回押日':'last_charged_date',
             '回押':'charged',
             '已寄出':'ifsend',
             '已取消':'ifcancel',
             '供應商':'vendor',
             '規格':'subcontent',
-            '常溫貨運連結':'room_temperature_shipping_link',
-            '低溫貨運連結':'low_temperature_shipping_link',
+            
             'unique_id':'unique_id',
         }
 
@@ -126,6 +127,10 @@ class HISTORY_DATA_and_Subcontent_user_edit_record_db_writer:
                     mandarin_column_names.append(k)
                     break
         dataframe_tobe_returned.columns = mandarin_column_names
+        dataframe_tobe_returned = dataframe_tobe_returned[['通路', '抓單日', '修訂出貨日', '最終出貨日', 
+        '訂單編號', '訂購人', '收件人', '貨到付款', '地址', '電話', '手機', '內容物', '金額', 
+        '數量', '備註', '常溫宅單編號', '低溫宅單編號', '常溫貨運連結', '低溫貨運連結', '最後回押日', 
+        '回押', '已寄出', '已取消', '供應商', '規格']]
         return dataframe_tobe_returned
 
 
@@ -196,30 +201,7 @@ class HISTORY_DATA_and_Subcontent_user_edit_record_db_writer:
             )
 
             txn_object.save()
-
-            '''try:
-                _temp_shipping_id = self.dataframe.loc[df_correspondant_index]['shipping_id']
-                # print('write_in_db-1.2', _temp_shipping_id)
-                if len(_temp_shipping_id) == 10:
-                    # 新竹物流的貨運編號長度為10，黑貓的長度為12
-                    _temp_logistic_company = 'xinzhu'
-                elif len(_temp_shipping_id) == 12:
-                    _temp_logistic_company = 'black_cat'
-                # print('write_in_db-1.3', _temp_logistic_company)
-            except:
-                pass
-
-            # print('History_data_update_2 Done')
-            if _temp_logistic_company is not None:
-                txn_object.shipping_id = _temp_shipping_id
-                txn_object.shipping_link = 'http://61.222.157.151/order_manage/edo_url/?shipping_number=' + str(_temp_shipping_id) + '&logistic_company=' + _temp_logistic_company
-            elif _temp_logistic_company is None and len(_temp_shipping_id) > 0:
-                # print('History_data_update_3.1: ', _temp_shipping_id)
-                txn_object.shipping_id = _temp_shipping_id
-                txn_object.shipping_link = ''
-            # print('已更新history_data:'+ ids )
-            # print('History_data_update_3 Done')'''
-            
+   
 
         self._check_dataframe()
         self._make_dataframe_columns_to_match_db_columns()
