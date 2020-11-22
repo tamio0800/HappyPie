@@ -1,20 +1,23 @@
 import unittest
 from Alicia_0611 import *
-
+from time import time
 
 class TestALICIA(unittest.TestCase):
     
     def setUp(self):
+        # 每一隻test執行前都會啟動
         self.alicia = ALICIA()
         self.where_does_orders_locate = 'order_manage/ALICIA/temp_files/'
         self.test_order_file_name = '20201119_export_default (1).xls'
         self.alicia.raw_txns_dir = self.where_does_orders_locate
+        self.start_time = time()
         # print("Set up alicia")
 
 
     def tearDown(self):
-        pass
-        # print("Done test.")
+        # 每一隻test執行後都會啟動
+        self.time_diff = time() - self.start_time
+        print(f'Test {self.id()} has spent: {round(self.time_diff, 2)} seconds.')
 
 
     def test_if_ALICIA_could_see_the_data(self):
@@ -75,7 +78,58 @@ class TestALICIA(unittest.TestCase):
         f'\nmax_num: {max_amount_of_vendors}\nmin_num: {min_amount_of_vendors}')
 
 
+    def test_vendor_column_should_only_contain_one_value_after_PRE_CLEAN_RAW_TXNS(self):
+        # PRE_CLEAN_RAW_TXNS 的用意是製作unique_id，好讓資料庫可以分辨資料是否有重複
+        self.alicia._integrate_all_platforms()
+        self.alicia.pre_clean_raw_txns()
 
+        amount_of_vendor_list = self.alicia.aggregated_txns['供應商'].apply(
+            lambda x: len(x.split(',')) if not pd.isnull(x) else 0
+            ).tolist()
+        max_amount_of_vendors, min_amount_of_vendors = max(amount_of_vendor_list), min(amount_of_vendor_list)
+        self.assertTrue(all(_ == 1 for _ in amount_of_vendor_list),
+        f'\nmax_num: {max_amount_of_vendors}\nmin_num: {min_amount_of_vendors}')
+
+
+    def test_only_one_vendor_after_combine_aggregated_txns_and_user_uploaded_aggregated_txns(self):
+        # combine_aggregated_txns_and_user_uploaded_aggregated_txns
+        # 上面這個函式用來將pre_clean_txn中【同訂單編號的交易們】合併在一起，變成一個row，
+        # 我們要測試經過這個函式後，是否每一個row當中只會有一個vendor
+        self.alicia._integrate_all_platforms()
+        
+        
+        combined_df = self.alicia.combine_aggregated_txns_and_user_uploaded_aggregated_txns(
+            self.alicia.aggregated_txns, None)
+        
+        amount_of_vendor_list = combined_df['供應商'].apply(
+            lambda x: len(x.split(',')) if not pd.isnull(x) else 0
+            ).tolist()
+        max_amount_of_vendors, min_amount_of_vendors = max(amount_of_vendor_list), min(amount_of_vendor_list)
+        self.assertTrue(all(_ == 1 for _ in amount_of_vendor_list),
+        f'\nmax_num: {max_amount_of_vendors}\nmin_num: {min_amount_of_vendors}')
+
+
+    def test_restruct_TO_ONE_UNIQUE_ID_DF_AFTER_KASH(self):
+        # 嘗試在這邊重構此一函式，將原來的txn_id分拆成:
+        # txn_id >> 原始收到的txn_id長相，中文改名叫『原始訂單編號』
+        # alicia_txn_id >> 經過【分拆供應商】後，我們給每一個row一個對應id based on txn_id，中文名叫『Alicia訂單編號』
+        
+        self.alicia._integrate_all_platforms()
+        print('Before combine shape: ', self.alicia.aggregated_txns.shape)
+        self.alicia.pre_clean_raw_txns()
+
+        dataframe_after_parsing = \
+            self.alicia.to_one_unique_id_df_after_kash(self.alicia.aggregated_txns)
+        
+        print('dataframe_after_parsing shape: ', dataframe_after_parsing.shape)
+
+        dataframe_after_parsing.to_excel('order_manage/ALICIA/dataframe_after_parsing.xlsx', index=False)
+
+        # 首先測試裡面應該有 "txn_id(原始訂單編號)", "alicia_txn_id(Alicia訂單編號)"欄位
+        self.assertIn('原始訂單編號', dataframe_after_parsing.columns)
+        self.assertIn('Alicia訂單編號', dataframe_after_parsing.columns)
+        
+    
 
 
 

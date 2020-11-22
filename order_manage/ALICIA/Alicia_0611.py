@@ -121,7 +121,7 @@ class ALICIA:
                 _result = str(target)
             return _result
 
-    def pre_clean_raw_txns(self):
+    def pre_clean_raw_txns(self, unique_ids_in_database=None):
         if self.aggregated_txns.shape[0] > 0:
             # self.aggregated_txns 至少要有東西再清理
             # 以通路 + 編號 + 內容物作為暫時的unique_id,
@@ -161,6 +161,11 @@ class ALICIA:
                 #_temp_df.to_excel('pre_clean_raw_txns2.2_temp_df.xlsx', index=False)
                 self.aggregated_txns = pd.concat([non_yabo_part, _temp_df])  # 將兩者合併
 
+            if unique_ids_in_database is not None and len(unique_ids_in_database) > 0:
+                # user有傳值進來
+                self.aggregated_txns = \
+                    self.aggregated_txns[~self.aggregated_txn.unique_id.isin(unique_ids_in_database)].reset_index(drop=True)
+
 
     def get_today(self, format='%Y%m%d'):
         return datetime.today().strftime(format)
@@ -180,7 +185,7 @@ class ALICIA:
         with open(path_of_new_flag, 'w') as w:
             w.write('done!')
 
-    def combine_aggregated_txns_and_user_uploaded_aggregated_txns(self, not_user_uploaded_df, user_uploaded_df, history_data):
+    def combine_aggregated_txns_and_user_uploaded_aggregated_txns(self, not_user_uploaded_df, user_uploaded_df):
         # not_user_uploaded_df指的是user從各個平台下載下來的原始訂單資料，
         # user_uploaded_df則是Alicia整合後的訂單再上傳
         def clean_number_like_columns(df):
@@ -190,11 +195,9 @@ class ALICIA:
             df['電話'] = df['電話'].apply(self.make_phone_and_mobile_number_clean)
             return df
         if not_user_uploaded_df is not None:
-            all_unique_ids = list(history_data.objects.values_list('unique_id', flat=True))
             if user_uploaded_df is not None:
                 not_user_uploaded_df.loc[:, 'unique_id'] = \
                     not_user_uploaded_df['通路'] + '-' + not_user_uploaded_df['訂單編號'].apply(self.try_to_be_int_in_str)
-                not_user_uploaded_df = not_user_uploaded_df[~not_user_uploaded_df.unique_id.isin(all_unique_ids)]
 
                 user_uploaded_df.loc[:, 'unique_id'] = \
                     user_uploaded_df['通路'] + '-' + user_uploaded_df['訂單編號'].apply(self.try_to_be_int_in_str)
@@ -210,9 +213,6 @@ class ALICIA:
                 _temp_df = pd.concat([not_user_uploaded_df, user_uploaded_df], join='inner').reset_index(drop=True)
                 return clean_number_like_columns(_temp_df)
             else:
-                not_user_uploaded_df = not_user_uploaded_df[~(
-                    not_user_uploaded_df['通路'] + '-' + not_user_uploaded_df['訂單編號'].apply(self.try_to_be_int_in_str)
-                ).isin(all_unique_ids)]
                 return clean_number_like_columns(not_user_uploaded_df)
         else:
             if user_uploaded_df is not None:
@@ -222,6 +222,8 @@ class ALICIA:
 
     
     def to_one_unique_id_df_after_kash(self, dataframe_with_unique_id_column, linked_symbol=',\n'):
+        ## 這個函示之後要改個名字，顯現它的功能其實是依照『供應商』來將訂單資料分拆/合併
+
         # unique_id 理想上由  通路-訂單編號  三個元素構成
         # 此函式是為了將含有多個"unique_id"的dataframe整合成真正的unique_id
         # linked_symbol是連接符號, 用以連接複數"unique_id"的內容物們, 如:
@@ -231,6 +233,15 @@ class ALICIA:
         
         assert dataframe_with_unique_id_column.shape[0] > 0
         # dataframe至少要有東西再丟進來清理
+        dataframe_with_unique_id_column.loc[:, 'Alicia訂單編號'] = ''
+        # 新增『Alicia訂單編號』欄位
+        dataframe_with_unique_id_column = dataframe_with_unique_id_column[
+            ['通路', '抓單日', '修訂出貨日', '最終出貨日', '訂單編號', 'Alicia訂單編號', '訂購人', 
+            '收件人', '貨到付款', '電話', '手機', '地址', '內容物', '數量', '金額', '備註', '宅單', 
+            '最後回押日', '回押', '已寄出', '已取消', '供應商', '規格', '貨運連結', 'unique_id']
+        ]  # 將此欄位放到『訂單編號後面』
+
+        dataframe_with_unique_id_column.rename(columns={'訂單編號': '原始訂單編號'}, inplace=True)
 
         if dataframe_with_unique_id_column.shape[0] != len(dataframe_with_unique_id_column.unique_id.unique()):
             # dataframe 長度與 其中的 unique_id 長度不同, 代表需要進行整合歸戶(unique_id)
@@ -677,7 +688,7 @@ class ALICIA:
                 is_found = False
                 return is_found, is_error, exception_files
             else:
-                print('_intergrate_with: ', platform, txn_paths)
+                # print('_intergrate_with: ', platform, txn_paths)
                 for txn_path in txn_paths:
                     try:
                         _file_created_date = self._get_file_created_date(txn_path)

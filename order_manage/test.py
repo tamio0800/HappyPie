@@ -14,9 +14,10 @@ class system_upgrade_201121_test(TestCase):
         
 
     def test_if_excel_file_uploaded_correctly(self):
-        file_path = 'test_folder/20201119_export_default (1).xls'
+        file_path = 'ALICIA/temp_files/20201119_export_default (1).xls'
         uploaded_file = open(file_path, 'rb')
         self.client.post('/order_manage/ordertracking.html', {'files': uploaded_file})
+        # slef.assertIn('您的檔案處理好囉:)', )
 
 
     
