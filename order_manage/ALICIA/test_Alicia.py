@@ -160,10 +160,19 @@ class TestALICIA(unittest.TestCase):
         self.assertIn('常溫貨運連結', self.alicia.aggregated_txns.columns)
         self.assertIn('低溫貨運連結', self.alicia.aggregated_txns.columns)
 
+    def test_aggregate_elements_in_subcontent_function(self):
+        # 用來測試將『同一個「自訂訂單編號」中相同的品項合併』的函式
+        # 這個函式理論上收到「abc*1x, ccd*12x, abc*3x, ccd*1g」後，應該產出:
+        # 「abc*4x, ccd*12x, ccd*1g」
+        test_string = 'abc*1x, ccd*12x, abc*3x, ccd*1g, xxc*99ss, xxc*4ss'
+        real_aggregated_txn_in_list = ['abc*4x', 'ccd*12x', 'ccd*1g', 'xxc*103ss']
+        calc_aggregated_txn = self.alicia.aggregate_elements_in_subcontent(test_string)
+        self.assertTrue(
+            all([_.strip() in real_aggregated_txn_in_list for _ in calc_aggregated_txn.split(',')]),
+            calc_aggregated_txn
+        )
 
         
-    
-
 
 
 if __name__ == '__main__':

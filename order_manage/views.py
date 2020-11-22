@@ -228,7 +228,9 @@ def ordertracking(request):
 
                     dataframe_after_parsing = alicia.to_one_unique_id_df_after_kash(alicia.aggregated_txns)
                     dataframe_after_parsing = dataframe_after_parsing.drop(['unique_id'], axis=1)
-
+                    dataframe_after_parsing['規格'] = \
+                        dataframe_after_parsing['規格'].apply(alicia.aggregate_elements_in_subcontent)
+                        
                     alicia.remove_unique_id()
                     print('共花了', int(time()-st), '秒.', '\n分析了', dataframe_after_parsing.shape[0], '筆交易.')
                 clean_temp_files_in_folders()

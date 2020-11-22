@@ -280,10 +280,11 @@ class ALICIA:
                     _temp_small_multi_df.loc[0, '金額'] = _temp_small_multi_df['金額'].astype(int).sum()
                 except:
                     pass
-                
                 _temp_df.loc[_temp_df.shape[0]] = \
                         _temp_small_multi_df.loc[0].tolist()
+
             return _temp_df
+            
         return dataframe_with_unique_id_column
                 
 
@@ -679,6 +680,7 @@ class ALICIA:
                         exception_files.append(ntpath.split(txn_path)[1])
                     return is_found, is_error, exception_files
         
+
         elif platform == '樂天派官網':
             def to_get_subcontent(target_string):
                 pattern = re.compile(r'[(]口味選擇:.*[)]|[(]口味:.*[)]|[(]商品規格:.*[)]|[(]規格:.*[)]')
@@ -937,6 +939,7 @@ class ALICIA:
                         exception_files.append(ntpath.split(txn_path)[1])       
                 return is_found, is_error, exception_files
 
+
         elif platform == 'Yahoo購物中心':
 
             if len(txn_paths) == 0:
@@ -1095,6 +1098,7 @@ class ALICIA:
                         is_error = True
                         exception_files.append(ntpath.split(txn_path)[1])                
                 return is_found, is_error, exception_files
+
 
         elif platform == '亞伯':
             if len(txn_paths) == 0:
@@ -1666,6 +1670,7 @@ class ALICIA:
                         exception_files.append(ntpath.split(txn_path)[1])                
                 return is_found, is_error, exception_files
 
+
         elif platform == '整合檔':
             # 整合檔跟其他平台最大的差別在於：它是可以直接被整合進資料庫裡的。
             # 因此不需要多做甚麼資料整理，但仍然要清一下各個column，免得有多餘的空白或跳行。
@@ -1779,6 +1784,66 @@ class ALICIA:
             return raw_number
         else:
             return raw_number
+
+    def aggregate_elements_in_subcontent(self, target_string):
+        # 這個函式用來將同一個「自訂訂單編號」中相同的品項合併
+        # 這個函式理論上收到「abc*1x, ccd*12x, abc*3x, ccd*1g」後，應該產出:
+        # 「abc*4x, ccd*12x, ccd*1g」
+        splitted_target_string = target_string.split(',')
+        pattern = r'\S+[*]\d+\S*'
+        ## 接著我們組一個大字典，分別將all_found以下列方式儲存:
+        ## {product_name: [商品名稱], volume: [數量], unit: [量詞, 沒有的話填入空字串], spec: [商品名稱-量詞]}
+        ## 最後一個spec是為了抓出可以整合的商品
+        subcontent_dict = {'product_name': list(), 'volume': list(), 'unit': list(), 'spec': list()}
+        
+        for each_splitted_element in splitted_target_string:
+            # 先判斷裡面的每一個元素是否符合r'\S+[*]\d+\S*'的規則
+            mapping = re.search(pattern, each_splitted_element)
+            if mapping is not None:
+                mapping_words = mapping.group()
+
+                product_name = mapping_words.split('*')[0]
+                volume = re.search(r'\d+', mapping_words.split('*')[1]).group()
+                unit = mapping_words.split('*')[1].replace(volume, '')
+                # 若沒有量詞時，這樣會自動給值空字串
+                subcontent_dict['product_name'].append(product_name)
+                subcontent_dict['volume'].append(volume)
+                subcontent_dict['unit'].append(unit)
+                subcontent_dict['spec'].append(product_name + '-' + unit)
+
+        ## 接著開始把有同樣product_name以及同樣unit的組合加起來
+        temp_df = pd.DataFrame(data=subcontent_dict)
+        temp_df.volume = temp_df.volume.astype(int)
+        
+        '''    這個temp_df大概會長這樣
+        .  product_name volume unit    spec
+        0          abc      1    x   abc-x
+        1          ccd     12    x   ccd-x
+        2          abc      3    x   abc-x
+        3          ccd      1    g   ccd-g
+        4          xxc     99   ss  xxc-ss
+        5          xxc      4   ss  xxc-ss
+        '''
+        temp_subcontent_in_list = list()
+
+        for each_unique_spec in sorted(temp_df.spec.unique()):
+            _tdf = temp_df[temp_df.spec==each_unique_spec]
+            
+            this_product_name = _tdf.product_name.tolist()[0]
+            this_volume_sum = _tdf.volume.sum()
+            this_unit = _tdf.unit.tolist()[0]
+            temp_subcontent_in_list.append(
+                this_product_name + '*' + str(this_volume_sum) + this_unit)
+        
+        return ', '.join(temp_subcontent_in_list)
+
+
+
+
+
+
+
+
 
 
 
