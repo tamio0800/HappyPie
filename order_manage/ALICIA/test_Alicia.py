@@ -1,6 +1,7 @@
 import unittest
 from Alicia_0611 import *
 from time import time
+#print('\n\n', os.path.abspath(os.curdir), '\n\n')
 
 class TestALICIA(unittest.TestCase):
     
@@ -171,6 +172,31 @@ class TestALICIA(unittest.TestCase):
             all([_.strip() in real_aggregated_txn_in_list for _ in calc_aggregated_txn.split(',')]),
             calc_aggregated_txn
         )
+
+    def test_who_is_vendor_from_this_product(self):
+        df = pd.read_excel('order_manage/ALICIA/temp_files/20201123-012954_待處理訂單資料整合檔.xlsx')
+        vendor_series = \
+            df['內容物'].apply(self.alicia.who_is_vendor_from_this_product)
+        df.loc[:, 'vendor'] = vendor_series
+        df.to_excel('order_manage/ALICIA/vendor_p.xlsx', index=False)
+        self.assertTrue(True)
+
+    def test_to_split_old_unique_ids(self):
+        # test_string = '樂天派官網-堅果先生, 鮮綠生活-1641137'
+        test_string_in_list = \
+            ['Friday-UMEE-20200906583231', 'Friday-堅果先生-20200824545569', 'Friday-堅果先生-20200901569818',
+            'Friday-糖村-20200831568239', 'Friday-蔣老爹-20200702378110', 'Friday-蔣老爹-20200702378905',
+            'LINA@--line-20200724-01', 'LINA@--line-20200730-01', 'LINA@--line-20200730-02',
+            'LaNew-樂天派-G00B43090030', 'LaNew-糖村-G00B43090033', 'LaNew-糖村-G00BM3090014', 'LaNew-糖村-G00KX3090007', 
+            'LaNew-糖村-TM201007W01153', 'MOMO--20200718473979-001-001-001', '東森得易購-金牌大師-169318988',
+            '樂天派官網-台東成功大閘蟹-1581869', '樂天派官網-台東成功大閘蟹-1582140', '樂天派官網-堅果先生, 鮮綠生活-1632488',
+            '樂天派官網-堅果先生, 鮮綠生活-1632578', '樂天派官網-堅果先生, 蔣老爹, 鮮綠生活-1632387']
+        modified_string_in_list = self.alicia.to_split_old_unique_ids(test_string_in_list)
+        print(modified_string_in_list)
+        self.assertGreater(len(modified_string_in_list), len(test_string_in_list),
+        modified_string_in_list)
+        # self.fail(modified_string_in_list)
+        
 
         
 

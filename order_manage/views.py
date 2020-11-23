@@ -1,18 +1,18 @@
 # -*- coding: utf8 -*- 
 from django.shortcuts import render, redirect
-from .models import History_data
+from order_manage.models import History_data
 from django.views import View
 from django.http import HttpResponse , FileResponse
 from django.contrib.auth.decorators import login_required
 from django.core.files.storage import FileSystemStorage
-from .ALICIA import Alicia_0611  # 匯入ALICIA
+from order_manage.ALICIA import Alicia_0611  # 匯入ALICIA
 import pandas as pd, numpy as np
 import os
 from time import time, sleep, localtime
 import subprocess
-from .model_tools import HISTORY_DATA_and_Subcontent_user_edit_record_db_writer
+from order_manage.model_tools import HISTORY_DATA_and_Subcontent_user_edit_record_db_writer
 from django_pandas.io import read_frame
-from .SHIPPING.Shipping_Manager import *
+from order_manage.SHIPPING.Shipping_Manager import *
 
 
 kash = subprocess.Popen(['python3', os.path.join(os.getcwd(),'order_manage','KASH','kashgari_final_with_Alicia.py')],
@@ -169,6 +169,7 @@ def ordertracking(request):
             alicia.wait_till_the_flag_comes_up(
                 'all_flags/ordetracking_function_is_not_running.flag',
                 'all_flags/ordetracking_function_is_running.flag')
+            print('order_tracking: Change is not running to is running.')
             try:
                 # 為了避免發生錯誤時,flag沒有被改回來
 
@@ -208,7 +209,9 @@ def ordertracking(request):
                                             'after_alicia_exception_files': []
                                     })
                 # 前面都只是在清理
+                print('order_tracking info 1: Starts to integrate files.')
                 platforms_found, platforms_not_found, after_alicia_exception_files = alicia._integrate_all_platforms()
+                print('order_tracking info 2: Dobe integrating files.')
                 # alicia.aggregated_txns.to_excel('01_step1_raw.xlsx')
 
                 # print('clean_temp_files_in_folders', platforms_found, platforms_not_found, after_alicia_exception_files)
@@ -220,7 +223,15 @@ def ordertracking(request):
                     # 當alicia.aggregated_txns長度不為0時再進行以下動作，
                     # 反之代表user只上傳了整合訂單檔案。
                     # 因為aggregated_txns只存放除了【整合訂單檔案】
-                    alicia.pre_clean_raw_txns()
+
+                    
+                    unique_ids_in_database_in_list = list(History_data.objects.values_list('unique_id', flat=True))
+                    print('order_tracking info 3: ', unique_ids_in_database_in_list[:10])
+                    modified_unique_ids_in_database = alicia.to_split_old_unique_ids(unique_ids_in_database_in_list)
+                    print('order_tracking info 4: ', modified_unique_ids_in_database[:10])
+
+
+                    alicia.pre_clean_raw_txns(modified_unique_ids_in_database)
                     prod_ipt = alicia.aggregated_txns.loc[:, '規格'].tolist()
                     num_ipt = alicia.aggregated_txns.loc[:, '數量'].astype(str).tolist()
                     result = kashgari_parsing(prod_ipt, num_ipt)
