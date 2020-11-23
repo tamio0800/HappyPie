@@ -182,9 +182,18 @@ class TestALICIA(unittest.TestCase):
         self.assertTrue(True)
 
     def test_to_split_old_unique_ids(self):
-        test_string = '樂天派官網-堅果先生, 鮮綠生活-1641137'
-        modified_string_in_list = self.alicia.to_split_old_unique_ids([test_string,])
-        self.assertGreater(len(modified_string_in_list), 1,
+        # test_string = '樂天派官網-堅果先生, 鮮綠生活-1641137'
+        test_string_in_list = \
+            ['Friday-UMEE-20200906583231', 'Friday-堅果先生-20200824545569', 'Friday-堅果先生-20200901569818',
+            'Friday-糖村-20200831568239', 'Friday-蔣老爹-20200702378110', 'Friday-蔣老爹-20200702378905',
+            'LINA@--line-20200724-01', 'LINA@--line-20200730-01', 'LINA@--line-20200730-02',
+            'LaNew-樂天派-G00B43090030', 'LaNew-糖村-G00B43090033', 'LaNew-糖村-G00BM3090014', 'LaNew-糖村-G00KX3090007', 
+            'LaNew-糖村-TM201007W01153', 'MOMO--20200718473979-001-001-001', '東森得易購-金牌大師-169318988',
+            '樂天派官網-台東成功大閘蟹-1581869', '樂天派官網-台東成功大閘蟹-1582140', '樂天派官網-堅果先生, 鮮綠生活-1632488',
+            '樂天派官網-堅果先生, 鮮綠生活-1632578', '樂天派官網-堅果先生, 蔣老爹, 鮮綠生活-1632387']
+        modified_string_in_list = self.alicia.to_split_old_unique_ids(test_string_in_list)
+        print(modified_string_in_list)
+        self.assertGreater(len(modified_string_in_list), len(test_string_in_list),
         modified_string_in_list)
         # self.fail(modified_string_in_list)
         

@@ -68,7 +68,8 @@ class HISTORY_DATA_and_Subcontent_user_edit_record_db_writer:
                 dataframe_columns = list(self.dataframe.columns)
                 columns_shoud_have = list(self.column_names_dict.keys())[:-1]
                 assert all([_ in columns_shoud_have for _ in dataframe_columns]) == True
-                self.dataframe.loc[:, 'unique_id'] = self.dataframe['通路'] + '-' + self.dataframe['訂單編號'].astype(str)
+                self.dataframe.loc[:, 'unique_id'] = \
+                    self.dataframe['通路'] + '|' + self.dataframe['供應商'] + '|' + self.dataframe['訂單編號'].astype(str)
                 print(self.dataframe.columns)
                 print(self.dataframe.loc[:, 'unique_id'])
             else:
@@ -324,14 +325,16 @@ class HISTORY_DATA_and_Subcontent_user_edit_record_db_writer:
                         temp_shipping_link = 'http://61.222.157.151/order_manage/edo_url/?shipping_number=' + str(temp_shipping_id) + '&logistic_company=' + _temp_logistic_company
                     else:
                         temp_shipping_link = self.dataframe.loc[df_correspondant_index]['shipping_link']'''
-                print('type of temp_file_created_date', type(temp_file_created_date), temp_file_created_date)
-                print('type of temp_file_edited_shipping_date', type(temp_file_edited_shipping_date), temp_file_edited_shipping_date)
-                print('type of temp_file_final_shipping_date', type(temp_file_final_shipping_date), temp_file_final_shipping_date)
+                # print('type of temp_file_created_date', type(temp_file_created_date), temp_file_created_date)
+                # print('type of temp_file_edited_shipping_date', type(temp_file_edited_shipping_date), temp_file_edited_shipping_date)
+                # print('type of temp_file_final_shipping_date', type(temp_file_final_shipping_date), temp_file_final_shipping_date)
                 '''for each_ele in [each_id, temp_platform, temp_file_created_date, temp_file_edited_shipping_date,
                 temp_file_edited_shipping_date, temp_file_final_shipping_date, temp_txn_id, temp_customer_name,
                 temp_receiver_name, temp_paid_after_receiving, temp_receiver_phone_nbr, temp_receiver_mobile,
-                temp_receiver_address, temp_content, temp_how_many, temp_how_much, temp_remark, temp_shipping_id,
-                temp_last_charged_date, temp_charged, temp_ifsend, temp_ifcancel, temp_vendor, temp_subcontent, temp_shipping_link]:
+                temp_receiver_address, temp_content, temp_how_many, temp_how_much, temp_remark,
+                temp_room_temperature_shipping_id, temp_low_temperature_shipping_id,
+                temp_last_charged_date, temp_charged, temp_ifsend, temp_ifcancel, temp_vendor, temp_subcontent, 
+                temp_room_temperature_shipping_link, temp_low_temperature_shipping_link]:
                     print(str(each_ele), each_ele)'''
                 
                 #try:

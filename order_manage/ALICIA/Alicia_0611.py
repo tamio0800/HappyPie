@@ -126,27 +126,29 @@ class ALICIA:
             # self.aggregated_txns 至少要有東西再清理
             # 以通路 + 編號 + 內容物作為暫時的unique_id,
             # 來作為A交易在昨天與今天一起被重複匯進來的處理機制
-            self.aggregated_txns.loc[:, 'pre_clean_unique_id'] = self.aggregated_txns['通路'] + '-' + \
-                self.aggregated_txns['訂單編號'].apply(self.force_float_to_be_int_and_to_string) + '-' + \
-                self.aggregated_txns['供應商'] + '-' + self.aggregated_txns['內容物']
+            self.aggregated_txns.loc[:, 'pre_clean_unique_id'] = self.aggregated_txns['通路'] + '|' + \
+                self.aggregated_txns['訂單編號'].apply(self.force_float_to_be_int_and_to_string) + '|' + \
+                self.aggregated_txns['供應商'] + '|' + self.aggregated_txns['內容物']
                 # self.aggregated_txns['訂單編號'].astype(str) + '-' + \
             self.aggregated_txns = self.aggregated_txns.drop_duplicates(subset='pre_clean_unique_id', keep='first')
             self.aggregated_txns = self.aggregated_txns.sort_values('pre_clean_unique_id').reset_index(drop=True)
             self.aggregated_txns = self.aggregated_txns.drop(['pre_clean_unique_id'], axis=1)
 
             # >> 以通路 + 供應商 + 編號 作為unique_id  2020.11.22
-            self.aggregated_txns.loc[:, 'unique_id'] = self.aggregated_txns['通路'] + '-' + \
-                self.aggregated_txns['供應商'] + '-' + \
+            self.aggregated_txns.loc[:, 'unique_id'] = self.aggregated_txns['通路'] + '|' + \
+                self.aggregated_txns['供應商'] + '|' + \
                 self.aggregated_txns['訂單編號'].apply(self.force_float_to_be_int_and_to_string)
         
             # 針對亞伯做特殊處理
             yabo_part = self.aggregated_txns[self.aggregated_txns['通路']=='亞伯']
             non_yabo_part = self.aggregated_txns[~self.aggregated_txns.index.isin(yabo_part.index)]
+            print('pre_clean_raw_txns 1.5:  Done None Yabo Part!')
+
             if yabo_part.shape[0] > 0:
                 print('pre_clean_raw_txns 2:  Found Yabo!')
                 #yabo_part.to_excel('pre_clean_raw_txns2.1_yabo_part.xlsx', index=False)
                 _temp_df = pd.DataFrame(columns=yabo_part.columns)
-                yabo_part.loc[:, 'unique_id'] = yabo_part['unique_id'].apply(lambda x: '-'.join(x.split('-')[:-1]))
+                yabo_part.loc[:, 'unique_id'] = yabo_part['unique_id'].apply(lambda x: '|'.join(x.split('-')[:-1]))
                 # print('pre_clean_raw_txns 2.1: ', yabo_part.loc[:, 'unique_id'].unique().tolist())
                 # 將unique_id去掉(會員訂單編號的部分)，為了將同一筆訂單合併
                 for each_unique_id in yabo_part['unique_id'].unique().tolist():
@@ -162,12 +164,13 @@ class ALICIA:
                 # print('pre_clean_raw_txns 2.1: ', _temp_df.shape)
                 #_temp_df.to_excel('pre_clean_raw_txns2.2_temp_df.xlsx', index=False)
                 self.aggregated_txns = pd.concat([non_yabo_part, _temp_df])  # 將兩者合併
+                print('pre_clean_raw_txns 3:  Done Yabo Part!')
 
             if unique_ids_in_database is not None and len(unique_ids_in_database) > 0:
                 # user有傳值進來
                 self.aggregated_txns = \
-                    self.aggregated_txns[~self.aggregated_txn.unique_id.isin(unique_ids_in_database)].reset_index(drop=True)
-
+                    self.aggregated_txns[~self.aggregated_txns.unique_id.isin(unique_ids_in_database)].reset_index(drop=True)
+            print('pre_clean_raw_txns 4:  Done Whole Part!')
 
     def get_today(self, format='%Y%m%d'):
         return datetime.today().strftime(format)
@@ -200,11 +203,11 @@ class ALICIA:
         if not_user_uploaded_df is not None:
             if user_uploaded_df is not None:
                 not_user_uploaded_df.loc[:, 'unique_id'] = \
-                    not_user_uploaded_df['通路'] + '-' + not_user_uploaded_df['供應商'] + '-' + \
+                    not_user_uploaded_df['通路'] + '|' + not_user_uploaded_df['供應商'] + '|' + \
                         not_user_uploaded_df['訂單編號'].apply(self.try_to_be_int_in_str)
 
                 user_uploaded_df.loc[:, 'unique_id'] = \
-                    user_uploaded_df['通路'] + '-' + user_uploaded_df['供應商'] + '-' + \
+                    user_uploaded_df['通路'] + '|' + user_uploaded_df['供應商'] + '|' + \
                     user_uploaded_df['訂單編號'].apply(self.try_to_be_int_in_str)
 
                 #  接著要整理一下，如果user_uploaded_df裡有的交易，就從not_user_uploaded_df中刪除
@@ -215,6 +218,7 @@ class ALICIA:
                 not_user_uploaded_df = not_user_uploaded_df[
                     pd.to_datetime(not_user_uploaded_df['抓單日']) > (pd.to_datetime(not_user_uploaded_df['抓單日'])  - pd.Timedelta(days=31))
                 ]
+                user_uploaded_df.to_excel('1124_user_uploaded_df.xlsx', index=False)
                 _temp_df = pd.concat([not_user_uploaded_df, user_uploaded_df], join='inner').reset_index(drop=True)
                 return clean_number_like_columns(_temp_df)
             else:
@@ -529,13 +533,10 @@ class ALICIA:
     def _get_unique_txns(self):
         if self.aggregated_txns.shape[0]:
             # 上面那行代表 aggregated_txns dataframe裡面有資料
-            self.aggregated_txns.loc[:, 'temp_unique_id'] = self.aggregated_txns['抓單日'] + '-' + \
-                                                       self.aggregated_txns['訂單編號'].apply(self.try_to_be_int_in_str) + '-' + \
+            self.aggregated_txns.loc[:, 'temp_unique_id'] = self.aggregated_txns['抓單日'] + '|' + \
+                                                       self.aggregated_txns['訂單編號'].apply(self.try_to_be_int_in_str) + '|' + \
                                                        self.aggregated_txns['通路']
-                                                            
-            #df.loc[:, 'temp_unique_id'] = df['抓單日'] + '-' + \
-            #                                                df['訂單編號'].astype(str) + '-' + \
-            #                                                df['通路']                                             
+                                                                                                  
             # 創立一個暫時的unique_id
             if self.aggregated_txns.shape[0] != len(self.aggregated_txns['temp_unique_id'].unique()):
                 # dataframe 長度與 其中的 unique_id 長度不同, 代表需要進行整合歸戶(id)
@@ -1858,10 +1859,13 @@ class ALICIA:
         _temp_list = list()
         for each_old_unique_id in old_unique_id_in_list:
             if ',' in each_old_unique_id:
-                channel, vendors_string, txn_id = each_old_unique_id.split('-')
-                vendors_in_list = vendors_string.split(', ')
+                channel, vendors_string, txn_id = each_old_unique_id.split('|')
+                if ', ' in vendors_string:
+                    vendors_in_list = vendors_string.split(', ')
+                else:
+                    vendors_in_list = vendors_string.split(',')
                 for each_vendor in vendors_in_list:
-                    _temp_list.append(channel + '-' + each_vendor + '-' + txn_id)
+                    _temp_list.append(channel + '|' + each_vendor + '|' + txn_id)
             else:
                 _temp_list.append(each_old_unique_id)
         return _temp_list
