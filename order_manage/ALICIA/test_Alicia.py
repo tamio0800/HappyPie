@@ -1,6 +1,7 @@
 import unittest
 from Alicia_0611 import *
 from time import time
+#print('\n\n', os.path.abspath(os.curdir), '\n\n')
 
 class TestALICIA(unittest.TestCase):
     
@@ -8,7 +9,7 @@ class TestALICIA(unittest.TestCase):
         # 每一隻test執行前都會啟動
         self.alicia = ALICIA()
         self.where_does_orders_locate = 'order_manage/ALICIA/temp_files/'
-        self.test_order_file_name = '20201119_export_default (1).xls'
+        self.test_order_file_name = '20201119_export_default.xls'
         self.alicia.raw_txns_dir = self.where_does_orders_locate
         self.start_time = time()
         # print("Set up alicia")
@@ -171,6 +172,15 @@ class TestALICIA(unittest.TestCase):
             all([_.strip() in real_aggregated_txn_in_list for _ in calc_aggregated_txn.split(',')]),
             calc_aggregated_txn
         )
+
+    def test_to_split_old_unique_ids(self):
+        df = pd.read_excel('order_manage/ALICIA/20201123-012954_待處理訂單資料整合檔.xlsx')
+        vendor_series = \
+            df['內容物'].apply(self.alicia.who_is_vendor_from_this_product)
+        df.loc[:, 'vendor'] = vendor_series
+        df.to_excel('vendor_p.xlsx', index=False)
+        self.assertTrue(True)
+        
 
         
 

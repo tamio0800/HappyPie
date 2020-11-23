@@ -657,9 +657,9 @@ class ALICIA:
                                                                                     _customer_name,
                                                                                     _receiver_name,
                                                                                     _paid_after_receiving,
+                                                                                    _receiver_address,
                                                                                     _receiver_phone_nbr,
                                                                                     _receiver_mobile,
-                                                                                    _receiver_address,
                                                                                     _content,
                                                                                     _how_many,
                                                                                     _how_much,
@@ -764,9 +764,10 @@ class ALICIA:
                                                                                     _customer_name,
                                                                                     _receiver_name,
                                                                                     _paid_after_receiving,
+                                                                                    _receiver_address,
                                                                                     _receiver_phone_nbr,
                                                                                     _receiver_mobile,
-                                                                                    _receiver_address,
+                                                                                    
                                                                                     _content,
                                                                                     _how_many,
                                                                                     _how_much,
@@ -853,9 +854,10 @@ class ALICIA:
                                                                                         _customer_name,
                                                                                         _receiver_name,
                                                                                         _paid_after_receiving,
+                                                                                        _receiver_address,
                                                                                         _receiver_phone_nbr,
                                                                                         _receiver_mobile,
-                                                                                        _receiver_address,
+                                                                                        
                                                                                         _content,
                                                                                         _how_many,
                                                                                         _how_much,
@@ -915,9 +917,10 @@ class ALICIA:
                                                                                         _customer_name,
                                                                                         _receiver_name,
                                                                                         _paid_after_receiving,
+                                                                                        _receiver_address,
                                                                                         _receiver_phone_nbr,
                                                                                         _receiver_mobile,
-                                                                                        _receiver_address,
+                                                                                        
                                                                                         _content,
                                                                                         _how_many,
                                                                                         _how_much,
@@ -998,9 +1001,10 @@ class ALICIA:
                                                                                     _customer_name,
                                                                                     _receiver_name,
                                                                                     _paid_after_receiving,
+                                                                                    _receiver_address,
                                                                                     _receiver_phone_nbr,
                                                                                     _receiver_mobile,
-                                                                                    _receiver_address,
+                                                                                    
                                                                                     _content,
                                                                                     _how_many,
                                                                                     _how_much,
@@ -1076,9 +1080,10 @@ class ALICIA:
                                                                                     _customer_name,
                                                                                     _receiver_name,
                                                                                     _paid_after_receiving,
+                                                                                    _receiver_address,
                                                                                     _receiver_phone_nbr,
                                                                                     _receiver_mobile,
-                                                                                    _receiver_address,
+                                                                                    
                                                                                     _content,
                                                                                     _how_many,
                                                                                     _how_much,
@@ -1161,9 +1166,10 @@ class ALICIA:
                                                                                     _customer_name,
                                                                                     _receiver_name,
                                                                                     _paid_after_receiving,
+                                                                                    _receiver_address,
                                                                                     _receiver_phone_nbr,
                                                                                     _receiver_mobile,
-                                                                                    _receiver_address,
+                                                                                    
                                                                                     _content,
                                                                                     _how_many,
                                                                                     _how_much,
@@ -1242,9 +1248,10 @@ class ALICIA:
                                                                                     _customer_name,
                                                                                     _receiver_name,
                                                                                     _paid_after_receiving,
+                                                                                    _receiver_address,
                                                                                     _receiver_phone_nbr,
                                                                                     _receiver_mobile,
-                                                                                    _receiver_address,
+                                                                                    
                                                                                     _content,
                                                                                     _how_many,
                                                                                     _how_much,
@@ -1328,9 +1335,10 @@ class ALICIA:
                                                                                     _customer_name,
                                                                                     _receiver_name,
                                                                                     _paid_after_receiving,
+                                                                                    _receiver_address,
                                                                                     _receiver_phone_nbr,
                                                                                     _receiver_mobile,
-                                                                                    _receiver_address,
+                                                                                    
                                                                                     _content,
                                                                                     _how_many,
                                                                                     _how_much,
@@ -1409,9 +1417,10 @@ class ALICIA:
                                                                                     _customer_name,
                                                                                     _receiver_name,
                                                                                     _paid_after_receiving,
+                                                                                    _receiver_address,
                                                                                     _receiver_phone_nbr,
                                                                                     _receiver_mobile,
-                                                                                    _receiver_address,
+                                                                                    
                                                                                     _content,
                                                                                     _how_many,
                                                                                     _how_much,
@@ -1499,9 +1508,10 @@ class ALICIA:
                                                                                     _customer_name,
                                                                                     _receiver_name,
                                                                                     _paid_after_receiving,
+                                                                                    _receiver_address,
                                                                                     _receiver_phone_nbr,
                                                                                     _receiver_mobile,
-                                                                                    _receiver_address,
+                                                                                    
                                                                                     _content,
                                                                                     _how_many,
                                                                                     _how_much,
@@ -1575,9 +1585,10 @@ class ALICIA:
                                                                                     _customer_name,
                                                                                     _receiver_name,
                                                                                     _paid_after_receiving,
+                                                                                    _receiver_address,
                                                                                     _receiver_phone_nbr,
                                                                                     _receiver_mobile,
-                                                                                    _receiver_address,
+                                                                                    
                                                                                     _content,
                                                                                     _how_many,
                                                                                     _how_much,
@@ -1647,9 +1658,10 @@ class ALICIA:
                                                                                     _customer_name,
                                                                                     _receiver_name,
                                                                                     _paid_after_receiving,
+                                                                                    _receiver_address,
                                                                                     _receiver_phone_nbr,
                                                                                     _receiver_mobile,
-                                                                                    _receiver_address,
+                                                                                    
                                                                                     _content,
                                                                                     _how_many,
                                                                                     _how_much,
@@ -1836,6 +1848,21 @@ class ALICIA:
                 this_product_name + '*' + str(this_volume_sum) + this_unit)
         
         return ', '.join(temp_subcontent_in_list)
+
+    def to_split_old_unique_ids(self, old_unique_id_in_list):
+        # As old unique_id contains formats like channel-vendor1, vendor2-txn_id,
+        # which is aborted now; We have to let Alicia know that means:
+        # "channel-vendor1-txn_id" & "channel-vendor2-txn_id" these 2 unique_ids.
+        _temp_list = list()
+        for each_old_unique_id in old_unique_id_in_list:
+            if ',' in each_old_unique_id:
+                channel, vendors_string, txn_id = each_old_unique_id.split('-')
+                vendors_in_list = vendors_string.split(', ')
+                for each_vendor in vendors_in_list:
+                    _temp_list.append(channel + '-' + each_vendor + '-' + txn_id)
+            else:
+                _temp_list.append(each_old_unique_id)
+        return _temp_list
 
 
 
