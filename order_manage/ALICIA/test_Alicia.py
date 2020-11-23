@@ -181,7 +181,12 @@ class TestALICIA(unittest.TestCase):
         df.to_excel('order_manage/ALICIA/vendor_p.xlsx', index=False)
         self.assertTrue(True)
 
-    # def test_to_split_old_unique_ids(self):
+    def test_to_split_old_unique_ids(self):
+        test_string = '樂天派官網-堅果先生, 鮮綠生活-1641137'
+        modified_string_in_list = self.alicia.to_split_old_unique_ids([test_string,])
+        self.assertGreater(len(modified_string_in_list), 1,
+        modified_string_in_list)
+        # self.fail(modified_string_in_list)
         
 
         

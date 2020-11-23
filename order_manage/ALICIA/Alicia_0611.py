@@ -1867,15 +1867,6 @@ class ALICIA:
         return _temp_list
 
 
-
-
-
-
-
-
-
-
-
 if __name__ == '__main__':
     import re, pandas as pd
     x = '加購－寬麵條(數量:1),\n蔣老爹 小資女獨享 水餃2包組(商品規格:麻辣餃x1+四季豆x1)\n紅30年的雞-阿雪手撕雞4盒(小盒)(顏色:4盒)'
