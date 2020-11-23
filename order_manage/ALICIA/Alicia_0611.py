@@ -378,10 +378,12 @@ class ALICIA:
         _result = list()
         for k, v in _prior_vendors.items():
             # 先檢查優先級別較高的供應商
+
             check_if_product_name_contains_any_of_these_value = \
                 any(_ in product_name for _ in v)
             if check_if_product_name_contains_any_of_these_value == True:
                 _result.append(k)
+
         if len(_result) > 0:
             return ','.join(_result)
         else:

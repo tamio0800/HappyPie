@@ -9,7 +9,7 @@ class TestALICIA(unittest.TestCase):
         # 每一隻test執行前都會啟動
         self.alicia = ALICIA()
         self.where_does_orders_locate = 'order_manage/ALICIA/temp_files/'
-        self.test_order_file_name = '20201119_export_default.xls'
+        self.test_order_file_name = '20201119_export_default (1).xls'
         self.alicia.raw_txns_dir = self.where_does_orders_locate
         self.start_time = time()
         # print("Set up alicia")
@@ -173,13 +173,15 @@ class TestALICIA(unittest.TestCase):
             calc_aggregated_txn
         )
 
-    def test_to_split_old_unique_ids(self):
-        df = pd.read_excel('order_manage/ALICIA/20201123-012954_待處理訂單資料整合檔.xlsx')
+    def test_who_is_vendor_from_this_product(self):
+        df = pd.read_excel('order_manage/ALICIA/temp_files/20201123-012954_待處理訂單資料整合檔.xlsx')
         vendor_series = \
             df['內容物'].apply(self.alicia.who_is_vendor_from_this_product)
         df.loc[:, 'vendor'] = vendor_series
-        df.to_excel('vendor_p.xlsx', index=False)
+        df.to_excel('order_manage/ALICIA/vendor_p.xlsx', index=False)
         self.assertTrue(True)
+
+    # def test_to_split_old_unique_ids(self):
         
 
         
