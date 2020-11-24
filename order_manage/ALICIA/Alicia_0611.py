@@ -770,7 +770,6 @@ class ALICIA:
                                                                                     _receiver_address,
                                                                                     _receiver_phone_nbr,
                                                                                     _receiver_mobile,
-                                                                                    
                                                                                     _content,
                                                                                     _how_many,
                                                                                     _how_much,
@@ -784,7 +783,7 @@ class ALICIA:
                                                                                     _vendor,
                                                                                     _subcontent,
                                                                                     _room_temperature_shipping_link,
-                                                                                    _low_temperature_shipping_link,]
+                                                                                    _low_temperature_shipping_link]
                     except Exception as e:
                         print(e)
                         is_error = True
@@ -860,7 +859,6 @@ class ALICIA:
                                                                                         _receiver_address,
                                                                                         _receiver_phone_nbr,
                                                                                         _receiver_mobile,
-                                                                                        
                                                                                         _content,
                                                                                         _how_many,
                                                                                         _how_much,

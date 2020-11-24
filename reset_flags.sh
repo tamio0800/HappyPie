@@ -1,2 +1,2 @@
 #!/bin/bash
-mv all_flags/kashgari_model_is_running.flag all_flags/kashgari_model_is_not_running.flag && mv all_flags/ordetracking_function_is_running all_flags/ordetracking_function_is_not_running
+rm all_flags/* && touch all_flags/kashgari_model_is_not_running.flag all_flags/ordetracking_function_is_not_running.flag

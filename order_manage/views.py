@@ -232,18 +232,21 @@ def ordertracking(request):
 
 
                     alicia.pre_clean_raw_txns(modified_unique_ids_in_database)
-                    prod_ipt = alicia.aggregated_txns.loc[:, '規格'].tolist()
-                    num_ipt = alicia.aggregated_txns.loc[:, '數量'].astype(str).tolist()
-                    result = kashgari_parsing(prod_ipt, num_ipt)
-                    alicia.aggregated_txns.loc[:, '規格'] = np.array(result)
+                    # alicia.aggregated_txns.to_excel('alicia.aggregated_txns.xlsx', index=False)
+                    
+                    if alicia.aggregated_txns.shape[0] > 0:
+                        prod_ipt = alicia.aggregated_txns.loc[:, '規格'].tolist()    
+                        num_ipt = alicia.aggregated_txns.loc[:, '數量'].astype(str).tolist()
+                        result = kashgari_parsing(prod_ipt, num_ipt)
+                        alicia.aggregated_txns.loc[:, '規格'] = np.array(result)
 
-                    dataframe_after_parsing = alicia.to_one_unique_id_df_after_kash(alicia.aggregated_txns)
-                    dataframe_after_parsing = dataframe_after_parsing.drop(['unique_id'], axis=1)
-                    dataframe_after_parsing['規格'] = \
-                        dataframe_after_parsing['規格'].apply(alicia.aggregate_elements_in_subcontent)
-                        
-                    alicia.remove_unique_id()
-                    print('共花了', int(time()-st), '秒.', '\n分析了', dataframe_after_parsing.shape[0], '筆交易.')
+                        dataframe_after_parsing = alicia.to_one_unique_id_df_after_kash(alicia.aggregated_txns)
+                        dataframe_after_parsing = dataframe_after_parsing.drop(['unique_id'], axis=1)
+                        dataframe_after_parsing['規格'] = \
+                            dataframe_after_parsing['規格'].apply(alicia.aggregate_elements_in_subcontent)
+                        alicia.remove_unique_id()
+                        print('共花了', int(time()-st), '秒.', '\n分析了', dataframe_after_parsing.shape[0], '筆交易.')
+                    print('共花了', int(time()-st), '秒.', '\n分析了 0 筆交易.')
                 clean_temp_files_in_folders()
                 # 先清理一下遺留的檔案
             except Exception as e:
@@ -269,8 +272,9 @@ def ordertracking(request):
 
             # 將整理好的資料寫進資料庫
             print('將整理好的資料寫進資料庫...')
-            model_writer = HISTORY_DATA_and_Subcontent_user_edit_record_db_writer(dataframe=dataframe_after_parsing)
-            model_writer.write_in_2diff_db()
+            if dataframe_after_parsing.shape[0] > 0:
+                model_writer = HISTORY_DATA_and_Subcontent_user_edit_record_db_writer(dataframe=dataframe_after_parsing)
+                model_writer.write_in_2diff_db()
 
             # write_current_pending_txns_to_excel_file()
             # 似乎不需要在這裡就將資料寫出, 可以等待user按了下載再產出最新檔案就好
