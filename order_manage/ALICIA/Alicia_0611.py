@@ -921,7 +921,6 @@ class ALICIA:
                                                                                         _receiver_address,
                                                                                         _receiver_phone_nbr,
                                                                                         _receiver_mobile,
-                                                                                        
                                                                                         _content,
                                                                                         _how_many,
                                                                                         _how_much,
@@ -1005,7 +1004,6 @@ class ALICIA:
                                                                                     _receiver_address,
                                                                                     _receiver_phone_nbr,
                                                                                     _receiver_mobile,
-                                                                                    
                                                                                     _content,
                                                                                     _how_many,
                                                                                     _how_much,
@@ -1084,7 +1082,6 @@ class ALICIA:
                                                                                     _receiver_address,
                                                                                     _receiver_phone_nbr,
                                                                                     _receiver_mobile,
-                                                                                    
                                                                                     _content,
                                                                                     _how_many,
                                                                                     _how_much,
@@ -1170,7 +1167,6 @@ class ALICIA:
                                                                                     _receiver_address,
                                                                                     _receiver_phone_nbr,
                                                                                     _receiver_mobile,
-                                                                                    
                                                                                     _content,
                                                                                     _how_many,
                                                                                     _how_much,
@@ -1252,7 +1248,6 @@ class ALICIA:
                                                                                     _receiver_address,
                                                                                     _receiver_phone_nbr,
                                                                                     _receiver_mobile,
-                                                                                    
                                                                                     _content,
                                                                                     _how_many,
                                                                                     _how_much,
@@ -1339,7 +1334,6 @@ class ALICIA:
                                                                                     _receiver_address,
                                                                                     _receiver_phone_nbr,
                                                                                     _receiver_mobile,
-                                                                                    
                                                                                     _content,
                                                                                     _how_many,
                                                                                     _how_much,
@@ -1421,7 +1415,6 @@ class ALICIA:
                                                                                     _receiver_address,
                                                                                     _receiver_phone_nbr,
                                                                                     _receiver_mobile,
-                                                                                    
                                                                                     _content,
                                                                                     _how_many,
                                                                                     _how_much,
@@ -1512,7 +1505,6 @@ class ALICIA:
                                                                                     _receiver_address,
                                                                                     _receiver_phone_nbr,
                                                                                     _receiver_mobile,
-                                                                                    
                                                                                     _content,
                                                                                     _how_many,
                                                                                     _how_much,
@@ -1589,7 +1581,6 @@ class ALICIA:
                                                                                     _receiver_address,
                                                                                     _receiver_phone_nbr,
                                                                                     _receiver_mobile,
-                                                                                    
                                                                                     _content,
                                                                                     _how_many,
                                                                                     _how_much,
@@ -1662,7 +1653,6 @@ class ALICIA:
                                                                                     _receiver_address,
                                                                                     _receiver_phone_nbr,
                                                                                     _receiver_mobile,
-                                                                                    
                                                                                     _content,
                                                                                     _how_many,
                                                                                     _how_much,
