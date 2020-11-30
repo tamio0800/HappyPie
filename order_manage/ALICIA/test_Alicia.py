@@ -9,7 +9,7 @@ class TestALICIA(unittest.TestCase):
         # 每一隻test執行前都會啟動
         self.alicia = ALICIA()
         self.where_does_orders_locate = 'order_manage/ALICIA/temp_files/'
-        self.test_order_file_name = '20201119_export_default (1).xls'
+        self.test_order_file_name = '20201124_export_default (1).xls'
         self.alicia.raw_txns_dir = self.where_does_orders_locate
         self.start_time = time()
         # print("Set up alicia")
@@ -174,7 +174,7 @@ class TestALICIA(unittest.TestCase):
         )
 
     def test_who_is_vendor_from_this_product(self):
-        df = pd.read_excel('order_manage/ALICIA/temp_files/20201123-012954_待處理訂單資料整合檔.xlsx')
+        df = pd.read_excel('order_manage/ALICIA/temp_files/20201124_export_default (1).xls')
         vendor_series = \
             df['內容物'].apply(self.alicia.who_is_vendor_from_this_product)
         df.loc[:, 'vendor'] = vendor_series
