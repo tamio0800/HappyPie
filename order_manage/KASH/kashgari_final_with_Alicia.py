@@ -11,14 +11,13 @@ class kashgari_model:
     def __init__(self):
         # '/mnt/c/Users/common tata/Desktop/Edony_AI/004_Customers/006_E-Commerce/20200331_Tina_aggregation/079_website/happypi_annie/20200426_bert/logs'
         # /home/edony/happypi_0610_annie
-        self.model = kashgari.utils.load_model(os.path.join(os.curdir, '20200426_bert/logs'))
+        self.model = kashgari.utils.load_model("/home/edony-prod/HP_PROJECT/20200426_bert/logs/")
+        # kashgari.utils.load_model(os.path.join(os.curdir, '20200426_bert/logs'))
         self.graph = tf.get_default_graph()
         # 下面這行是為了讓模型先跑一次
         self.model.predict(self.preclean_seq('無敵美味大漢堡'))
 
-
     def preclean_seq(self, target_strs):
-
         if type(target_strs) is str:
             return [[_ for _ in target_strs],]
 
@@ -28,7 +27,6 @@ class kashgari_model:
                 _temp.append([_ for _ in each_target_str])
             return _temp
 
-
     def get_annotations(self, target_str):
         _input = self.preclean_seq(target_str)
         print('get_annotations 1: ', _input, target_str)
@@ -36,19 +34,15 @@ class kashgari_model:
             _output = self.model.predict(_input)[0]
             print('get_annotations 1.1: ', _output)
         prods_index, nums_index = self.get_prod_and_num_index(target_str, _output)
-
         print('get_annotations 2: ', prods_index, nums_index)
         try:
             opt_prods, opt_nums =  self.match(prods_index, nums_index, target_str)
         except:
             opt_prods, opt_nums = 'None', 'None'
-
         return opt_prods, opt_nums
-
         # prods = str(self.get_prod(target_str, _output)).replace('[', '').replace(']', '').replace('\'', '')
         # nums = str(self.get_qnty(target_str, _output)).replace('[', '').replace(']', '').replace('\'', '')
         # return prods + '||||' + nums
-
 
     def get_prod(self, y, y_):
         prods = []
@@ -350,16 +344,16 @@ class kashgari_model:
         for _, c in enumerate(contents_in_array):
             content_by_index_dict[_] = c
         # 這個字典用來儲存每一個index對應的content
-        with open('get_annotations_alicia_0_dict.csv', 'w') as w:
-            w.write('key,value\n')
-            for i, j in content_by_index_dict.items():
-                w.write(str(i) + ',' + str(j) + '\n')
+        #with open('get_annotations_alicia_0_dict.csv', 'w') as w:
+        #    w.write('key,value\n')
+        #    for i, j in content_by_index_dict.items():
+        #        w.write(str(i) + ',' + str(j) + '\n')
         unique_contents = np.array([_ for _ in set(contents_in_array)])
         is_gift_arr, clean_content_arr, multiple_arr, _prefix_arr = [], [], [], []
-        with open('get_annotations_alicia_0.5_unique_contents.txt', 'w') as w:
-            w.write('unique_content\n')
-            for _ in unique_contents:
-                w.write(str(_) + '\n')
+        #with open('get_annotations_alicia_0.5_unique_contents.txt', 'w') as w:
+        #    w.write('unique_content\n')
+        #    for _ in unique_contents:
+        #        w.write(str(_) + '\n')
         for _ in unique_contents:
             is_gift, clean_content, multiple, _prefix = first_clean(_)
 
@@ -374,10 +368,10 @@ class kashgari_model:
 
         opt_prods, opt_nums = self.get_annotations_alicia(clean_content_arr)
         
-        with open('get_annotations_alicia_1.csv', 'w') as w:
-            w.write('opt_prods,opt_nums\n')
-            for i, j in zip(opt_prods, opt_nums):
-                w.write(str(i) + ',' + str(j) + '\n')
+        #with open('get_annotations_alicia_1.csv', 'w') as w:
+        #    w.write('opt_prods,opt_nums\n')
+        #    for i, j in zip(opt_prods, opt_nums):
+        #        w.write(str(i) + ',' + str(j) + '\n')
         print('get_results_alicia 1', opt_prods, opt_nums)
         # opt_prods, opt_nums = kash.get_annotations_alicia(clean_content_arr)
         # 這裡都還是unique contents from contents_in_array
@@ -398,10 +392,10 @@ class kashgari_model:
             mapped_prefix = _prefix_arr[mapped_index]
             print('get_results_alicia 1: ', mapped_opt_prod, mapped_opt_num, 
                 mapped_num, mapped_is_gift, mapped_multiple, mapped_prefix)
-            with open('get_annotations_alicia_2.csv', 'a') as w:
-                w.write('mapped_opt_prod,mapped_opt_num,mapped_num,mapped_is_gift,mapped_multiple,mapped_prefix\n')
-                i, j, k, l, m, n = mapped_opt_prod, mapped_opt_num, mapped_num, mapped_is_gift, mapped_multiple, mapped_prefix
-                w.write(','.join([str(_) for _ in (i, j, k, l, m, n)]) + '\n')
+            #with open('get_annotations_alicia_2.csv', 'a') as w:
+            #    w.write('mapped_opt_prod,mapped_opt_num,mapped_num,mapped_is_gift,mapped_multiple,mapped_prefix\n')
+            #    i, j, k, l, m, n = mapped_opt_prod, mapped_opt_num, mapped_num, mapped_is_gift, mapped_multiple, mapped_prefix
+            #    w.write(','.join([str(_) for _ in (i, j, k, l, m, n)]) + '\n')
             temp_final_outputs.append(second_clean(mapped_opt_prod, mapped_opt_num,
                                                    mapped_num, mapped_is_gift,
                                                    mapped_multiple, mapped_prefix))
@@ -430,10 +424,10 @@ if __name__ == '__main__':
 
     while(1):
         the_input = input()
-        with open('kash_with_alicia_log.txt', 'a') as w:
-            w.write('THE INPUT\n')
-            w.write(the_input)
-            w.write('\n\n')
+        #with open('kash_with_alicia_log.txt', 'a') as w:
+        #    w.write('THE INPUT\n')
+        #    w.write(the_input)
+        #    w.write('\n\n')
         try:
             the_input = eval(the_input)
             # 如果輸入的是list型態, 則第一個元素為產品名稱list, 第二個元素為數量list
@@ -442,11 +436,11 @@ if __name__ == '__main__':
 
         if type(the_input) is list:
             # 代表輸入的其實是list >> 啟用list模式的kash_model
-            with open('kash_with_alicia_log.txt', 'a') as w:
-                w.write('List Detail\n')
-                for i, j in zip(the_input[0], the_input[1]):
-                    w.write(str(i) + ' , ' + str(j) + '\n')
-                    w.write('\n')
+            #with open('kash_with_alicia_log.txt', 'a') as w:
+            #    w.write('List Detail\n')
+            #    for i, j in zip(the_input[0], the_input[1]):
+            #        w.write(str(i) + ' , ' + str(j) + '\n')
+            #        w.write('\n')
             final_outputs = kash.get_results_alicia(the_input[0], the_input[1])
             print('done_parsing')
             print(final_outputs)

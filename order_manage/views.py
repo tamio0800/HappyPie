@@ -1,23 +1,24 @@
 # -*- coding: utf8 -*- 
 from django.shortcuts import render, redirect
-from .models import History_data
+from order_manage.models import History_data
 from django.views import View
 from django.http import HttpResponse , FileResponse
 from django.contrib.auth.decorators import login_required
 from django.core.files.storage import FileSystemStorage
-from .ALICIA import Alicia_0611  # 匯入ALICIA
+from order_manage.ALICIA import Alicia_0611  # 匯入ALICIA
 import pandas as pd, numpy as np
 import os
 from time import time, sleep, localtime
 import subprocess
-from .model_tools import HISTORY_DATA_and_Subcontent_user_edit_record_db_writer
+from order_manage.model_tools import HISTORY_DATA_and_Subcontent_user_edit_record_db_writer
 from django_pandas.io import read_frame
-from .SHIPPING.Shipping_Manager import *
+from order_manage.SHIPPING.Shipping_Manager import *
 
-
-kash = subprocess.Popen(['python3', os.path.join(os.getcwd(),'order_manage','KASH','kashgari_final_with_Alicia.py')],
+kash = subprocess.Popen(['/home/edony-prod/miniconda3/envs/happypie/bin/python', os.path.join(os.getcwd(),'order_manage','KASH','kashgari_final_with_Alicia.py')],
                         stdin=subprocess.PIPE, stdout=subprocess.PIPE)
+
 print('loading model.')
+
 is_ready = 0
 while(is_ready == 0):
     try:
@@ -69,7 +70,6 @@ def to_download_file(request):
         # print('write_current_pending_txns_to_excel_file 1')
         model_writer = HISTORY_DATA_and_Subcontent_user_edit_record_db_writer(dataframe=alicia.aggregated_txns)
         # print('write_current_pending_txns_to_excel_file 2')
-
         _df = model_writer.query_all_pending_txns()
         # print('write_current_pending_txns_to_excel_file 3')
         _df = alicia._clean_dataframe(
@@ -153,6 +153,7 @@ def ordertracking(request):
     alicia = Alicia_0611.ALICIA()
     folder_where_are_uploaded_files_be = 'temp_files'
     folder_where_i_want_all_decrypted_files_be_at = 'order_manage/ALICIA/decrypt'
+
     alicia.raw_txns_dir = folder_where_i_want_all_decrypted_files_be_at
     alicia.decr_raw_txns_dir = folder_where_i_want_all_decrypted_files_be_at
 
@@ -169,6 +170,7 @@ def ordertracking(request):
             alicia.wait_till_the_flag_comes_up(
                 'all_flags/ordetracking_function_is_not_running.flag',
                 'all_flags/ordetracking_function_is_running.flag')
+            print('order_tracking: Change is not running to is running.')
             try:
                 # 為了避免發生錯誤時,flag沒有被改回來
 
@@ -181,24 +183,23 @@ def ordertracking(request):
                 if if_files_are_all_good:
                     # 所有檔案都符合條件, 進行存檔
                     fs = FileSystemStorage()
+                    fs_backup = FileSystemStorage(location='user_uploaded_files/')
+                    # 存放user上傳的訂單資料，以免未來需要做編輯 & 開發新功能
                     for each_file in request.FILES.getlist("files"):
                         print('each_file.name in VIEWS: ', each_file.name)
                         fs.save(each_file.name, each_file)
+                        fs_backup.save(alicia.get_today("%Y%m%d-%H%M%S") + '_' + each_file.name, each_file)
                         # 上傳的檔案將被存放在預設為 '/HAPPYPI_0610_ANNIE/temp_files/' 的資料夾中
                         # 注意! 上傳的檔案包括「需要解密」的檔案跟「不需要解密」的檔案
-
                     alicia.move_files_and_decrypt_them(folder_where_are_uploaded_files_be, 
                                                     folder_where_i_want_all_decrypted_files_be_at)
                     print('Has Successfully Decrypted And Moved All Files.')
-                    pass
                 else:
                     # 上傳的檔案有問題, 需要做例外控管!!!
                     upload_files_conditions = True
-
                     os.rename(
                             'all_flags/ordetracking_function_is_running.flag',
                             'all_flags/ordetracking_function_is_not_running.flag')
-                    
                     return render(request, 'order_manage/ordertracking.html', 
                                 context={
                                             'upload_files_conditions': upload_files_conditions,
@@ -208,45 +209,45 @@ def ordertracking(request):
                                             'platforms_not_found': [],
                                             'after_alicia_exception_files': []
                                     })
-
                 # 前面都只是在清理
-
-                platforms_found, platforms_not_found, after_alicia_exception_files = alicia._intergate_all_platforms()
+                print('order_tracking info 1: Starts to integrate files.')
+                platforms_found, platforms_not_found, after_alicia_exception_files = alicia._integrate_all_platforms()
+                print('order_tracking info 2: Dobe integrating files.')
                 # alicia.aggregated_txns.to_excel('01_step1_raw.xlsx')
 
-                print('clean_temp_files_in_folders', platforms_found, platforms_not_found, after_alicia_exception_files)
+                # print('clean_temp_files_in_folders', platforms_found, platforms_not_found, after_alicia_exception_files)
                 is_integrated_done = True
                 # 上面那行整合各平台交易資訊, 並回傳哪一些平台有找到, 哪一些沒有
 
-                df = None
+                dataframe_after_parsing = None
                 if alicia.aggregated_txns.shape[0] > 0:
                     # 當alicia.aggregated_txns長度不為0時再進行以下動作，
                     # 反之代表user只上傳了整合訂單檔案。
-
                     # 因為aggregated_txns只存放除了【整合訂單檔案】
-                    alicia.pre_clean_raw_txns()
-                    # alicia.aggregated_txns.to_excel('02_step2_preclean.xlsx')
 
-                    prod_ipt = alicia.aggregated_txns.loc[:, '規格'].tolist()
-                    num_ipt = alicia.aggregated_txns.loc[:, '數量'].astype(str).tolist()
+                    
+                    unique_ids_in_database_in_list = list(History_data.objects.values_list('unique_id', flat=True))
+                    print('order_tracking info 3: ', unique_ids_in_database_in_list[:10])
+                    modified_unique_ids_in_database = alicia.to_split_old_unique_ids(unique_ids_in_database_in_list)
+                    print('order_tracking info 4: ', modified_unique_ids_in_database[:10])
 
-                    print('kashgari_parsing Starts.')
-                    result = kashgari_parsing(prod_ipt, num_ipt)
-                    print('kashgari_parsing Successfully.')
 
-                    alicia.aggregated_txns.loc[:, '規格'] = np.array(result)
+                    alicia.pre_clean_raw_txns(modified_unique_ids_in_database)
+                    # alicia.aggregated_txns.to_excel('alicia.aggregated_txns.xlsx', index=False)
+                    
+                    if alicia.aggregated_txns.shape[0] > 0:
+                        prod_ipt = alicia.aggregated_txns.loc[:, '規格'].tolist()    
+                        num_ipt = alicia.aggregated_txns.loc[:, '數量'].astype(str).tolist()
+                        result = kashgari_parsing(prod_ipt, num_ipt)
+                        alicia.aggregated_txns.loc[:, '規格'] = np.array(result)
 
-                    print('to_one_unique_id_df_after_kash Starts.')
-                    df = alicia.to_one_unique_id_df_after_kash(alicia.aggregated_txns)
-                    print('to_one_unique_id_df_after_kash Successfully.')
-
-                    df = df.drop(['unique_id'], axis=1)
-                    # df.aggregated_txns.to_excel('03_step3_df.xlsx')
-                    alicia.remove_unique_id()
-                    # alicia.aggregated_txns.to_excel('04_step4.xlsx')
-
-                    print('共花了', int(time()-st), '秒.', '\n分析了', df.shape[0], '筆交易.')
-
+                        dataframe_after_parsing = alicia.to_one_unique_id_df_after_kash(alicia.aggregated_txns)
+                        dataframe_after_parsing = dataframe_after_parsing.drop(['unique_id'], axis=1)
+                        dataframe_after_parsing['規格'] = \
+                            dataframe_after_parsing['規格'].apply(alicia.aggregate_elements_in_subcontent)
+                        alicia.remove_unique_id()
+                        print('共花了', int(time()-st), '秒.', '\n分析了', dataframe_after_parsing.shape[0], '筆交易.')
+                    print('共花了', int(time()-st), '秒.', '\n分析了 0 筆交易.')
                 clean_temp_files_in_folders()
                 # 先清理一下遺留的檔案
             except Exception as e:
@@ -254,7 +255,6 @@ def ordertracking(request):
                 os.rename(
                     'all_flags/ordetracking_function_is_running.flag',
                     'all_flags/ordetracking_function_is_not_running.flag')
-
             os.rename(
                     'all_flags/ordetracking_function_is_running.flag',
                     'all_flags/ordetracking_function_is_not_running.flag')
@@ -264,18 +264,22 @@ def ordertracking(request):
             # print(df['規格'].tolist())
             # alicia.user_uploaded_aggregated_txns.to_excel('05_step5_user_uploaded.xlsx')
 
-            df = alicia.combine_aggregated_txns_and_user_uploaded_aggregated_txns(
-                df, alicia.user_uploaded_aggregated_txns)
+            dataframe_after_parsing = alicia.combine_aggregated_txns_and_user_uploaded_aggregated_txns(
+                dataframe_after_parsing, alicia.user_uploaded_aggregated_txns)
+                # dataframe_after_parsing指的是user從各個平台下載下來，經過Alicia整理後的原始訂單資料，
+                # user_uploaded_aggregated_txns則是之前已經整理過而產出的訂單整合檔再上傳
 
             # df.to_excel('06_step6_df2.xlsx')
 
             # 將整理好的資料寫進資料庫
-            model_writer = HISTORY_DATA_and_Subcontent_user_edit_record_db_writer(dataframe=df)
-            model_writer.write_in_2diff_db()
+            print('將整理好的資料寫進資料庫...')
+            if dataframe_after_parsing.shape[0] > 0:
+                model_writer = HISTORY_DATA_and_Subcontent_user_edit_record_db_writer(dataframe=dataframe_after_parsing)
+                model_writer.write_in_2diff_db()
 
             # write_current_pending_txns_to_excel_file()
             # 似乎不需要在這裡就將資料寫出, 可以等待user按了下載再產出最新檔案就好
-
+            print('VIEWS HAS TAKEN(S) : ', time() - st)
             return render(request, 'order_manage/ordertracking.html', 
                       locals())
 
