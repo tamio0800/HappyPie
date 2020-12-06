@@ -306,7 +306,7 @@ class ALICIA:
                  '博客來': re.compile(r'^take_order_2[0-9]{13}\s{0,2}[(]博客來[)].xls|^take_order_2[0-9]{13}\s{0,2}.{0,6}.xls'),
                  '台塑': re.compile(r'^Order_2[0-9]{16}[(]台塑[)]'),
                  '整合檔': re.compile(r'.*20[0-9]{6}-[0-9]{6}_.*整合檔.*.xls[x]{0,1}'),
-                 'LaNew': re.compile(r'^(?!.*?take_order)\w{5}_2[0-9]{3}[01][0-9][0123][0-9].{0,6}.xls[x]{0,1}'),
+                 'LaNew': re.compile(r'複{0,1}本{0,1}[_ ]{0,1}訂{0,1}單{0,1}接{0,1}單{0,1}[_ ]{0,1}[A-Z]{3}\d{2}_2[0-9]{3}[01][0-9][0123][0-9].{0,6}.xls[x]{0,1}'),
                  '快車肉乾銷港': re.compile(r'.{0,6}orders\s*[(]{0,1}\d*[)]{0,1}\s*.csv|.{0,6}orders\s*[(]{0,1}\d*[)]{0,1}\s*.{0,6}.xls[x]{0,1}'),
                 }
         # 我們把 "整合檔" 也當作一個平台來處理，只是它不需要被再度整合、也不需要丟進kashgari做分析
@@ -845,6 +845,7 @@ class ALICIA:
                                 _ifsend = False
                                 _ifcancel = False
                                 _subcontent = _temp_df.loc[each_row_index, '單品詳細']
+                                #if len(re.findall(r'\d+/\d+/s{0,1}[-~]/s{0,1}\d+/\d+', _subcontent))
                                 _room_temperature_shipping_link = ''
                                 _low_temperature_shipping_link = ''
                                 # 寫入資料
