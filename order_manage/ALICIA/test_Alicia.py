@@ -43,7 +43,7 @@ class TestALICIA(unittest.TestCase):
         # 檢查是否有找到符合標準的訂單資料
         self.assertGreater(self.alicia.aggregated_txns.shape[0], 0)
         # 檢查讀取到的內容
-        
+    
 
     def test_ALICIA_by_integrate_with_function_rather_than_integrate_all_platforms(self):
         # 先測試單一的「integrate_with」函式，以樂天派官網作為標的

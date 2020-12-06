@@ -84,7 +84,7 @@ class ALICIA:
     def move_files_and_decrypt_them(self, from_dir, to_dir):
         # 先移動需要密碼的那三個平台, 因為處理方式略為不同
         assert from_dir != to_dir
-        for encrypted_platform in ['MOMO', '亞伯', '東森得易購']:
+        for encrypted_platform in ['MOMO', '亞伯', '東森得易購', '特力家Online店']:
             encrypted_txn_files = self._return_txn_path(from_dir, encrypted_platform)
             for each_encrypted_txn_file in encrypted_txn_files:
                 # 下面這句是將路徑/檔案名 分解成 路徑, 檔案名, 使用ntpath在linux與windows環境下都可以正常運作
@@ -308,6 +308,7 @@ class ALICIA:
                  '整合檔': re.compile(r'.*20[0-9]{6}-[0-9]{6}_.*整合檔.*.xls[x]{0,1}'),
                  'LaNew': re.compile(r'複{0,1}本{0,1}[_ ]{0,1}訂{0,1}單{0,1}接{0,1}單{0,1}[_ ]{0,1}[A-Z]{3}\d{2}_2[0-9]{3}[01][0-9][0123][0-9].{0,6}.xls[x]{0,1}'),
                  '快車肉乾銷港': re.compile(r'.{0,6}orders\s*[(]{0,1}\d*[)]{0,1}\s*.csv|.{0,6}orders\s*[(]{0,1}\d*[)]{0,1}\s*.{0,6}.xls[x]{0,1}'),
+                 '特力家Online店': re.compile(r'複{0,1}本{0,1}[_ ]{0,1}TLW\d{27}\s{0,1}[(]{0,1}\d*[)]{0,1}.xls'),
                 }
         # 我們把 "整合檔" 也當作一個平台來處理，只是它不需要被再度整合、也不需要丟進kashgari做分析
         # by Annie and Tamio @2020.06.24
@@ -682,6 +683,84 @@ class ALICIA:
                         is_error = True
                         exception_files.append(ntpath.split(txn_path)[1])
                     return is_found, is_error, exception_files
+
+        elif platform == '特力家Online店':
+            if len(txn_paths) == 0:
+                # print('未找到任何來自『' + platform + '』的交易資料。')
+                is_found = False
+                return is_found, is_error, exception_files
+            else:
+                for txn_path in txn_paths:
+                    try:
+                        _file_created_date = self._get_file_created_date(txn_path)
+                        _temp_df = self._clean_dataframe(pd.read_excel(txn_path, skiprows=1))
+                        
+                        for each_row_index in range(_temp_df.shape[0]):
+                            try:
+                                _txn_id = self.try_to_be_int_in_str(_temp_df.loc[each_row_index, '訂單號碼'])
+                            except Exception as e:
+                                print(e)
+                                _txn_id = _temp_df.loc[each_row_index, '訂單號碼']
+                            _customer_name = _temp_df.loc[each_row_index, '收件人姓名']
+                            _receiver_name = _temp_df.loc[each_row_index, '收件人姓名']
+                            _paid_after_receiving = False
+                            _receiver_address = _temp_df.loc[each_row_index, '地址']
+                            _receiver_phone_nbr = _temp_df.loc[each_row_index, '電話']
+                            _receiver_mobile = _temp_df.loc[each_row_index, '手機']
+                            _content = _temp_df.loc[each_row_index, '網站品名']
+                            _subcontent = _content
+                            if not pd.isnull(_temp_df.loc[each_row_index, '規格']):
+                                _content = self._combine_columns([_temp_df.loc[each_row_index, '網站品名'],
+                                                                _temp_df.loc[each_row_index, '規格']], ', ')
+                                _subcontent = _temp_df.loc[each_row_index, '規格']
+                            else:
+                                _content = _temp_df.loc[each_row_index, '網站品名']
+                                _subcontent = _content
+
+                            _vendor = self.who_is_vendor_from_this_product(_content)
+                            _how_many = int(_temp_df.loc[each_row_index, '數量'])
+                            _how_much = int(_temp_df.loc[each_row_index, '成本(未稅)'])
+                            _remark = _temp_df.loc[each_row_index, '訂單備註']
+                            _room_temperature_shipping_id = ''
+                            _low_temperature_shipping_id = ''
+                            _last_charged_date = ''
+                            _charged = False
+                            _ifsend = False
+                            _ifcancel = False
+                            #temp_df = _clean_dataframe(pd.read_excel(txn_path))
+                            _room_temperature_shipping_link = ''
+                            _low_temperature_shipping_link = ''
+                            # 寫入資料
+                            self.aggregated_txns.loc[self.aggregated_txns.shape[0]] = [platform,
+                                                                                    _file_created_date,
+                                                                                    None,
+                                                                                    None,
+                                                                                    _txn_id,
+                                                                                    _customer_name,
+                                                                                    _receiver_name,
+                                                                                    _paid_after_receiving,
+                                                                                    _receiver_address,
+                                                                                    _receiver_phone_nbr,
+                                                                                    _receiver_mobile,
+                                                                                    _content,
+                                                                                    _how_many,
+                                                                                    _how_much,
+                                                                                    _remark,
+                                                                                    _room_temperature_shipping_id,
+                                                                                    _low_temperature_shipping_id,
+                                                                                    _last_charged_date,
+                                                                                    _charged,
+                                                                                    _ifsend,
+                                                                                    _ifcancel,
+                                                                                    _vendor,
+                                                                                    _subcontent,
+                                                                                    _room_temperature_shipping_link,
+                                                                                    _low_temperature_shipping_link]
+                    except Exception as e:
+                        print(e)
+                        is_error = True
+                        exception_files.append(ntpath.split(txn_path)[1])
+                return is_found, is_error, exception_files
         
 
         elif platform == '樂天派官網':
