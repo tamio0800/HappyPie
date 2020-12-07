@@ -1119,10 +1119,12 @@ class ALICIA:
                         _temp_df = self._clean_dataframe(pd.read_excel(txn_path))
                         for each_row_index in range(_temp_df.shape[0]):
                             try:
-                                _txn_id = self.try_to_be_int_in_str(_temp_df.loc[each_row_index, '訂單號碼'])
+                                _txn_id = self.try_to_be_int_in_str(
+                                    _temp_df.loc[each_row_index, '訂單號碼'].astype(str) + '_' + _temp_df.loc[each_row_index, '訂單項次'].astype(str)
+                                    )
                             except Exception as e:
                                 print(e)
-                                _txn_id = _temp_df.loc[each_row_index, '訂單號碼']
+                                _txn_id = _temp_df.loc[each_row_index, '訂單號碼'].astype(str) + '_' + _temp_df.loc[each_row_index, '訂單項次'].astype(str)
                             _customer_name = _temp_df.loc[each_row_index, '客戶名稱']
                             _receiver_name = _temp_df.loc[each_row_index, '客戶名稱']
                             _paid_after_receiving = False
