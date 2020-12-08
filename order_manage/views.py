@@ -14,9 +14,13 @@ from order_manage.model_tools import HISTORY_DATA_and_Subcontent_user_edit_recor
 from django_pandas.io import read_frame
 from order_manage.SHIPPING.Shipping_Manager import *
 
-kash = subprocess.Popen(['/home/edony-prod/miniconda3/envs/happypie/bin/python', os.path.join(os.getcwd(),'order_manage','KASH','kashgari_final_with_Alicia.py')],
-                        stdin=subprocess.PIPE, stdout=subprocess.PIPE)
-
+try:
+    kash = subprocess.Popen(['/home/edony-prod/miniconda3/envs/happypie/bin/python', os.path.join(os.getcwd(),'order_manage','KASH','kashgari_final_with_Alicia.py')],
+                            stdin=subprocess.PIPE, stdout=subprocess.PIPE)
+except:
+    kash = subprocess.Popen(['python', os.path.join(os.getcwd(),'order_manage','KASH','kashgari_final_with_Alicia.py')],
+                            stdin=subprocess.PIPE, stdout=subprocess.PIPE)
+# '/home/edony-prod/miniconda3/envs/happypie/bin/python'
 print('loading model.')
 
 is_ready = 0

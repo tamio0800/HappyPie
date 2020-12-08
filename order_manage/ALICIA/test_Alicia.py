@@ -9,7 +9,7 @@ class TestALICIA(unittest.TestCase):
         # 每一隻test執行前都會啟動
         self.alicia = ALICIA()
         self.where_does_orders_locate = 'order_manage/ALICIA/temp_files/'
-        self.test_order_file_name = '20201124_export_default (1).xls'
+        self.test_order_file_name = 'A1102_1_011808_20201203164335.xls'
         self.alicia.raw_txns_dir = self.where_does_orders_locate
         self.start_time = time()
         # print("Set up alicia")
@@ -39,16 +39,16 @@ class TestALICIA(unittest.TestCase):
         platforms_found, _platforms_not_found, _after_alicia_exception_files = \
             self.alicia._integrate_all_platforms()
         self.assertGreater(len(platforms_found), 0)
-        self.assertIn('樂天派官網', platforms_found)
+        self.assertIn('MOMO', platforms_found)
         # 檢查是否有找到符合標準的訂單資料
         self.assertGreater(self.alicia.aggregated_txns.shape[0], 0)
         # 檢查讀取到的內容
-        
+    
 
     def test_ALICIA_by_integrate_with_function_rather_than_integrate_all_platforms(self):
         # 先測試單一的「integrate_with」函式，以樂天派官網作為標的
         _is_found, _is_error, _exception_files = \
-            self.alicia._integrate_with('樂天派官網')
+            self.alicia._integrate_with('MOMO')
         self.assertTrue(_is_found, f"_exception_files: {_exception_files}")
 
         # 確認每一個供應商欄位都只有一個值，而且不為0
@@ -173,13 +173,13 @@ class TestALICIA(unittest.TestCase):
             calc_aggregated_txn
         )
 
-    def test_who_is_vendor_from_this_product(self):
+    '''def test_who_is_vendor_from_this_product(self):
         df = pd.read_excel('order_manage/ALICIA/temp_files/20201124_export_default (1).xls')
         vendor_series = \
             df['內容物'].apply(self.alicia.who_is_vendor_from_this_product)
         df.loc[:, 'vendor'] = vendor_series
         df.to_excel('order_manage/ALICIA/vendor_p.xlsx', index=False)
-        self.assertTrue(True)
+        self.assertTrue(True)'''
 
     def test_to_split_old_unique_ids(self):
         # test_string = '樂天派官網-堅果先生, 鮮綠生活-1641137'
