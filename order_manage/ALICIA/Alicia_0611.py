@@ -835,6 +835,7 @@ class ALICIA:
                             _ifsend = False
                             _ifcancel = False
                             _subcontent = to_get_subcontent(_temp_df.loc[each_row_index, '商品名稱'])
+                            # print(f'after to_get_subcontent: {_subcontent}')
                             _room_temperature_shipping_link = ''
                             _low_temperature_shipping_link = ''
                             # 寫入資料
@@ -1874,7 +1875,10 @@ class ALICIA:
         # 這個函式用來將同一個「自訂訂單編號」中相同的品項合併
         # 這個函式理論上收到「abc*1x, ccd*12x, abc*3x, ccd*1g」後，應該產出:
         # 「abc*4x, ccd*12x, ccd*1g」
+        # 將前綴詞與產品分離出來
+        prefix_words = ' '.join([_ for _ in target_string.split() if '*' not in _])
         splitted_target_string = target_string.split(',')
+
         pattern = r'\S+[*]\d+\S*'
         ## 接著我們組一個大字典，分別將all_found以下列方式儲存:
         ## {product_name: [商品名稱], volume: [數量], unit: [量詞, 沒有的話填入空字串], spec: [商品名稱-量詞]}
@@ -1920,7 +1924,7 @@ class ALICIA:
             temp_subcontent_in_list.append(
                 this_product_name + '*' + str(this_volume_sum) + this_unit)
         
-        return ', '.join(temp_subcontent_in_list)
+        return prefix_words + ' ' + ', '.join(temp_subcontent_in_list)
 
     def to_split_old_unique_ids(self, old_unique_id_in_list):
         # As old unique_id contains formats like channel-vendor1, vendor2-txn_id,

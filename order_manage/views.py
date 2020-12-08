@@ -240,9 +240,11 @@ def ordertracking(request):
                     # alicia.aggregated_txns.to_excel('alicia.aggregated_txns.xlsx', index=False)
                     
                     if alicia.aggregated_txns.shape[0] > 0:
-                        prod_ipt = alicia.aggregated_txns.loc[:, '規格'].tolist()    
+                        prod_ipt = alicia.aggregated_txns.loc[:, '規格'].tolist()
+                        # print(f'prod_ipt:  {prod_ipt}')   
                         num_ipt = alicia.aggregated_txns.loc[:, '數量'].astype(str).tolist()
                         result = kashgari_parsing(prod_ipt, num_ipt)
+                        # print(f'result:  {result}')   
                         alicia.aggregated_txns.loc[:, '規格'] = np.array(result)
 
                         dataframe_after_parsing = alicia.to_one_unique_id_df_after_kash(alicia.aggregated_txns)
