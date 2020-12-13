@@ -177,7 +177,6 @@ def ordertracking(request):
             print('order_tracking: Change is not running to is running.')
             try:
                 # 為了避免發生錯誤時,flag沒有被改回來
-
                 clean_temp_files_in_folders()
                 names_of_all_selected_files = [_.name for _ in request.FILES.getlist("files")]
                 
@@ -216,6 +215,7 @@ def ordertracking(request):
                 # 前面都只是在清理
                 print('order_tracking info 1: Starts to integrate files.')
                 platforms_found, platforms_not_found, after_alicia_exception_files = alicia._integrate_all_platforms()
+                print('alicia.aggregated_txns.shape', alicia.aggregated_txns.shape)
                 print('order_tracking info 2: Dobe integrating files.')
                 # alicia.aggregated_txns.to_excel('01_step1_raw.xlsx')
 
@@ -261,9 +261,13 @@ def ordertracking(request):
                 os.rename(
                     'all_flags/ordetracking_function_is_running.flag',
                     'all_flags/ordetracking_function_is_not_running.flag')
-            os.rename(
-                    'all_flags/ordetracking_function_is_running.flag',
-                    'all_flags/ordetracking_function_is_not_running.flag')
+
+            try:
+                os.rename(
+                        'all_flags/ordetracking_function_is_running.flag',
+                        'all_flags/ordetracking_function_is_not_running.flag')
+            except:
+                pass
             # 將flag改回去讓下一個執行緒可以取用
             
             # 整理一下，確認有沒有df這個檔案，以及處理user上傳整合檔該怎麼寫進DB中的問題

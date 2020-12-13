@@ -86,14 +86,32 @@ class ALICIA:
         assert from_dir != to_dir
         for encrypted_platform in ['MOMO', '亞伯', '東森得易購', '特力家Online店']:
             encrypted_txn_files = self._return_txn_path(from_dir, encrypted_platform)
+            print('encrypted_txn_files', encrypted_txn_files)
             for each_encrypted_txn_file in encrypted_txn_files:
                 # 下面這句是將路徑/檔案名 分解成 路徑, 檔案名, 使用ntpath在linux與windows環境下都可以正常運作
                 _, tail_of_file = ntpath.split(each_encrypted_txn_file)
+                print(f'Encrypted files: {each_encrypted_txn_file}')
                 if self.check_if_the_xl_file_is_encrypted(each_encrypted_txn_file):
-                    the_file = ms.OfficeFile(open(each_encrypted_txn_file, 'rb'))
-                    the_file.load_key(password=self.password_dict[encrypted_platform])
-                    the_file.decrypt(open(os.path.join(to_dir, tail_of_file), 'wb'))
-                    os.unlink(each_encrypted_txn_file)
+                    try:
+                        # 嘗試進行解密
+                        the_file = ms.OfficeFile(open(each_encrypted_txn_file, 'rb'))
+                        the_file.load_key(password=self.password_dict[encrypted_platform])
+                        the_file.decrypt(open(os.path.join(to_dir, tail_of_file), 'wb'))
+                    except Exception as e:
+                        the_file = ms.OfficeFile(open(each_encrypted_txn_file, 'rb'))
+                        the_file.load_key(password='')
+                        
+                        the_file.decrypt(open(os.path.join(to_dir, tail_of_file), 'wb'))
+                        #print(f'move_files_and_decrypt_them EXCEPTION: {e}')
+                        #os.rename(each_encrypted_txn_file, os.path.join(to_dir, tail_of_file))
+                        pass
+                    print(f'each_encrypted_txn_file: {each_encrypted_txn_file}')
+                    print(f'os.path.join(to_dir, tail_of_file): {os.path.join(to_dir, tail_of_file)}')
+                    try:
+                        os.unlink(each_encrypted_txn_file)
+                    except Exception as e:
+                        print(f'move_files_and_decrypt_them EXCEPTION(2): {e}')
+                        # os.unlink(each_encrypted_txn_file)
                     # print('Successfully Moved ', tail_of_file)
         # 把剩下的檔案移一移, 包括原先就沒有加密的跟理論上會加密但沒有加密的那些檔案
         for each_file in os.listdir(from_dir):
@@ -298,7 +316,7 @@ class ALICIA:
                  '生活市集': re.compile(r'^2[0-9]{3}-[0-9]{2}-[0-9]{2}_生活市集_\S+'),
                  '樂天派官網': re.compile(r'.*export_[0-9]{2}\w{3}[0-9]{2}\s{0,2}.*xls[x]{0,1}$|.*2[0-9]{7}_export_default.{0,6}.xls[x]{0,1}'),
                  'MOMO': re.compile(r'[A-Z]\d+_\d_\d+_\d+_[20]\d+.xls|\S+\d+\s{0,2}[(]MOMO[)].xls|.*訂單查詢-第三方物流.*xls[x]{0,1}$|[A-Z]\d+_\d_\d+_[20]\d+.{0,6}.xls'),
-                 '亞伯': re.compile(r'[a-z]\d+_PoDetail_\d+.xls|\S+PoDetail_\d+\s{0,2}[(]亞伯[)].xls|[a-z]\d+_shipmentReport_\d+.{0,6}.xls'),
+                 '亞伯': re.compile(r'[a-z]\d+_PoDetail_\d+.xls|\S+PoDetail_\d+\s{0,2}[(]亞伯[)].xls[x]{0,1}|[a-z]\d+_shipmentReport_\d+.{0,6}.xls[x]{0,1}'),
                  '東森得易購': re.compile(r'^[a-z0-9]{8}_20\d+.{0,6}.xls'),
                  'Yahoo購物中心': re.compile(r'^delivery - [0-9]{4}-[0-9]{2}-[0-9]{2}\S+\s{0,2}[(]YAHOO購物中心[)].xls|^delivery - [0-9]{4}-[0-9]{2}-[0-9]{2}\S+\s{0,2}.{0,6}.xls'),
                  'UDN': re.compile(r'^Order_2[0-9]{16}[(][Uu][Dd][Nn][)].{0,6}'),
@@ -1192,11 +1210,12 @@ class ALICIA:
                 is_found = False
                 return is_found, is_error, exception_files
             else:
+                print('Found Yabo.')
+                print(txn_paths)
                 try:
                     for txn_path in txn_paths:
-                        assert (txn_path.endswith('.xls') or txn_path.endswith('.xlsx') or txn_path.endswith('.xlsm'))
-                        # 檢查是否為excel檔
                         _file_created_date = self._get_file_created_date(txn_path)
+                        print('Yabo created_date', _file_created_date)
                         _temp_df = self._clean_dataframe(pd.read_excel(txn_path))
                         for each_row_index in range(_temp_df.shape[0]):
                             try:
@@ -1208,6 +1227,7 @@ class ALICIA:
                                 _txn_id = self._combine_columns([_temp_df.loc[each_row_index, '廠商訂單編號'],
                                                                 _temp_df.loc[each_row_index, '會員訂單編號']],
                                                                 '-')
+                            print('_txn_id', _txn_id)
                             _customer_name = _temp_df.loc[each_row_index, '消費者']
                             _receiver_name = _temp_df.loc[each_row_index, '收貨人姓名']
                             _paid_after_receiving = False
@@ -1619,10 +1639,9 @@ class ALICIA:
                     try:
                         _file_created_date = self._get_file_created_date(txn_path)
                         _temp_df = self._clean_dataframe(pd.read_csv(txn_path))
-                        # _temp_df.loc[:, '_temp_subcontent'] = _temp_df['Product Name'].apply(lambda x: x.split('-')[-1] if '-' in x else x.split(' ')[-2])
-                        # print('ali: spilt')
+                        _temp_df = _temp_df[_temp_df['Payment Status'] == 'paid'].reset_index(drop=True)
+
                         _temp_df.loc[:, '_temp_subcontent'] = _temp_df['Product Name'].apply(lambda x: x.split('】')[-1].split('-')[-1].strip() if '-' in x else x.split('】')[-1].strip())
-                        #_temp_df.loc[:, '_temp_subcontent'] = _temp_df['Product Name'].apply(lambda x: x.split('-')[-1].strip() if '-' in x else x.split(' ')[-2])
                         _temp_df.loc[:, 'customer_name'] = _temp_df['First Name'] + ' ' + _temp_df['Last Name']
                         _temp_df.loc[:, '_temp_remark'] = _temp_df['Order Note'] + '; email:' + _temp_df['Buyer\'s Email Address']
                         _temp_df['Shipping Address'] = _temp_df['Shipping Address'].apply(lambda x: x.replace('\n', ' '))
