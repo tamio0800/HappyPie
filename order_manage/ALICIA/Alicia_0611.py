@@ -82,10 +82,13 @@ class ALICIA:
             return True
 
     def move_files_and_decrypt_them(self, from_dir, to_dir):
-        # 先移動需要密碼的那三個平台, 因為處理方式略為不同
+        # 先移動需要密碼的那幾個平台, 因為處理方式略為不同
         assert from_dir != to_dir
         for encrypted_platform in ['MOMO', '亞伯', '東森得易購', '特力家Online店']:
             encrypted_txn_files = self._return_txn_path(from_dir, encrypted_platform)
+            if encrypted_platform == '亞伯':
+                encrypted_txn_files = [_ for _ in encrypted_txn_files if 'shipmentReport' not in _]
+            
             print('encrypted_txn_files', encrypted_txn_files)
             for each_encrypted_txn_file in encrypted_txn_files:
                 # 下面這句是將路徑/檔案名 分解成 路徑, 檔案名, 使用ntpath在linux與windows環境下都可以正常運作
@@ -100,10 +103,7 @@ class ALICIA:
                     except Exception as e:
                         the_file = ms.OfficeFile(open(each_encrypted_txn_file, 'rb'))
                         the_file.load_key(password='')
-                        
                         the_file.decrypt(open(os.path.join(to_dir, tail_of_file), 'wb'))
-                        #print(f'move_files_and_decrypt_them EXCEPTION: {e}')
-                        #os.rename(each_encrypted_txn_file, os.path.join(to_dir, tail_of_file))
                         pass
                     print(f'each_encrypted_txn_file: {each_encrypted_txn_file}')
                     print(f'os.path.join(to_dir, tail_of_file): {os.path.join(to_dir, tail_of_file)}')
@@ -316,7 +316,7 @@ class ALICIA:
                  '生活市集': re.compile(r'^2[0-9]{3}-[0-9]{2}-[0-9]{2}_生活市集_\S+'),
                  '樂天派官網': re.compile(r'.*export_[0-9]{2}\w{3}[0-9]{2}\s{0,2}.*xls[x]{0,1}$|.*2[0-9]{7}_export_default.{0,6}.xls[x]{0,1}'),
                  'MOMO': re.compile(r'[A-Z]\d+_\d_\d+_\d+_[20]\d+.xls|\S+\d+\s{0,2}[(]MOMO[)].xls|.*訂單查詢-第三方物流.*xls[x]{0,1}$|[A-Z]\d+_\d_\d+_[20]\d+.{0,6}.xls'),
-                 '亞伯': re.compile(r'[a-z]\d+_PoDetail_\d+.xls|\S+PoDetail_\d+\s{0,2}[(]亞伯[)].xls[x]{0,1}|[a-z]\d+_shipmentReport_\d+.{0,6}.xls[x]{0,1}'),
+                 '亞伯': re.compile(r'a52464493_PoDetail_\d+.xls|\S+PoDetail_\d+\s{0,2}[(]亞伯[)].xls[x]{0,1}|a52464493_shipmentReport_\d+.{0,6}.xls[x]{0,1}'),
                  '東森得易購': re.compile(r'^[a-z0-9]{8}_20\d+.{0,6}.xls'),
                  'Yahoo購物中心': re.compile(r'^delivery - [0-9]{4}-[0-9]{2}-[0-9]{2}\S+\s{0,2}[(]YAHOO購物中心[)].xls|^delivery - [0-9]{4}-[0-9]{2}-[0-9]{2}\S+\s{0,2}.{0,6}.xls'),
                  'UDN': re.compile(r'^Order_2[0-9]{16}[(][Uu][Dd][Nn][)].{0,6}'),
@@ -781,7 +781,7 @@ class ALICIA:
                 return is_found, is_error, exception_files
         
 
-        elif platform == '樂天派官網':
+        elif platform == '樂天派官網':  
             def to_get_subcontent(target_string):
                 pattern = re.compile(r'[(]口味選擇:.*[)]|[(]口味:.*[)]|[(]商品規格:.*[)]|[(]規格:.*[)]')
                 if len(re.findall(pattern, target_string)) > 0:
@@ -943,6 +943,19 @@ class ALICIA:
                                 _ifsend = False
                                 _ifcancel = False
                                 _subcontent = _temp_df.loc[each_row_index, '單品詳細']
+                                pattern = r'\d{1,2}/\d{1,2}\s{0,1}-\s{0,1}\d{1,2}/\d{1,2}'
+                                
+                                if _subcontent == '無':
+                                    _subcontent = _content
+
+                                # 若「單品詳細」只有日期，則將與品名合在一起
+                                if len(re.findall(pattern, _subcontent)):
+                                    if re.findall(pattern, _subcontent)[0] == _subcontent:
+                                        _subcontent = \
+                                            self._combine_columns([_temp_df.loc[each_row_index, '品名'],
+                                                                  _temp_df.loc[each_row_index, '單品詳細']],
+                                                                  ' - ')
+
                                 #if len(re.findall(r'\d+/\d+/s{0,1}[-~]/s{0,1}\d+/\d+', _subcontent))
                                 _room_temperature_shipping_link = ''
                                 _low_temperature_shipping_link = ''
@@ -1006,6 +1019,18 @@ class ALICIA:
                                 _ifsend = False
                                 _ifcancel = False
                                 _subcontent = _temp_df.loc[each_row_index, '單品詳細']
+                                
+                                if _subcontent == '無':
+                                    _subcontent = _content
+
+                                # 若「單品詳細」只有日期，則將與品名合在一起
+                                if len(re.findall(pattern, _subcontent)):
+                                    if re.findall(pattern, _subcontent)[0] == _subcontent:
+                                        _subcontent = \
+                                            self._combine_columns([_temp_df.loc[each_row_index, '品名'],
+                                                                  _temp_df.loc[each_row_index, '單品詳細']],
+                                                                  ' - ')
+                                                                  
                                 _room_temperature_shipping_link = ''
                                 _low_temperature_shipping_link = ''
                                 # 寫入資料
@@ -1217,73 +1242,143 @@ class ALICIA:
                         _file_created_date = self._get_file_created_date(txn_path)
                         print('Yabo created_date', _file_created_date)
                         _temp_df = self._clean_dataframe(pd.read_excel(txn_path))
-                        for each_row_index in range(_temp_df.shape[0]):
-                            try:
-                                _txn_id = self._combine_columns([self.try_to_be_int_in_str(_temp_df.loc[each_row_index, '廠商訂單編號']),
-                                                                self.try_to_be_int_in_str(_temp_df.loc[each_row_index, '會員訂單編號'])],
-                                                                '-')
-                            except Exception as e:
-                                print(e)
-                                _txn_id = self._combine_columns([_temp_df.loc[each_row_index, '廠商訂單編號'],
-                                                                _temp_df.loc[each_row_index, '會員訂單編號']],
-                                                                '-')
-                            print('_txn_id', _txn_id)
-                            _customer_name = _temp_df.loc[each_row_index, '消費者']
-                            _receiver_name = _temp_df.loc[each_row_index, '收貨人姓名']
-                            _paid_after_receiving = False
-                            _receiver_address = _temp_df.loc[each_row_index, '收貨人地址']
-                            try:
-                                _receiver_phone_nbr = _temp_df.loc[each_row_index, '收貨人連絡電話']
-                                _receiver_mobile = _temp_df.loc[each_row_index, '收貨人連絡電話']
-                            except:
-                                _receiver_phone_nbr = _temp_df.loc[each_row_index, '收貨人聯絡電話']
-                                _receiver_mobile = _temp_df.loc[each_row_index, '收貨人聯絡電話']
-                            _content = self._combine_columns([_temp_df.loc[each_row_index, '品名'],
-                                                            _temp_df.loc[each_row_index, '選購規格']],
-                                                            ', ')
-                            _vendor = self.who_is_vendor_from_this_product(_content)
-                            _how_many = _temp_df.loc[each_row_index, '數量'].astype(int)
-                            _how_much = _temp_df.loc[each_row_index, '成本小計'].astype(int)
-                            _remark = ''
-                            _room_temperature_shipping_id = ''
-                            _low_temperature_shipping_id = ''
-                            _last_charged_date = ''
-                            _charged = False
-                            _ifsend = False
-                            _ifcancel = False
-                            if not pd.isnull(_temp_df.loc[each_row_index, '選購規格']):
-                                _subcontent = _temp_df.loc[each_row_index, '選購規格']
-                            else:
-                                _subcontent = _temp_df.loc[each_row_index, '品名']
-                            
-                            _room_temperature_shipping_link = ''
-                            _low_temperature_shipping_link = ''
-                            # 寫入資料
-                            self.aggregated_txns.loc[self.aggregated_txns.shape[0]] = [platform,
-                                                                                    _file_created_date,
-                                                                                    None,
-                                                                                    None,
-                                                                                    _txn_id,
-                                                                                    _customer_name,
-                                                                                    _receiver_name,
-                                                                                    _paid_after_receiving,
-                                                                                    _receiver_address,
-                                                                                    _receiver_phone_nbr,
-                                                                                    _receiver_mobile,
-                                                                                    _content,
-                                                                                    _how_many,
-                                                                                    _how_much,
-                                                                                    _remark,
-                                                                                    _room_temperature_shipping_id,
-                                                                                    _low_temperature_shipping_id,
-                                                                                    _last_charged_date,
-                                                                                    _charged,
-                                                                                    _ifsend,
-                                                                                    _ifcancel,
-                                                                                    _vendor,
-                                                                                    _subcontent,
-                                                                                    _room_temperature_shipping_link,
-                                                                                    _low_temperature_shipping_link]
+                        # 亞伯有兩個版本，目前這個是PoDetail版
+                        if 'PoDetail' in txn_path:
+                            for each_row_index in range(_temp_df.shape[0]):
+                                try:
+                                    _txn_id = self._combine_columns([self.try_to_be_int_in_str(_temp_df.loc[each_row_index, '廠商訂單編號']),
+                                                                    self.try_to_be_int_in_str(_temp_df.loc[each_row_index, '會員訂單編號'])],
+                                                                    '-')
+                                except Exception as e:
+                                    print(e)
+                                    _txn_id = self._combine_columns([_temp_df.loc[each_row_index, '廠商訂單編號'],
+                                                                    _temp_df.loc[each_row_index, '會員訂單編號']],
+                                                                    '-')
+                                print('_txn_id', _txn_id)
+                                _customer_name = _temp_df.loc[each_row_index, '消費者']
+                                _receiver_name = _temp_df.loc[each_row_index, '收貨人姓名']
+                                _paid_after_receiving = False
+                                _receiver_address = _temp_df.loc[each_row_index, '收貨人地址']
+                                try:
+                                    _receiver_phone_nbr = _temp_df.loc[each_row_index, '收貨人連絡電話']
+                                    _receiver_mobile = _temp_df.loc[each_row_index, '收貨人連絡電話']
+                                except:
+                                    _receiver_phone_nbr = _temp_df.loc[each_row_index, '收貨人聯絡電話']
+                                    _receiver_mobile = _temp_df.loc[each_row_index, '收貨人聯絡電話']
+                                _content = self._combine_columns([_temp_df.loc[each_row_index, '品名'],
+                                                                _temp_df.loc[each_row_index, '選購規格']],
+                                                                ', ')
+                                _vendor = self.who_is_vendor_from_this_product(_content)
+                                _how_many = _temp_df.loc[each_row_index, '數量'].astype(int)
+                                _how_much = _temp_df.loc[each_row_index, '成本小計'].astype(int)
+                                _remark = ''
+                                _room_temperature_shipping_id = ''
+                                _low_temperature_shipping_id = ''
+                                _last_charged_date = ''
+                                _charged = False
+                                _ifsend = False
+                                _ifcancel = False
+                                if not pd.isnull(_temp_df.loc[each_row_index, '選購規格']):
+                                    _subcontent = _temp_df.loc[each_row_index, '選購規格']
+                                else:
+                                    _subcontent = _temp_df.loc[each_row_index, '品名']
+                                
+                                _room_temperature_shipping_link = ''
+                                _low_temperature_shipping_link = ''
+                                # 寫入資料
+                                self.aggregated_txns.loc[self.aggregated_txns.shape[0]] = [platform,
+                                                                                        _file_created_date,
+                                                                                        None,
+                                                                                        None,
+                                                                                        _txn_id,
+                                                                                        _customer_name,
+                                                                                        _receiver_name,
+                                                                                        _paid_after_receiving,
+                                                                                        _receiver_address,
+                                                                                        _receiver_phone_nbr,
+                                                                                        _receiver_mobile,
+                                                                                        _content,
+                                                                                        _how_many,
+                                                                                        _how_much,
+                                                                                        _remark,
+                                                                                        _room_temperature_shipping_id,
+                                                                                        _low_temperature_shipping_id,
+                                                                                        _last_charged_date,
+                                                                                        _charged,
+                                                                                        _ifsend,
+                                                                                        _ifcancel,
+                                                                                        _vendor,
+                                                                                        _subcontent,
+                                                                                        _room_temperature_shipping_link,
+                                                                                        _low_temperature_shipping_link]
+                        elif 'shipmentReport' in txn_path:
+                            for each_row_index in range(_temp_df.shape[0]):
+                                try:
+                                    _txn_id = self._combine_columns([self.try_to_be_int_in_str(_temp_df.loc[each_row_index, '廠商訂單編號']),
+                                                                    self.try_to_be_int_in_str(_temp_df.loc[each_row_index, '會員訂單編號'])],
+                                                                    '-')
+                                except Exception as e:
+                                    print(e)
+                                    _txn_id = self._combine_columns([_temp_df.loc[each_row_index, '廠商訂單編號'],
+                                                                    _temp_df.loc[each_row_index, '會員訂單編號']],
+                                                                    '-')
+                                print('_txn_id', _txn_id)
+                                _customer_name = _temp_df.loc[each_row_index, '消費者']
+                                _receiver_name = _temp_df.loc[each_row_index, '收貨人姓名']
+                                _paid_after_receiving = False
+                                _receiver_address = _temp_df.loc[each_row_index, '收貨人地址']
+                                try:
+                                    _receiver_phone_nbr = _temp_df.loc[each_row_index, '收貨人連絡電話']
+                                    _receiver_mobile = _temp_df.loc[each_row_index, '收貨人連絡電話']
+                                except:
+                                    _receiver_phone_nbr = _temp_df.loc[each_row_index, '收貨人聯絡電話']
+                                    _receiver_mobile = _temp_df.loc[each_row_index, '收貨人聯絡電話']
+                                _content = self._combine_columns([_temp_df.loc[each_row_index, '品名'],
+                                                                _temp_df.loc[each_row_index, '選購規格']],
+                                                                ', ')
+                                _vendor = self.who_is_vendor_from_this_product(_content)
+                                _how_many = _temp_df.loc[each_row_index, '數量'].astype(int)
+                                _how_much = _temp_df.loc[each_row_index, '成本小計'].astype(int)
+                                _remark = ''
+                                _room_temperature_shipping_id = ''
+                                _low_temperature_shipping_id = ''
+                                _last_charged_date = ''
+                                _charged = False
+                                _ifsend = False
+                                _ifcancel = False
+                                if not pd.isnull(_temp_df.loc[each_row_index, '選購規格']):
+                                    _subcontent = _temp_df.loc[each_row_index, '選購規格']
+                                else:
+                                    _subcontent = _temp_df.loc[each_row_index, '品名']
+                                
+                                _room_temperature_shipping_link = ''
+                                _low_temperature_shipping_link = ''
+                                # 寫入資料
+                                self.aggregated_txns.loc[self.aggregated_txns.shape[0]] = [platform,
+                                                                                        _file_created_date,
+                                                                                        None,
+                                                                                        None,
+                                                                                        _txn_id,
+                                                                                        _customer_name,
+                                                                                        _receiver_name,
+                                                                                        _paid_after_receiving,
+                                                                                        _receiver_address,
+                                                                                        _receiver_phone_nbr,
+                                                                                        _receiver_mobile,
+                                                                                        _content,
+                                                                                        _how_many,
+                                                                                        _how_much,
+                                                                                        _remark,
+                                                                                        _room_temperature_shipping_id,
+                                                                                        _low_temperature_shipping_id,
+                                                                                        _last_charged_date,
+                                                                                        _charged,
+                                                                                        _ifsend,
+                                                                                        _ifcancel,
+                                                                                        _vendor,
+                                                                                        _subcontent,
+                                                                                        _room_temperature_shipping_link,
+                                                                                        _low_temperature_shipping_link]
                 except Exception as e:
                     print(e)
                     is_error = True
