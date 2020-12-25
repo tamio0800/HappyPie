@@ -1019,7 +1019,7 @@ class ALICIA:
                                 _ifsend = False
                                 _ifcancel = False
                                 _subcontent = _temp_df.loc[each_row_index, '單品詳細']
-                                
+                                pattern = r'\d{1,2}/\d{1,2}\s{0,1}-\s{0,1}\d{1,2}/\d{1,2}'
                                 if _subcontent == '無':
                                     _subcontent = _content
 
