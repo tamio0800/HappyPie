@@ -853,6 +853,20 @@ class ALICIA:
                             _ifsend = False
                             _ifcancel = False
                             _subcontent = to_get_subcontent(_temp_df.loc[each_row_index, '商品名稱'])
+
+                            if '青葉臺菜' in _subcontent:
+                                # (到貨日:花膠佛跳牆1組+鰻魚櫻花蝦米糕1組_2/3-2/9到貨)
+                                # (到貨日:花膠佛跳牆1組+鰻魚櫻花蝦米糕1組_1/27-2/2到貨)
+                                # (到貨日:1/27-2/2到貨)
+                                nian_cai_pattern = r'[(]到貨日:.*[)]$'
+                                _target_string = re.findall(nian_cai_pattern, _subcontent)
+                                if len(_target_string):
+                                    # found somthing
+                                    _target_string = _target_string[0][5:-1]
+                                    if len(_target_string) > 13:
+                                        # something like 花膠佛跳牆1組+鰻魚櫻花蝦米糕1組_2/3-2/9到貨
+                                        _subcontent = _target_string
+
                             # print(f'after to_get_subcontent: {_subcontent}')
                             _room_temperature_shipping_link = ''
                             _low_temperature_shipping_link = ''
