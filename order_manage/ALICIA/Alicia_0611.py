@@ -156,7 +156,11 @@ class ALICIA:
             self.aggregated_txns.loc[:, 'unique_id'] = self.aggregated_txns['通路'] + '|' + \
                 self.aggregated_txns['供應商'] + '|' + \
                 self.aggregated_txns['訂單編號'].apply(self.force_float_to_be_int_and_to_string)
-        
+
+            # 2021.01.10 >> 針對 輕滋百蔬宴米糕 做特別處理
+            self.aggregated_txns.loc[:, '規格'] = \
+                self.aggregated_txns.loc[:, '規格'].apply(lambda x: re.sub(r'輕滋百蔬宴米糕', '百蔬宴米糕', x)).apply(lambda x: re.sub(r'加購-錵魚一夜干', '加購 - 錵魚一夜干', x))
+
             # 針對亞伯做特殊處理
             yabo_part = self.aggregated_txns[self.aggregated_txns['通路']=='亞伯']
             non_yabo_part = self.aggregated_txns[~self.aggregated_txns.index.isin(yabo_part.index)]
@@ -236,7 +240,7 @@ class ALICIA:
                 not_user_uploaded_df = not_user_uploaded_df[
                     pd.to_datetime(not_user_uploaded_df['抓單日']) > (pd.to_datetime(not_user_uploaded_df['抓單日'])  - pd.Timedelta(days=31))
                 ]
-                user_uploaded_df.to_excel('1124_user_uploaded_df.xlsx', index=False)
+                # user_uploaded_df.to_excel('1124_user_uploaded_df.xlsx', index=False)
                 _temp_df = pd.concat([not_user_uploaded_df, user_uploaded_df], join='inner').reset_index(drop=True)
                 return clean_number_like_columns(_temp_df)
             else:
