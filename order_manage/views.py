@@ -332,10 +332,15 @@ def ordertracking(request):
             if dataframe_after_parsing.shape[0] > 0:
                 model_writer = HISTORY_DATA_and_Subcontent_user_edit_record_db_writer(dataframe=dataframe_after_parsing)
                 model_writer.write_in_2diff_db()
+                model_writer.qingye_cleaning()
 
             # write_current_pending_txns_to_excel_file()
             # 似乎不需要在這裡就將資料寫出, 可以等待user按了下載再產出最新檔案就好
             print('VIEWS HAS TAKEN(S) : ', time() - st)
+            
+            
+
+
             return render(request, 'order_manage/ordertracking.html', 
                       locals())
 
