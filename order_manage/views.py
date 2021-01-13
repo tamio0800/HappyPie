@@ -314,14 +314,15 @@ def ordertracking(request):
                     # print('test 5')
                     _temp_df.loc[_temp_df.shape[0] - 1, '供應商'] = '青葉'
                     # print('test 6')
-                    _temp_df.loc[_temp_df.shape[0] - 1, 'unique_id'] = \
-                        _temp_df.loc[_temp_df.shape[0] - 1, 'unique_id'].split('|')[0] + '|' + '青葉' + '|' + _temp_df.loc[_temp_df.shape[0] - 1, 'unique_id'].split('|')[2]
+                    #_temp_df.loc[_temp_df.shape[0] - 1, 'unique_id'] = \
+                    #    _temp_df.loc[_temp_df.shape[0] - 1, 'unique_id'].split('|')[0] + '|' + '青葉' + '|' + _temp_df.loc[_temp_df.shape[0] - 1, 'unique_id'].split('|')[2]
+                    #print(f"xxxx {_temp_df.loc[_temp_df.shape[0] - 1, 'unique_id']}")
                     # print('test 7')
                     df_without_qingye = \
                         pd.concat([df_without_qingye, _temp_df]).reset_index(drop=True)
                     # print(df_without_qingye.head(1).T)
                 except Exception as e:
-                    print(f'Exception: {e}')
+                    print(f'qingye part Exception: {e}')
                     break
 
             dataframe_after_parsing = df_without_qingye.sort_values('訂單編號')
