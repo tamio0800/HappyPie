@@ -11,7 +11,7 @@ import numpy as np
 import msoffcrypto as ms
 import ntpath
 import xlrd
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, date as date_function
 import pyDes
 import base64
 
@@ -2019,8 +2019,8 @@ class ALICIA:
                         _temp_df['常溫宅單編號'][~pd.isnull(_temp_df['常溫宅單編號'])] = _temp_df['常溫宅單編號'][~pd.isnull(_temp_df['常溫宅單編號'])].apply(lambda x: str(x).split('.')[0].replace('\'', '').replace('-', ''))
                         _temp_df['低溫宅單編號'][~pd.isnull(_temp_df['低溫宅單編號'])] = _temp_df['低溫宅單編號'][~pd.isnull(_temp_df['低溫宅單編號'])].apply(lambda x: str(x).split('.')[0].replace('\'', '').replace('-', ''))
                         _temp_df['貨到付款'][pd.isnull(_temp_df['貨到付款'])] = False
-                        _temp_df['修訂出貨日'] = pd.to_datetime(_temp_df['修訂出貨日'])
-                        _temp_df['修訂出貨日'][pd.isnull(_temp_df['修訂出貨日'])] = ''
+                        #_temp_df['修訂出貨日'] = pd.to_datetime(_temp_df['修訂出貨日'])
+                        #_temp_df['修訂出貨日'][pd.isnull(_temp_df['修訂出貨日'])] = ''
                         _temp_df['地址'][pd.isnull(_temp_df['地址'])] = ''
                         _temp_df['地址'][pd.isnull(_temp_df['地址'])] = ''
                         _temp_df['金額'][pd.isnull(_temp_df['金額'])] = 0

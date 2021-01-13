@@ -1,3 +1,5 @@
+from datetime import datetime, date as date_function
+from time import monotonic
 import pandas as pd, numpy as np
 from .models import History_data
 from django_pandas.io import read_frame
@@ -250,8 +252,15 @@ class HISTORY_DATA_and_Subcontent_user_edit_record_db_writer:
                     
                     if self._check_if_has_value(self.dataframe.loc[df_correspondant_index]['edited_shipping_date']):
                         print(f"CHANGE DATE {self.dataframe.loc[df_correspondant_index]['edited_shipping_date']}")
-                        setattr(history_data_object, 'edited_shipping_date', self.dataframe.loc[df_correspondant_index]['edited_shipping_date'])
-                        setattr(history_data_object, 'final_shipping_date', self.dataframe.loc[df_correspondant_index]['edited_shipping_date'])
+                        edited_shipping_date = str(self.dataframe.loc[df_correspondant_index]['edited_shipping_date']).split()[0]
+                        _year, _month, _day = edited_shipping_date.split('-')
+                        #print(f'arg1 {edited_shipping_date}')
+                        #print(f'arg2 {_year}-{_month}-{_day}')
+                        #\edited_shipping_date.year, edited_shipping_date._month, edited_shipping_date.day
+                        edited_shipping_date = date_function(year=int(_year), month=int(_month), day=int(_day))
+                        #print(f"CHANGE DATE {edited_shipping_date}")
+                        setattr(history_data_object, 'edited_shipping_date', edited_shipping_date)
+                        setattr(history_data_object, 'final_shipping_date', edited_shipping_date)
 
                     setattr(history_data_object, 'room_temperature_shipping_link', _room_temperature_shipping_link)
                     setattr(history_data_object, 'low_temperature_shipping_link', _low_temperature_shipping_link)
