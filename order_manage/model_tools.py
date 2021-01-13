@@ -249,6 +249,7 @@ class HISTORY_DATA_and_Subcontent_user_edit_record_db_writer:
                         setattr(history_data_object, each_col, self.dataframe.loc[df_correspondant_index][each_col])
                     
                     if self._check_if_has_value(self.dataframe.loc[df_correspondant_index]['edited_shipping_date']):
+                        print(f"CHANGE DATE {self.dataframe.loc[df_correspondant_index]['edited_shipping_date']}")
                         setattr(history_data_object, 'edited_shipping_date', self.dataframe.loc[df_correspondant_index]['edited_shipping_date'])
                         setattr(history_data_object, 'final_shipping_date', self.dataframe.loc[df_correspondant_index]['edited_shipping_date'])
 
@@ -259,7 +260,7 @@ class HISTORY_DATA_and_Subcontent_user_edit_record_db_writer:
                     # print('Done written in database.')
 
                 except Exception as e:
-                    print('encounter exception: ', e, each_col)
+                    print(f'encounter exception: {e}')
                 # print('write_in_2diff_db_2.4: history_data_object has updated.')
                 if history_data_object.subcontent != self.dataframe.loc[df_correspondant_index]['subcontent']:
                     # 規格欄位有被修改過，需要更新追蹤user將規格從什麼改成什麼

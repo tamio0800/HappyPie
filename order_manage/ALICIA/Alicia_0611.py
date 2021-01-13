@@ -179,7 +179,7 @@ class ALICIA:
 
             # 2021.01.10 >> 針對 輕滋百蔬宴米糕 做特別處理
             self.aggregated_txns.loc[:, '規格'] = \
-                self.aggregated_txns.loc[:, '規格'].apply(lambda x: re.sub(r'輕滋百蔬宴米糕', '百蔬宴米糕', x)).apply(lambda x: re.sub(r'加購-錵魚一夜干', '加購 - 錵魚一夜干', x))
+                self.aggregated_txns.loc[:, '規格'].apply(lambda x: re.sub(r'輕滋百蔬宴米糕', ' 百蔬宴米糕', x)).apply(lambda x: re.sub(r'加購-錵魚一夜干', '加購 - 錵魚一夜干', x))
 
             # 針對亞伯做特殊處理
             yabo_part = self.aggregated_txns[self.aggregated_txns['通路']=='亞伯']
@@ -2019,6 +2019,9 @@ class ALICIA:
                         _temp_df['常溫宅單編號'][~pd.isnull(_temp_df['常溫宅單編號'])] = _temp_df['常溫宅單編號'][~pd.isnull(_temp_df['常溫宅單編號'])].apply(lambda x: str(x).split('.')[0].replace('\'', '').replace('-', ''))
                         _temp_df['低溫宅單編號'][~pd.isnull(_temp_df['低溫宅單編號'])] = _temp_df['低溫宅單編號'][~pd.isnull(_temp_df['低溫宅單編號'])].apply(lambda x: str(x).split('.')[0].replace('\'', '').replace('-', ''))
                         _temp_df['貨到付款'][pd.isnull(_temp_df['貨到付款'])] = False
+                        _temp_df['修訂出貨日'] = pd.to_datetime(_temp_df['修訂出貨日'])
+                        _temp_df['修訂出貨日'][pd.isnull(_temp_df['修訂出貨日'])] = ''
+                        _temp_df['地址'][pd.isnull(_temp_df['地址'])] = ''
                         _temp_df['地址'][pd.isnull(_temp_df['地址'])] = ''
                         _temp_df['金額'][pd.isnull(_temp_df['金額'])] = 0
                         _temp_df['數量'][pd.isnull(_temp_df['數量'])] = 1
