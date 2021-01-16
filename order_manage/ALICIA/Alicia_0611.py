@@ -1970,7 +1970,6 @@ class ALICIA:
                             _ifcancel = False
                             _subcontent = \
                                 ', '.join((tdf.loc[:, '商品規格'] + '*' + tdf.loc[:, '數量'].astype(str)).tolist())
-                            
                             sum_how_many = sum(tdf.loc[:, '數量'].astype(int))
                             if sum_how_many >= 4 and _vendor == '水根肉乾':
                                 _subcontent = _subcontent + ', 袋子*' + str(int(sum_how_many/4))
