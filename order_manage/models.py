@@ -36,12 +36,17 @@ class History_data(models.Model):
      
     # 為了使回傳platform名稱而不是object
     def __str__(self):
-        return self.platform
+        return f'{self.platform} - {self.txn_id}'
 
 
-
-##class test_db(models.Model):
- #   t_date = models.CharField(max_length=35, default='')
-#    Volatage = models.FloatField(default=0)
- #   Current = models.FloatField(default=0)
- #   Power = models.FloatField(default=0)
+class Qingye_Niancai_raw_record(models.Model):
+    '''
+    將符合2020青葉年菜grouping機制的交易紀錄留一份在這裡
+    '''
+    txn_id = models.CharField(max_length = 60)
+    vendor = models.CharField(max_length=30, null=True, blank=True, default='')
+    content = models.TextField(null = True)
+     
+    # 為了使回傳platform名稱而不是object
+    def __str__(self):
+        return f'{self.platform} - {self.txn_id}'

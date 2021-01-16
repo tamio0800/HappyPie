@@ -14,6 +14,7 @@ import xlrd
 from datetime import datetime, timedelta, date as date_function
 import pyDes
 import base64
+from order_manage.models import Qingye_Niancai_raw_record
 
 
 class ALICIA:
@@ -141,46 +142,76 @@ class ALICIA:
 
     def pre_clean_raw_txns(self, unique_ids_in_database=None):
         if self.aggregated_txns.shape[0] > 0:
+            self.aggregated_txns['訂單編號'] = self.aggregated_txns['訂單編號'].apply(self.force_float_to_be_int_and_to_string)
             # self.aggregated_txns 至少要有東西再清理
             # 以通路 + 編號 + 內容物作為暫時的unique_id,
             # 來作為A交易在昨天與今天一起被重複匯進來的處理機制
+            self.aggregated_txns['內容物'] = self.aggregated_txns['內容物'].apply(lambda x: re.sub(r'神老師推薦》\s{0,4}', '神老師推薦》', x))
+            self.aggregated_txns['內容物'] = self.aggregated_txns['內容物'].apply(lambda x: re.sub(r'《青葉臺菜X神老師推薦》\s{0,4}冰箱', '《神老師推薦》冰箱', x))
+            self.aggregated_txns['規格'] = self.aggregated_txns['規格'].apply(lambda x: re.sub(r'輕滋', ' ', x))
+            self.aggregated_txns['規格'] = self.aggregated_txns['規格'].apply(lambda x: re.sub(r'到貨日\s{0,2}:\s{0,2}', ' ', x))
 
-            '''long_ge_part_df = self.aggregated_txns[self.aggregated_txns['通路']=='龍哥']
-            long_ge_part_df.loc[:, 'pre_clean_unique_id'] = long_ge_part_df['通路'] + '|' + \
-                long_ge_part_df['訂單編號'].apply(self.force_float_to_be_int_and_to_string) + '|' + \
-                long_ge_part_df['商品規格']           
-            long_ge_part_df = long_ge_part_df.drop_duplicates(subset='pre_clean_unique_id', keep='first')
-            long_ge_part_df = long_ge_part_df.sort_values('pre_clean_unique_id').reset_index(drop=True)
-            long_ge_part_df = long_ge_part_df.drop(['pre_clean_unique_id'], axis=1)
-
-            non_long_ge_part_df = self.aggregated_txns[~self.aggregated_txns.index.isin(long_ge_part_df.index)]
-            non_long_ge_part_df.loc[:, 'pre_clean_unique_id'] = non_long_ge_part_df['通路'] + '|' + \
-                non_long_ge_part_df['訂單編號'].apply(self.force_float_to_be_int_and_to_string) + '|' + \
-                non_long_ge_part_df['供應商'] + '|' + non_long_ge_part_df['內容物']           
-            non_long_ge_part_df = non_long_ge_part_df.drop_duplicates(subset='pre_clean_unique_id', keep='first')
-            non_long_ge_part_df = non_long_ge_part_df.sort_values('pre_clean_unique_id').reset_index(drop=True)
-            non_long_ge_part_df = non_long_ge_part_df.drop(['pre_clean_unique_id'], axis=1)
-            self.aggregated_txns = pd.concat([long_ge_part_df, non_long_ge_part_df])'''
-            
-            
-            self.aggregated_txns.loc[:, 'pre_clean_unique_id'] = self.aggregated_txns['通路'] + '|' + \
-                self.aggregated_txns['訂單編號'].apply(self.force_float_to_be_int_and_to_string) + '|' + \
-                self.aggregated_txns['供應商'] + '|' + self.aggregated_txns['內容物']
-                # self.aggregated_txns['訂單編號'].astype(str) + '-' + \
-            self.aggregated_txns = self.aggregated_txns.drop_duplicates(subset='pre_clean_unique_id', keep='first')
-            self.aggregated_txns = self.aggregated_txns.sort_values('pre_clean_unique_id').reset_index(drop=True)
-            self.aggregated_txns = self.aggregated_txns.drop(['pre_clean_unique_id'], axis=1)
+            try:
+                print(f'pre_clean_raw_txns1 {self.aggregated_txns}')
+                self.aggregated_txns.loc[:, 'pre_clean_unique_id'] = self.aggregated_txns['通路'] + '|' + \
+                    self.aggregated_txns['訂單編號'].apply(self.force_float_to_be_int_and_to_string) + '|' + \
+                    self.aggregated_txns['供應商'] + '|' + self.aggregated_txns['內容物']
+                    # self.aggregated_txns['訂單編號'].astype(str) + '-' + \
+                self.aggregated_txns = self.aggregated_txns.drop_duplicates(subset='pre_clean_unique_id', keep='first')
+                self.aggregated_txns = self.aggregated_txns.sort_values('pre_clean_unique_id').reset_index(drop=True)
+                self.aggregated_txns = self.aggregated_txns.drop(['pre_clean_unique_id'], axis=1)
+                print(f'pre_clean_raw_txns2 {self.aggregated_txns}')
+            except Exception as e:
+                print(f'pre_clean_raw_txns_ERROR {e}')
 
             
             # >> 以通路 + 供應商 + 編號 作為unique_id  2020.11.22
-            self.aggregated_txns.loc[:, 'unique_id'] = self.aggregated_txns['通路'] + '|' + \
-                self.aggregated_txns['供應商'] + '|' + \
-                self.aggregated_txns['訂單編號'].apply(self.force_float_to_be_int_and_to_string)
+            # 2021.01.15 為官網的青葉年菜另做處理
+            try:
+                # print(f'before making unique_id col: {self.aggregated_txns.columns}')
+                official_qingye_txn_ids = self.aggregated_txns[
+                    (self.aggregated_txns['通路'] == '樂天派官網') &
+                    ((self.aggregated_txns['內容物'].str.contains('青葉臺菜')) | 
+                    (self.aggregated_txns['內容物'].str.contains('青葉台菜')))]['訂單編號'].unique()
+                self.aggregated_txns.loc[:, 'unique_id'] = \
+                    self.aggregated_txns['通路'] + '|'\
+                    + self.aggregated_txns['供應商'] + '|'\
+                    + self.aggregated_txns['訂單編號']
+                print(f'pre_clean_raw_txns3 {self.aggregated_txns.shape}')
+                self.aggregated_txns.loc[self.aggregated_txns['訂單編號'].isin(official_qingye_txn_ids), 'unique_id'] = \
+                    self.aggregated_txns[self.aggregated_txns['訂單編號'].isin(official_qingye_txn_ids)]['通路'] + '|'\
+                    + self.aggregated_txns[self.aggregated_txns['訂單編號'].isin(official_qingye_txn_ids)]['供應商'] + '|'\
+                    + self.aggregated_txns[self.aggregated_txns['訂單編號'].isin(official_qingye_txn_ids)]['訂單編號'].apply(self.force_float_to_be_int_and_to_string) + '|'\
+                    + self.aggregated_txns[self.aggregated_txns['訂單編號'].isin(official_qingye_txn_ids)]['內容物'][-20:]
+                print(f'pre_clean_raw_txns4 {self.aggregated_txns.shape}')
+                #self.aggregated_txns.loc[:, 'unique_id'] = \
+                #    self.aggregated_txns['通路'] + '|'\
+                #    + self.aggregated_txns['供應商'] + '|'\
+                #    + self.aggregated_txns['訂單編號'].apply(self.force_float_to_be_int_and_to_string)
+                #print(f'after making unique_id col: {self.aggregated_txns.columns}')
+                #print(f'pre_clean_raw_txns_making_unique_ids: {self.aggregated_txns.unique_id}')
+            except Exception as e:
+                print(f'pre_clean_raw_txns_making_unique_ids error: {e}')
+            #self.aggregated_txns.loc[:, 'unique_id'] = self.aggregated_txns['通路'] + '|' + \
+            #    self.aggregated_txns['供應商'] + '|' + \
+            #    self.aggregated_txns['訂單編號'].apply(self.force_float_to_be_int_and_to_string)
 
             # 2021.01.10 >> 針對 輕滋百蔬宴米糕 做特別處理
             self.aggregated_txns.loc[:, '規格'] = \
                 self.aggregated_txns.loc[:, '規格'].apply(lambda x: re.sub(r'輕滋百蔬宴米糕', ' 百蔬宴米糕', x)).apply(lambda x: re.sub(r'加購-錵魚一夜干', '加購 - 錵魚一夜干', x))
 
+            # 把Qingye 的 txn_id + content + vendor 當作unique_id做比對
+            qingye_unique_string = \
+                [f'{i}-{j}' for i, j in Qingye_Niancai_raw_record.objects.values_list('txn_id', 'content')]
+            if len(qingye_unique_string):
+                # 如果有值再比對就好，這裡要剔除裡面已經有的資料，避免重複計算
+                repeated_index = \
+                    self.aggregated_txns[
+                        (self.aggregated_txns['通路'] == '樂天派官網') &
+                        ~(self.aggregated_txns['訂單編號'] + '-' + self.aggregated_txns['內容物']).isin(qingye_unique_string)].index
+                self.aggregated_txns = self.aggregated_txns[~self.aggregated_txns.index.isin(repeated_index)]
+            print(f'pre_clean_raw_txns5 {self.aggregated_txns.shape}')
+            #print(f'check in pre_clean_function 1: {self.aggregated_txns}')
             # 針對亞伯做特殊處理
             yabo_part = self.aggregated_txns[self.aggregated_txns['通路']=='亞伯']
             non_yabo_part = self.aggregated_txns[~self.aggregated_txns.index.isin(yabo_part.index)]
@@ -212,6 +243,7 @@ class ALICIA:
                 # user有傳值進來
                 self.aggregated_txns = \
                     self.aggregated_txns[~self.aggregated_txns.unique_id.isin(unique_ids_in_database)].reset_index(drop=True)
+            #print(f'check in pre_clean_function 2: {self.aggregated_txns}')
             print('pre_clean_raw_txns 4:  Done Whole Part!')
 
     def get_today(self, format='%Y%m%d'):
@@ -242,8 +274,12 @@ class ALICIA:
             df['手機'] = df['手機'].apply(self.make_phone_and_mobile_number_clean)
             df['電話'] = df['電話'].apply(self.make_phone_and_mobile_number_clean)
             return df
+        
         if not_user_uploaded_df is not None:
             if user_uploaded_df is not None:
+                #print(f'combine_aggregated_txns_and_user_uploaded_aggregated_txns_user_uploaded_df {user_uploaded_df}')
+                #print(f'combine_aggregated_txns_and_user_uploaded_aggregated_txns_not_user_uploaded_df {not_user_uploaded_df}')
+                
                 not_user_uploaded_df.loc[:, 'unique_id'] = \
                     not_user_uploaded_df['通路'] + '|' + not_user_uploaded_df['供應商'] + '|' + \
                         not_user_uploaded_df['訂單編號'].apply(self.try_to_be_int_in_str)
@@ -252,16 +288,113 @@ class ALICIA:
                     user_uploaded_df['通路'] + '|' + user_uploaded_df['供應商'] + '|' + \
                     user_uploaded_df['訂單編號'].apply(self.try_to_be_int_in_str)
 
-                #  接著要整理一下，如果user_uploaded_df裡有的交易，就從not_user_uploaded_df中刪除
-                not_user_uploaded_df = \
-                    not_user_uploaded_df[~not_user_uploaded_df.unique_id.isin(user_uploaded_df.unique_id)]
-
-                # 再增加一個條件以加速資料寫入的流程>> 1個月以前的交易不做更新(直接從這次的batch中排除)
                 not_user_uploaded_df = not_user_uploaded_df[
-                    pd.to_datetime(not_user_uploaded_df['抓單日']) > (pd.to_datetime(not_user_uploaded_df['抓單日'])  - pd.Timedelta(days=31))
-                ]
-                # user_uploaded_df.to_excel('1124_user_uploaded_df.xlsx', index=False)
+                        pd.to_datetime(not_user_uploaded_df['抓單日']) > (pd.to_datetime(not_user_uploaded_df['抓單日'])  - pd.Timedelta(days=31))
+                    ]
                 _temp_df = pd.concat([not_user_uploaded_df, user_uploaded_df], join='inner').reset_index(drop=True)
+                '''official_qingye_txn_ids = not_user_uploaded_df[
+                    (not_user_uploaded_df['通路'] == '樂天派官網') &
+                    ((not_user_uploaded_df['內容物'].str.contains('青葉臺菜')) | 
+                    (not_user_uploaded_df['內容物'].str.contains('青葉台菜')))]['訂單編號'].unique()
+                print(f'inside_combine_aggregated_txns 1: {not_user_uploaded_df}')
+                print(f'inside_combine_aggregated_txns 2: {official_qingye_txn_ids}')
+                print(f'inside_combine_aggregated_txns 3: {not_user_uploaded_df.columns}')
+                not_user_uploaded_df.loc[:, 'unique_id'] = \
+                    not_user_uploaded_df[~not_user_uploaded_df['訂單編號'].isin(official_qingye_txn_ids)]['通路'] + '|'\
+                        + not_user_uploaded_df[~not_user_uploaded_df['訂單編號'].isin(official_qingye_txn_ids)]['供應商'] + '|'\
+                        + not_user_uploaded_df[~not_user_uploaded_df['訂單編號'].isin(official_qingye_txn_ids)]['訂單編號'].apply(self.force_float_to_be_int_and_to_string)
+                
+                try:
+                    
+                    print(f'inside_combine_aggregated_txns 4: {not_user_uploaded_df.columns}')
+                    not_user_uploaded_df.loc[not_user_uploaded_df['訂單編號'].isin(official_qingye_txn_ids), 'unique_id'] = \
+                        not_user_uploaded_df[not_user_uploaded_df['訂單編號'].isin(official_qingye_txn_ids)]['通路'] + '|'\
+                        + not_user_uploaded_df[not_user_uploaded_df['訂單編號'].isin(official_qingye_txn_ids)]['供應商'] + '|'\
+                        + not_user_uploaded_df[not_user_uploaded_df['訂單編號'].isin(official_qingye_txn_ids)]['訂單編號'].apply(self.force_float_to_be_int_and_to_string) + '|'\
+                        + not_user_uploaded_df[not_user_uploaded_df['訂單編號'].isin(official_qingye_txn_ids)]['內容物'][-20:]
+                    print(f'inside_combine_aggregated_txns 5: {not_user_uploaded_df}')
+                    
+                    #not_user_uploaded_df.loc[~not_user_uploaded_df['訂單編號'].isin(official_qingye_txn_ids), 'unique_id'] = \
+                    #    not_user_uploaded_df[~not_user_uploaded_df['訂單編號'].isin(official_qingye_txn_ids)]['通路'] + '|'\
+                    #    + not_user_uploaded_df[~not_user_uploaded_df['訂單編號'].isin(official_qingye_txn_ids)]['供應商'] + '|'\
+                    #    + not_user_uploaded_df[~not_user_uploaded_df['訂單編號'].isin(official_qingye_txn_ids)]['訂單編號'].apply(self.force_float_to_be_int_and_to_string)
+                    print(f'inside_combine_aggregated_txns 6: {not_user_uploaded_df}')
+                    print(f'inside_combine_aggregated_txns7: {not_user_uploaded_df.unique_id}')
+                    
+                    # 再增加一個條件以加速資料寫入的流程>> 1個月以前的交易不做更新(直接從這次的batch中排除)
+                    
+                except Exception as e:
+                    print(f'Exception in combine_aggregated 1: {e}')
+                
+                try:
+                    if user_uploaded_df.shape[0]:
+                        user_uploaded_df.loc[:, 'unique_id'] = ''
+                        official_qingye_txn_ids = user_uploaded_df[
+                            (user_uploaded_df['通路'] == '樂天派官網') &
+                            ((user_uploaded_df['內容物'].str.contains('青葉臺菜')) | 
+                            (user_uploaded_df['內容物'].str.contains('青葉台菜')))]['訂單編號'].unique()
+
+                        user_uploaded_df.loc[user_uploaded_df['訂單編號'].isin(official_qingye_txn_ids), 'unique_id'] = \
+                            user_uploaded_df[user_uploaded_df['訂單編號'].isin(official_qingye_txn_ids)]['通路'] + '|'\
+                            + user_uploaded_df[user_uploaded_df['訂單編號'].isin(official_qingye_txn_ids)]['供應商'] + '|'\
+                            + user_uploaded_df[user_uploaded_df['訂單編號'].isin(official_qingye_txn_ids)]['訂單編號'].apply(self.force_float_to_be_int_and_to_string) + '|'\
+                            + user_uploaded_df[user_uploaded_df['訂單編號'].isin(official_qingye_txn_ids)]['內容物'][-20:]
+
+                        user_uploaded_df.loc[~user_uploaded_df['訂單編號'].isin(official_qingye_txn_ids), 'unique_id'] = \
+                            user_uploaded_df[~user_uploaded_df['訂單編號'].isin(official_qingye_txn_ids)]['通路'] + '|'\
+                            + user_uploaded_df[~user_uploaded_df['訂單編號'].isin(official_qingye_txn_ids)]['供應商'] + '|'\
+                            + user_uploaded_df[~user_uploaded_df['訂單編號'].isin(official_qingye_txn_ids)]['訂單編號'].apply(self.force_float_to_be_int_and_to_string)
+                        
+                        not_user_uploaded_df = \
+                            not_user_uploaded_df[~not_user_uploaded_df.unique_id.isin(user_uploaded_df.unique_id)]
+
+                        _temp_df = pd.concat([not_user_uploaded_df, user_uploaded_df], join='inner').reset_index(drop=True)
+                    else:
+                        _temp_df = not_user_uploaded_df
+
+                
+                # user_uploaded_df.to_excel('1124_user_uploaded_df.xlsx', index=False)
+                
+                        
+                        #print(f'combine_aggregated_txns_and_user_uploaded_aggregated_txns {not_user_uploaded_df.columns}')
+                except Exception as e:
+                    print(f'Exception in combine_aggregated 2: {e}')
+                official_qingye_txn_ids = not_user_uploaded_df[
+                    (not_user_uploaded_df['通路'] == '樂天派官網') &
+                    ((not_user_uploaded_df['內容物'].str.contains('青葉臺菜')) | 
+                    (not_user_uploaded_df['內容物'].str.contains('青葉台菜')))]['訂單編號'].unique()
+                not_user_uploaded_df.loc[:, 'unique_id'] = ''
+
+                not_user_uploaded_df[not_user_uploaded_df['訂單編號'].isin(official_qingye_txn_ids)].loc[:, 'unique_id'] = \
+                    not_user_uploaded_df[not_user_uploaded_df['訂單編號'].isin(official_qingye_txn_ids)]['通路'] + '|'\
+                    + not_user_uploaded_df[not_user_uploaded_df['訂單編號'].isin(official_qingye_txn_ids)]['供應商'] + '|'\
+                    + not_user_uploaded_df[not_user_uploaded_df['訂單編號'].isin(official_qingye_txn_ids)]['訂單編號'].apply(self.force_float_to_be_int_and_to_string) + '|'\
+                    + not_user_uploaded_df[not_user_uploaded_df['訂單編號'].isin(official_qingye_txn_ids)]['內容物'][-20:]
+
+                not_user_uploaded_df[~not_user_uploaded_df['訂單編號'].isin(official_qingye_txn_ids)].loc[:, 'unique_id'] = \
+                    not_user_uploaded_df[~not_user_uploaded_df['訂單編號'].isin(official_qingye_txn_ids)]['通路'] + '|'\
+                    + not_user_uploaded_df[~not_user_uploaded_df['訂單編號'].isin(official_qingye_txn_ids)]['供應商'] + '|'\
+                    + not_user_uploaded_df[~not_user_uploaded_df['訂單編號'].isin(official_qingye_txn_ids)]['訂單編號'].apply(self.force_float_to_be_int_and_to_string)
+
+                official_qingye_txn_ids = user_uploaded_df[
+                    (user_uploaded_df['通路'] == '樂天派官網') &
+                    ((user_uploaded_df['內容物'].str.contains('青葉臺菜')) | 
+                    (user_uploaded_df['內容物'].str.contains('青葉台菜')))]['訂單編號'].unique()
+                user_uploaded_df.loc[:, 'unique_id'] = ''
+
+                user_uploaded_df[user_uploaded_df['訂單編號'].isin(official_qingye_txn_ids)].loc[:, 'unique_id'] = \
+                    user_uploaded_df[user_uploaded_df['訂單編號'].isin(official_qingye_txn_ids)]['通路'] + '|'\
+                    + user_uploaded_df[user_uploaded_df['訂單編號'].isin(official_qingye_txn_ids)]['供應商'] + '|'\
+                    + user_uploaded_df[user_uploaded_df['訂單編號'].isin(official_qingye_txn_ids)]['訂單編號'].apply(self.force_float_to_be_int_and_to_string) + '|'\
+                    + user_uploaded_df[user_uploaded_df['訂單編號'].isin(official_qingye_txn_ids)]['內容物'][-20:]
+
+                user_uploaded_df[~user_uploaded_df['訂單編號'].isin(official_qingye_txn_ids)].loc[:, 'unique_id'] = \
+                    user_uploaded_df[~user_uploaded_df['訂單編號'].isin(official_qingye_txn_ids)]['通路'] + '|'\
+                    + user_uploaded_df[~user_uploaded_df['訂單編號'].isin(official_qingye_txn_ids)]['供應商'] + '|'\
+                    + user_uploaded_df[~user_uploaded_df['訂單編號'].isin(official_qingye_txn_ids)]['訂單編號'].apply(self.force_float_to_be_int_and_to_string)
+                print(f'combine_aggregated_txns_and_user_uploaded_aggregated_txns {not_user_uploaded_df.columns}')'''
+                #  接著要整理一下，如果user_uploaded_df裡有的交易，就從not_user_uploaded_df中刪除
+                
                 return clean_number_like_columns(_temp_df)
             else:
                 return clean_number_like_columns(not_user_uploaded_df)
@@ -299,35 +432,50 @@ class ALICIA:
         if dataframe_with_unique_id_column.shape[0] != len(dataframe_with_unique_id_column.unique_id.unique()):
             # dataframe 長度與 其中的 unique_id 長度不同, 代表需要進行整合歸戶(unique_id)
             _temp_df = dataframe_with_unique_id_column[dataframe_with_unique_id_column.unique_id.apply(
-                lambda x: True if dataframe_with_unique_id_column[dataframe_with_unique_id_column.unique_id==x].shape[0] == 1 else False)].reset_index(drop=True)
+                lambda x: True if dataframe_with_unique_id_column[dataframe_with_unique_id_column.unique_id==x].shape[0] == 1 else False)]
             _multi_df = dataframe_with_unique_id_column[~dataframe_with_unique_id_column.unique_id.isin(_temp_df.unique_id)].reset_index(drop=True)
             # 將只有1個row的交易移到_temp_df中, 剩下的放到_multi_df中
+            # print(f'_temp_df1: {_temp_df}')
+            try:
+                for each_unique_txn_id in _multi_df['訂單編號'].unique():
+                    tdf = dataframe_with_unique_id_column[dataframe_with_unique_id_column['訂單編號']==each_unique_txn_id]
+                    if sum(tdf['通路'].str.contains('樂天派官網')):
+                        if sum(tdf['內容物'].str.contains('青葉台菜')) + sum(tdf['內容物'].str.contains('青葉臺菜')):
+                            # 如果其中含有任一字眼
+                            _temp_df = pd.concat([tdf, _temp_df]).reset_index(drop=True)
+                        _multi_df = _multi_df[_multi_df['訂單編號'] != each_unique_txn_id].reset_index(drop=True)
+            except Exception as e:
+                print(f'to_one_unique_id_df_after_kash error: {e}')
+                exit()
 
-            for each_unique_txn_id in _multi_df.unique_id.unique():
-                _temp_small_multi_df = _multi_df[_multi_df.unique_id==each_unique_txn_id].reset_index(drop=True)
-                # 創建一個對應的dataframe, 內含交易為對應的unique_txn_id
-                _temp_small_multi_df.loc[0, '內容物'] = self._combine_columns(
-                        _temp_small_multi_df['內容物'].tolist(), linked_symbol)
-                _temp_small_multi_df.loc[0, '備註'] = self._combine_columns(
-                        list(
-                            filter(
-                                lambda x: pd.isnull(x) == False, 
-                                list(set(_temp_small_multi_df['備註'].tolist())))
-                            ), linked_symbol)
-                _temp_small_multi_df.loc[0, '規格'] = self._combine_columns(
-                        _temp_small_multi_df['規格'].tolist(), ', ')
-                _temp_small_multi_df.loc[0, '供應商'] = self._combine_columns(
-                        list(
-                            filter(
-                                lambda x: len(x) > 0, 
-                                list(set(_temp_small_multi_df['供應商'].tolist())))
-                            ), ', ')
-                try:
-                    _temp_small_multi_df.loc[0, '金額'] = _temp_small_multi_df['金額'].astype(int).sum()
-                except:
-                    pass
-                _temp_df.loc[_temp_df.shape[0]] = \
-                        _temp_small_multi_df.loc[0].tolist()
+            # print(f'_temp_df2: {_temp_df}')
+
+            if _multi_df.shape[0]:
+                for each_unique_txn_id in _multi_df.unique_id.unique():
+                    _temp_small_multi_df = _multi_df[_multi_df.unique_id==each_unique_txn_id].reset_index(drop=True)
+                    # 創建一個對應的dataframe, 內含交易為對應的unique_txn_id
+                    _temp_small_multi_df.loc[0, '內容物'] = self._combine_columns(
+                            _temp_small_multi_df['內容物'].tolist(), linked_symbol)
+                    _temp_small_multi_df.loc[0, '備註'] = self._combine_columns(
+                            list(
+                                filter(
+                                    lambda x: pd.isnull(x) == False, 
+                                    list(set(_temp_small_multi_df['備註'].tolist())))
+                                ), linked_symbol)
+                    _temp_small_multi_df.loc[0, '規格'] = self._combine_columns(
+                            _temp_small_multi_df['規格'].tolist(), ', ')
+                    _temp_small_multi_df.loc[0, '供應商'] = self._combine_columns(
+                            list(
+                                filter(
+                                    lambda x: len(x) > 0, 
+                                    list(set(_temp_small_multi_df['供應商'].tolist())))
+                                ), ', ')
+                    try:
+                        _temp_small_multi_df.loc[0, '金額'] = _temp_small_multi_df['金額'].astype(int).sum()
+                    except:
+                        pass
+                    _temp_df.loc[_temp_df.shape[0]] = \
+                            _temp_small_multi_df.loc[0].tolist()
 
             return _temp_df
             
@@ -578,10 +726,10 @@ class ALICIA:
         if self.aggregated_txns.shape[0]:
             # 上面那行代表 aggregated_txns dataframe裡面有資料
             self.aggregated_txns.loc[:, 'temp_unique_id'] = self.aggregated_txns['抓單日'] + '|' + \
-                                                       self.aggregated_txns['訂單編號'].apply(self.try_to_be_int_in_str) + '|' + \
-                                                       self.aggregated_txns['通路']
-                                                                                                  
+                self.aggregated_txns['訂單編號'].apply(self.try_to_be_int_in_str) + '|' + \
+                self.aggregated_txns['通路']                                                                                      
             # 創立一個暫時的unique_id
+
             if self.aggregated_txns.shape[0] != len(self.aggregated_txns['temp_unique_id'].unique()):
                 # dataframe 長度與 其中的 unique_id 長度不同, 代表需要進行整合歸戶(id)
                 _temp_df = self.aggregated_txns[self.aggregated_txns.temp_unique_id.apply(
@@ -826,6 +974,9 @@ class ALICIA:
                 is_found = False
                 return is_found, is_error, exception_files
             else:
+                # 有樂天派官網的資料
+                # 確認一下資料有沒有留存在青葉資料庫裏面，有的話要剔除
+
                 # print('_intergrate_with: ', platform, txn_paths)
                 for txn_path in txn_paths:
                     try:
@@ -866,7 +1017,11 @@ class ALICIA:
                             # temp_df = a._clean_dataframe(temp_df)
                             # temp_df.loc[1, '商品名稱'].split('(')[0].strip() + \
                             # ' - ' +
-                            _content = _temp_df.loc[each_row_index, '商品名稱']
+                            # print(f"_content before  {_temp_df.loc[each_row_index, '商品名稱']}")
+                            _content = re.sub(r'神老師推薦》\s{0,4}', '神老師推薦》', _temp_df.loc[each_row_index, '商品名稱'])
+                            _content = re.sub(r'《青葉臺菜X神老師推薦》\s{0,4}冰箱', '《神老師推薦》冰箱', _temp_df.loc[each_row_index, '商品名稱'])
+                            # print(f'_content after  {_content}')
+                            # 2021.01.15 >> 針對 《青葉臺菜X神老師推薦》被改成 《神老師推薦》 做特別處理
                             _vendor = self.who_is_vendor_from_this_product(_content)
                             _how_many = _temp_df.loc[each_row_index, '購買數量'].astype(int)
                             _how_much = _temp_df.loc[each_row_index, '單價'].astype(int)
@@ -924,7 +1079,7 @@ class ALICIA:
                     except Exception as e:
                         print(e)
                         is_error = True
-                        exception_files.append(ntpath.split(txn_path)[1])                
+                        exception_files.append(ntpath.split(txn_path)[1])              
                 return is_found, is_error, exception_files
 
 
@@ -1771,12 +1926,13 @@ class ALICIA:
             else:
                 for txn_path in txn_paths:
                     file_name_without_ext = ntpath.split(txn_path)[1]
-
+                    vendor = file_name_without_ext.split('_')[-1].split('.')[0]
                     try:
                         _file_created_date = self._get_file_created_date(txn_path)
                         _temp_df = self._clean_dataframe(pd.read_excel(txn_path))
+                        # _temp_df['訂單編號'] = _temp_df['訂單編號'].astype(str)
                         unique_txn_ids = list(_temp_df['訂單編號'].unique())
-                        print(f'unique_txn_ids len: {len(unique_txn_ids)}')
+                        # print(f'unique_txn_ids len: {len(unique_txn_ids)}')
                         for each_unique_txn_id in unique_txn_ids:
                             tdf = _temp_df[_temp_df['訂單編號']==each_unique_txn_id].reset_index(drop=True)
                             _txn_id = each_unique_txn_id
@@ -1787,7 +1943,7 @@ class ALICIA:
                             _receiver_phone_nbr = tdf.loc[0, '收件人電話']
                             _receiver_mobile = _receiver_phone_nbr
                             _content = tdf.loc[0, '商品名稱']
-                            _vendor = self.who_is_vendor_from_this_product(_content)
+                            _vendor = vendor
                             # print(f"_how_much: {tdf.loc[:, '商品單價'].astype(int)}  {tdf.loc[:, '數量'].astype(int)} {tdf.loc[:, '商品單價'].astype(int) * tdf.loc[:, '數量'].astype(int)}")
                             _how_much = sum(tdf.loc[:, '商品單價'].astype(int) * tdf.loc[:, '數量'].astype(int))
                             # print(f"_how_much: {_how_much}")
@@ -1803,7 +1959,10 @@ class ALICIA:
                             elif pd.isnull(tdf.loc[0, "賣家備註"]) == False:
                                 _remark = f'賣家: {tdf.loc[0, "賣家備註"]}'
 
-                            _room_temperature_shipping_id = tdf.loc[0, '貨運編號']
+                            if '貨運編號' in tdf.columns:
+                                _room_temperature_shipping_id = tdf.loc[0, '貨運編號']
+                            else:
+                                _room_temperature_shipping_id = ''
                             _low_temperature_shipping_id = ''
                             _last_charged_date = ''
                             _charged = False
@@ -2177,16 +2336,19 @@ class ALICIA:
         # "channel-vendor1-txn_id" & "channel-vendor2-txn_id" these 2 unique_ids.
         _temp_list = list()
         for each_old_unique_id in old_unique_id_in_list:
-            if ',' in each_old_unique_id:
-                channel, vendors_string, txn_id = each_old_unique_id.split('|')
-                if ', ' in vendors_string:
-                    vendors_in_list = vendors_string.split(', ')
+            try:
+                if ',' in each_old_unique_id:
+                    channel, vendors_string, txn_id = each_old_unique_id.split('|')
+                    if ', ' in vendors_string:
+                        vendors_in_list = vendors_string.split(', ')
+                    else:
+                        vendors_in_list = vendors_string.split(',')
+                    for each_vendor in vendors_in_list:
+                        _temp_list.append(channel + '|' + each_vendor + '|' + txn_id)
                 else:
-                    vendors_in_list = vendors_string.split(',')
-                for each_vendor in vendors_in_list:
-                    _temp_list.append(channel + '|' + each_vendor + '|' + txn_id)
-            else:
-                _temp_list.append(each_old_unique_id)
+                    _temp_list.append(each_old_unique_id)
+            except Exception as e:
+                print(f'to_split_old_unique_ids ERROR {e}')
         return _temp_list
 
 

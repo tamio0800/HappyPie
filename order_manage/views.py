@@ -214,13 +214,11 @@ def ordertracking(request):
                                             'after_alicia_exception_files': []
                                     })
                 # 前面都只是在清理
-                print('order_tracking info 1: Starts to integrate files.')
+                # print('order_tracking info 1: Starts to integrate files.')
                 platforms_found, platforms_not_found, after_alicia_exception_files = alicia._integrate_all_platforms()
-                print('alicia.aggregated_txns.shape', alicia.aggregated_txns.shape)
-                print('order_tracking info 2: Dobe integrating files.')
-                # alicia.aggregated_txns.to_excel('01_step1_raw.xlsx')
-
-                # print('clean_temp_files_in_folders', platforms_found, platforms_not_found, after_alicia_exception_files)
+                # print('alicia.aggregated_txns.shape', alicia.aggregated_txns.shape)
+                # print('order_tracking info 2: Dobe integrating files.')
+            
                 is_integrated_done = True
                 # 上面那行整合各平台交易資訊, 並回傳哪一些平台有找到, 哪一些沒有
 
@@ -229,15 +227,18 @@ def ordertracking(request):
                     # 當alicia.aggregated_txns長度不為0時再進行以下動作，
                     # 反之代表user只上傳了整合訂單檔案。
                     # 因為aggregated_txns只存放除了【整合訂單檔案】
-
+                    print(f'brfore unique_ids_in_database_in_list {alicia.aggregated_txns.shape}')
                     unique_ids_in_database_in_list = list(History_data.objects.values_list('unique_id', flat=True))
                     print('order_tracking info 3: ', unique_ids_in_database_in_list[:10])
+                    print(f'brfore to_split_old_unique_ids {alicia.aggregated_txns.shape}')
                     modified_unique_ids_in_database = alicia.to_split_old_unique_ids(unique_ids_in_database_in_list)
                     print('order_tracking info 4: ', modified_unique_ids_in_database[:10])
 
-
+                    print(f'brfore pre_clean_raw_txns {alicia.aggregated_txns.shape}')
                     alicia.pre_clean_raw_txns(modified_unique_ids_in_database)
+                    print('order_tracking info 5: ', alicia.aggregated_txns)
                     # alicia.aggregated_txns.to_excel('alicia.aggregated_txns.xlsx', index=False)
+                    
                     
                     if alicia.aggregated_txns.shape[0] > 0:
                         prod_ipt = alicia.aggregated_txns.loc[:, '規格'].tolist()
@@ -246,11 +247,32 @@ def ordertracking(request):
                         result = kashgari_parsing(prod_ipt, num_ipt)
                         # print(f'result:  {result}')   
                         alicia.aggregated_txns.loc[:, '規格'] = np.array(result)
+                        # print(f'before to_one_unique_id_df_after_kash: {alicia.aggregated_txns}')
+                        # 在這裡先將官網2020青葉台菜年菜組合分離開來
 
-                        dataframe_after_parsing = alicia.to_one_unique_id_df_after_kash(alicia.aggregated_txns)
+                        official_qingye_txn_ids = alicia.aggregated_txns[
+                            (alicia.aggregated_txns['通路'] == '樂天派官網') &
+                            ((alicia.aggregated_txns['內容物'].str.contains('青葉臺菜')) | 
+                            (alicia.aggregated_txns['內容物'].str.contains('青葉台菜')))]['訂單編號'].unique()
+                        official_qingye_df = alicia.aggregated_txns[
+                            alicia.aggregated_txns['訂單編號'].isin(official_qingye_txn_ids)]
+                        
+                        alicia.aggregated_txns = \
+                            alicia.aggregated_txns[~alicia.aggregated_txns['訂單編號'].isin(official_qingye_txn_ids)]
+
+                        if alicia.aggregated_txns.shape[0]:
+                            dataframe_after_parsing = alicia.to_one_unique_id_df_after_kash(alicia.aggregated_txns)
+                        # print(f'after to_one_unique_id_df_after_kash: {dataframe_after_parsing}')
+                        dataframe_after_parsing = pd.concat([official_qingye_df, alicia.aggregated_txns])
+                        # print(f'official_qingye_df  {official_qingye_df}')
+                        # print(f'aggregated_txns  {alicia.aggregated_txns}')
+                        # print(f'dataframe_after_parsing  {dataframe_after_parsing}')
+                        #except Exception as e:
+                        #    print(f'something about qingye error: {e}')
                         dataframe_after_parsing = dataframe_after_parsing.drop(['unique_id'], axis=1)
                         dataframe_after_parsing['規格'] = \
                             dataframe_after_parsing['規格'].apply(alicia.aggregate_elements_in_subcontent)
+                        # print(f'after_aggregate_elements_in_subcontent  {dataframe_after_parsing}')
                         alicia.remove_unique_id()
                         print('共花了', int(time()-st), '秒.', '\n分析了', dataframe_after_parsing.shape[0], '筆交易.')
                     print('共花了', int(time()-st), '秒.', '\n分析了 0 筆交易.')
@@ -273,61 +295,21 @@ def ordertracking(request):
             # 整理一下，確認有沒有df這個檔案，以及處理user上傳整合檔該怎麼寫進DB中的問題
             # print(df['規格'].tolist())
             # alicia.user_uploaded_aggregated_txns.to_excel('05_step5_user_uploaded.xlsx')
-
-            dataframe_after_parsing = alicia.combine_aggregated_txns_and_user_uploaded_aggregated_txns(
-                dataframe_after_parsing, alicia.user_uploaded_aggregated_txns)
+            # print(f'dataframe_after_parsing before last  {dataframe_after_parsing}')
+            try:
+                # print(f'before_combine_aggregated_txns_and_user_uploaded_aggregated_txns  {dataframe_after_parsing}')
+                # print(f'before user_uploaded_aggregated_txns  {alicia.user_uploaded_aggregated_txns}')
+                dataframe_after_parsing = alicia.combine_aggregated_txns_and_user_uploaded_aggregated_txns(
+                    dataframe_after_parsing, alicia.user_uploaded_aggregated_txns)
+                # print(f'after_combine_aggregated_txns_and_user_uploaded_aggregated_txns  {dataframe_after_parsing}')
+                # print(f'after_combine_aggregated_txns_and_user_uploaded_aggregated_txns2  {dataframe_after_parsing.unique_id}')
+            except Exception as e:
+                print(f'error in combine_aggregated_txns_and_user_uploaded_aggregated_txns: {e}')
+                exit()
                 # dataframe_after_parsing指的是user從各個平台下載下來，經過Alicia整理後的原始訂單資料，
                 # user_uploaded_aggregated_txns則是之前已經整理過而產出的訂單整合檔再上傳
 
-
-            # dataframe_after_parsing.to_excel('ssssss.xlsx', index=False)
-            # 20210109 進行青葉臺菜的年菜整合 >>
-            #   只要是相同的 訂單編號，假設裡面有a, b, c, d 四筆訂單，
-            #   如果任何一筆含有「青葉臺菜」，就把這四筆歸為同一筆訂單。
-            txn_id_with_qingye_in_list = \
-                dataframe_after_parsing[dataframe_after_parsing['內容物'].str.contains('青葉臺菜')]['訂單編號'].tolist()
-            # print('so far so good1')
-            txn_id_with_qingye_in_list = list(set(txn_id_with_qingye_in_list))
-            # print('so far so good2')
-            txns_with_qingye_df = \
-                dataframe_after_parsing[dataframe_after_parsing['訂單編號'].isin(txn_id_with_qingye_in_list)]
-            # print('so far so good3')
-            df_without_qingye = \
-                dataframe_after_parsing[~dataframe_after_parsing['訂單編號'].isin(txn_id_with_qingye_in_list)]
-            # print('so far so good4')
-            # print(f'txn_id_with_qingye_in_list len: {len(txn_id_with_qingye_in_list)}')
-            # 接下來進行合併
-            
-            for each_txn_id_with_qingye in txn_id_with_qingye_in_list:
-                # print(f'current position: {txn_id_with_qingye_in_list.index(each_txn_id_with_qingye)}')
-                try:
-                    tdf = txns_with_qingye_df[txns_with_qingye_df['訂單編號']==each_txn_id_with_qingye].reset_index(drop=True)
-                    # print('test 1')
-                    _temp_df = pd.DataFrame(columns=txns_with_qingye_df.columns)
-                    # print(f'test 2 {_temp_df.shape[0]}')
-                    _temp_df.loc[_temp_df.shape[0]] = tdf.iloc[0]  # 先把第一行全部搬過去
-                    # print(f'test 3 {_temp_df.shape[0]}')
-                    _temp_df.loc[_temp_df.shape[0] - 1, '內容物'] = \
-                        ', '.join(sorted((tdf['內容物'] + ' * ' + tdf['數量'].astype(str)).tolist()))
-                    # print('test 4')
-                    _temp_df.loc[_temp_df.shape[0] - 1, '規格'] = ', '.join(tdf['規格'].tolist())
-                    # print('test 5')
-                    _temp_df.loc[_temp_df.shape[0] - 1, '供應商'] = '青葉'
-                    # print('test 6')
-                    #_temp_df.loc[_temp_df.shape[0] - 1, 'unique_id'] = \
-                    #    _temp_df.loc[_temp_df.shape[0] - 1, 'unique_id'].split('|')[0] + '|' + '青葉' + '|' + _temp_df.loc[_temp_df.shape[0] - 1, 'unique_id'].split('|')[2]
-                    #print(f"xxxx {_temp_df.loc[_temp_df.shape[0] - 1, 'unique_id']}")
-                    # print('test 7')
-                    df_without_qingye = \
-                        pd.concat([df_without_qingye, _temp_df]).reset_index(drop=True)
-                    # print(df_without_qingye.head(1).T)
-                except Exception as e:
-                    print(f'qingye part Exception: {e}')
-                    break
-
-            dataframe_after_parsing = df_without_qingye.sort_values('訂單編號')
-            dataframe_after_parsing = df_without_qingye.sort_values('供應商').reset_index(drop=True)
-
+            # print(f'before model tools: {dataframe_after_parsing}')
             # 將整理好的資料寫進資料庫
             print('將整理好的資料寫進資料庫...')
             if dataframe_after_parsing.shape[0] > 0:
@@ -403,6 +385,16 @@ def redirect_2_shipping_url(request):
         return response
     else:
         return HttpResponse('請確認連結是否有誤唷!')
+
+
+
+
+
+
+
+
+
+
 
 
 def import_selfmade_txns(request):
@@ -502,6 +494,7 @@ def import_selfmade_txns(request):
             
             alicia.aggregated_txns = fill_df_with_alicia_full_columns(df)
             alicia.pre_clean_raw_txns()
+            
 
             df = alicia.to_one_unique_id_df_after_kash(alicia.aggregated_txns)
             df = df.drop(['unique_id'], axis=1)
@@ -658,3 +651,48 @@ class history_data(View):
 
             else:
                 return render(request, 'order_manage/orderhistory.html',{'data':data})
+'''# dataframe_after_parsing.to_excel('ssssss.xlsx', index=False)
+            # 20210109 進行青葉臺菜的年菜整合 >>
+            #   只要是相同的 訂單編號，假設裡面有a, b, c, d 四筆訂單，
+            #   如果任何一筆含有「青葉臺菜」，就把這四筆歸為同一筆訂單。
+            txn_id_with_qingye_in_list = \
+                dataframe_after_parsing[dataframe_after_parsing['內容物'].str.contains('青葉臺菜')]['訂單編號'].tolist()
+            # print('so far so good1')
+            txn_id_with_qingye_in_list = list(set(txn_id_with_qingye_in_list))
+            # print('so far so good2')
+            txns_with_qingye_df = \
+                dataframe_after_parsing[dataframe_after_parsing['訂單編號'].isin(txn_id_with_qingye_in_list)]
+            # print('so far so good3')
+            df_without_qingye = \
+                dataframe_after_parsing[~dataframe_after_parsing['訂單編號'].isin(txn_id_with_qingye_in_list)]
+            # print('so far so good4')
+            # print(f'txn_id_with_qingye_in_list len: {len(txn_id_with_qingye_in_list)}')
+            # 接下來進行合併
+            for each_txn_id_with_qingye in txn_id_with_qingye_in_list:
+                # print(f'current position: {txn_id_with_qingye_in_list.index(each_txn_id_with_qingye)}')
+                try:
+                    tdf = txns_with_qingye_df[txns_with_qingye_df['訂單編號']==each_txn_id_with_qingye].reset_index(drop=True)
+                    # print('test 1')
+                    _temp_df = pd.DataFrame(columns=txns_with_qingye_df.columns)
+                    # print(f'test 2 {_temp_df.shape[0]}')
+                    _temp_df.loc[_temp_df.shape[0]] = tdf.iloc[0]  # 先把第一行全部搬過去
+                    # print(f'test 3 {_temp_df.shape[0]}')
+                    _temp_df.loc[_temp_df.shape[0] - 1, '內容物'] = \
+                        ', '.join(sorted((tdf['內容物'] + ' * ' + tdf['數量'].astype(str)).tolist()))
+                    # print('test 4')
+                    _temp_df.loc[_temp_df.shape[0] - 1, '規格'] = ', '.join(tdf['規格'].tolist())
+                    # print('test 5')
+                    _temp_df.loc[_temp_df.shape[0] - 1, '供應商'] = '青葉'
+                    # print('test 6')
+                    #_temp_df.loc[_temp_df.shape[0] - 1, 'unique_id'] = \
+                    #    _temp_df.loc[_temp_df.shape[0] - 1, 'unique_id'].split('|')[0] + '|' + '青葉' + '|' + _temp_df.loc[_temp_df.shape[0] - 1, 'unique_id'].split('|')[2]
+                    #print(f"xxxx {_temp_df.loc[_temp_df.shape[0] - 1, 'unique_id']}")
+                    # print('test 7')
+                    df_without_qingye = \
+                        pd.concat([df_without_qingye, _temp_df]).reset_index(drop=True)
+                    # print(df_without_qingye.head(1).T)
+                except Exception as e:
+                    print(f'qingye part Exception: {e}')
+                    break
+            dataframe_after_parsing = df_without_qingye.sort_values('訂單編號')
+            dataframe_after_parsing = df_without_qingye.sort_values('供應商').reset_index(drop=True)'''
