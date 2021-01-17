@@ -226,7 +226,7 @@ class HISTORY_DATA_and_Subcontent_user_edit_record_db_writer:
                     #).save()
                 print('DONE SAVING IN　QINGYE TABLE')
                 try:
-                    _tdf['content'] = '\n'.join([i + '*' + str(j) for i, j in zip(tdf.content.tolist(), tdf.how_many.tolist())])
+                    _tdf['content'] = '\n'.join([i + '*' + str(j) for i, j in zip(tdf.content.tolist(), tdf.how_many.tolist()) if len(i.strip())])
                     _tdf['how_many'] = 1
                     _tdf['how_much'] = sum(tdf.how_many.astype(int) * tdf.how_much.astype(int))
                     _tdf['vendor'] = '青葉'
@@ -252,7 +252,7 @@ class HISTORY_DATA_and_Subcontent_user_edit_record_db_writer:
                         # 接著要把這些資料從 self.dataframe 中刪除，整合後再加入 self.dataframe
                         self.dataframe = self.dataframe[~self.dataframe.index.isin(tdf_with_certain_vendor.index)]
                         try:
-                            _tdf['content'] = '\n'.join([i + '*' + str(j) for i, j in zip(tdf.content.tolist(), tdf.how_many.tolist())])
+                            _tdf['content'] = '\n'.join([i + '*' + str(j) for i, j in zip(tdf.content.tolist(), tdf.how_many.tolist()) if len(i.strip())])
                             _tdf['how_many'] = 1
                             _tdf['how_much'] = sum(tdf_with_certain_vendor.how_many.astype(int) * tdf_with_certain_vendor.how_much.astype(int))
                             _tdf['subcontent'] = self.alicia.aggregate_elements_in_subcontent(', '.join(tdf_with_certain_vendor.subcontent.tolist()))
@@ -510,8 +510,9 @@ class HISTORY_DATA_and_Subcontent_user_edit_record_db_writer:
                         for _content, _how_many in zip([_.content for _ in sub_queryset], [_.how_many for _ in sub_queryset]):
                             #print(f'_final_content {_final_content}')
                             #print(_content, _how_many)
-                            _final_content.append(
-                                _content + '*' + str(_how_many))
+                            if len(_content.strip()):
+                                _final_content.append(
+                                    _content + '*' + str(_how_many))
                         _final_content = ', '.join(_final_content)
                     except Exception as e:
                         print(f'in_clean_1_except: {e}')
