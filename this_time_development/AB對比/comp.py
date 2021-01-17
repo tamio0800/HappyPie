@@ -57,11 +57,79 @@ def aggregate_elements_in_subcontent(target_string):
     
     return prefix_words + ' ' + ', '.join(temp_subcontent_in_list)
 
-df_new = pd.read_excel('/mnt/c/Users/User/Desktop/HP_PROJECT/this_time_development/AB對比/整理後確認ok的官網版本.xlsx')
+df = pd.read_excel('/mnt/c/Users/User/Desktop/HP_PROJECT/this_time_development/AB對比/20999999-141505_待處理訂單資料整合檔.xlsx')
+print(df.shape)
+print(sum(df['規格'].str.contains('紅包')))
+df['規格'] = df['規格'].apply(lambda x: re.sub(r'[+]\s{0,3}紅包\s{0,3}\d+', '', x))
+print(sum(df['規格'].str.contains('紅包')))
+
+#df[(df['內容物'].str.contains('青葉台菜')) | df['內容物'].str.contains('青葉臺菜')]['規格'] = \
+#    df[(df['內容物'].str.contains('青葉台菜')) | df['內容物'].str.contains('青葉臺菜')]['規格'] + ' + 紅包*1'
+
+#df[(df['抓單日'].dt.year > 2020) & (df['內容物'].str.contains('青葉台菜')) | df['內容物'].str.contains('青葉臺菜')]['規格'] = \
+#    df[(df['抓單日'].dt.year > 2020) & (df['內容物'].str.contains('青葉台菜')) | df['內容物'].str.contains('青葉臺菜')]['規格'].apply(lambda x: x + ' + 紅包*1')
+
+the_index = df[(df['抓單日'].dt.year > 2020) & (df['通路'] == '樂天派官網') & ((df['內容物'].str.contains('青葉台菜')) | df['內容物'].str.contains('青葉臺菜'))].index
+print(df.loc[the_index, '通路'])
+
+df.loc[the_index, '規格'] = df.loc[the_index, '規格'] + ' + 紅包*1'
+print(sum(df['規格'].str.contains('紅包')))
+df.to_excel('/mnt/c/Users/User/Desktop/HP_PROJECT/this_time_development/AB對比/更新後整合檔0117.xlsx', index=False)
+
+#print(df[(df['抓單日'].dt.year > 2020) &
+#    (df['內容物'].str.contains('青葉台菜')) | df['內容物'].str.contains('青葉臺菜')]['規格'])
+#print(sum(df['規格'].str.contains('紅包')))
+
+
+# df.to_excel('/mnt/c/Users/User/Desktop/HP_PROJECT/this_time_development/AB對比/更新後整合檔0117.xlsx', index=False)
+#the_index = df[(df['抓單日'].dt.year > 2020) & (df['內容物'].str.contains('青葉台菜')) | df['內容物'].str.contains('青葉臺菜')].index
+
+#the_index = df[(df['抓單日'].dt.year > 2020) & ((df['內容物'].str.contains('青葉台菜')) | df['內容物'].str.contains('青葉臺菜'))].index
+#df['規格'] = df['規格'].apply(lambda x: re.sub(r'2/3-2/9到貨s{0,1}|1/27-2/2到貨\s{0,1}', '', x))
+#df['規格'] = df['規格'].apply(lambda x: re.sub(r'[(]預購[)]\s{0,1}\d/\d{1,2}[-]\d/\d{1,2}到貨\s{0,1}', '', x))
+#df['規格'] = df['規格'].apply(lambda x: re.sub(r'[_]\d/\d{1,2}[-]\d/\d{1,2}\s{0,1}\d{0,1}\s{0,1}', '', x))
+#df['規格'] = df['規格'].apply(lambda x: re.sub(r'[-]\d/\d{1,2}[-]\d/\d{1,2}\s{0,1}\d{0,1}\s{0,1}', '', x))
+#df['規格'] = df['規格'].apply(lambda x: re.sub(r'^\d/\d{1,2}[-]\d/\d{1,2}\s{0,1}', '', x))
+#df['規格'] = df['規格'].apply(lambda x: re.sub(r'^\d[-]\d/\d{1,2}[-]\d/\d{1,2}\s{0,1}', '', x))
+#df['規格'] = df['規格'].apply(lambda x: re.sub(r'[(]預購[)]\s{0,1}', '', x))
+#df['規格'] = df['規格'].apply(lambda x: re.sub(r'到貨\s*', '', x))
+#df['規格'] = df['規格'].apply(lambda x: re.sub(r'出貨\s*', '', x))
+#df['規格'] = df['規格'].apply(lambda x: re.sub(r'區間[*]1', '', x))
+#df['規格'] = df['規格'].apply(lambda x: re.sub(r'出貨 日[*]1', '', x))
+#df['規格'] = df['規格'].apply(lambda x: re.sub(r'日[*]1', '', x))
+#df['規格'] = df['規格'].apply(lambda x: re.sub(r'^\d/\d{1,2}[-]\d/\d{1,2}', '', x))
+#df['規格'] = df['規格'].apply(lambda x: re.sub(r'^\d\s*', '', x))
+#df['規格'] = df['規格'].apply(lambda x: re.sub(r'^\d/\d{1,2}', '', x))
+#df['規格'] = df['規格'].apply(lambda x: re.sub(r'^,\s*', '', x))
+#df['規格'] = df['規格'].apply(lambda x: re.sub(r'^/\d{0,2}\s*', '', x))
+#df['規格'] = df['規格'].apply(lambda x: re.sub(r'^\s*', '', x))
+
+
+#print(df.loc[the_index, '規格'])
+
+#for i, _ in enumerate(df.loc[the_index, '規格']):
+#    print(_)
+#    if i == 500:
+#        break
+#df['規格'] = df['規格'].apply(lambda x: re.sub(r'[-]{0,1}\d{1,2}[/]\d{1,2}[-]\d{1,2}[/]\d{1,2}\s{0,1}到貨|[-]{0,1}\d{1,2}[/]\d{1,2}[-]\d{1,2}[/]\d{1,2}\s{0,1}出貨|\d{1,2}[/]\d{1,2}[-]\d{1,2}[/]\d{1,2}|', '', x))
+#df['規格'] = df['規格'].apply(lambda x: re.sub(r'[(]預購[)]', '', x))
+#the_contents = ', '.join(df.loc[the_index, '規格'].tolist())
+#parsed_contents = aggregate_elements_in_subcontent(the_contents)
+#for each_part in sorted(parsed_contents.split(',')):
+#    if len(each_part):
+#        print(each_part)
+
+
+
+
+
+
+
+'''df_new = pd.read_excel('/mnt/c/Users/User/Desktop/HP_PROJECT/this_time_development/AB對比/整理後確認ok的官網版本.xlsx')
 df_old = pd.read_excel('/mnt/c/Users/User/Desktop/HP_PROJECT/this_time_development/AB對比/舊版.xlsx')
 
 df_old['規格'] = df_old['規格'].apply(lambda x: re.sub(r'[+]\s{0,3}紅包\s{0,3}\d+', '', x))
-print(df_old['規格'].tolist()[:50]) 
+print(df_old['規格'].tolist()[:50]) '''
 
 
 '''
@@ -74,7 +142,7 @@ print(df_old['規格'].tolist()[:50])
 
 '''
 
-result = pd.DataFrame(columns=['是否符合', '錯誤型態', '訂購人', '訂單編號(舊)', '訂單編號(新)', '金額(舊)',
+'''result = pd.DataFrame(columns=['是否符合', '錯誤型態', '訂購人', '訂單編號(舊)', '訂單編號(新)', '金額(舊)',
      '金額(新)', '規格(舊)', '規格(新)'])
 
 # 先找出舊的有的，新的沒有的
@@ -204,4 +272,4 @@ for each_txn_id in tdf_new['訂單編號'].unique():
             print(f'ERROR_2 INFO OLD {_tdf_old[_tdf_old.unique_id==each_unique_id]}')
 
 print(f'third {result}')
-result.to_excel('/mnt/c/Users/User/Desktop/HP_PROJECT/this_time_development/AB對比/比對後結果.xlsx', index=False)
+result.to_excel('/mnt/c/Users/User/Desktop/HP_PROJECT/this_time_development/AB對比/比對後結果.xlsx', index=False)'''
