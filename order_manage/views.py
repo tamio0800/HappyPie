@@ -87,7 +87,7 @@ def to_download_file(request):
         # print(_df.head())
         # print('write_current_pending_txns_to_excel_file 4')
         _df_name = alicia.get_today("%Y%m%d-%H%M%S") + '_待處理訂單資料整合檔.xlsx'
-        _df['規格'] = _df['規格'].apply(lambda x: alicia.aggregate_elements_in_subcontent(x))
+        # _df['規格'] = _df['規格'].apply(lambda x: alicia.aggregate_elements_in_subcontent(x))
         # print(alicia.get_today("%Y%m%d-%H%M%S") + '_待處理訂單資料整合檔.xlsx')
         _df_path=os.path.join(which_folder_to_save, _df_name)
         _df.to_excel(_df_path, index=False)

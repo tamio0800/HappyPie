@@ -208,7 +208,7 @@ class ALICIA:
                 repeated_index = \
                     self.aggregated_txns[
                         (self.aggregated_txns['通路'] == '樂天派官網') &
-                        ~(self.aggregated_txns['訂單編號'] + '-' + self.aggregated_txns['內容物']).isin(qingye_unique_string)].index
+                        (self.aggregated_txns['訂單編號'] + '-' + self.aggregated_txns['內容物']).isin(qingye_unique_string)].index
                 self.aggregated_txns = self.aggregated_txns[~self.aggregated_txns.index.isin(repeated_index)]
             print(f'pre_clean_raw_txns5 {self.aggregated_txns.shape}')
             #print(f'check in pre_clean_function 1: {self.aggregated_txns}')
