@@ -1942,7 +1942,10 @@ class ALICIA:
                             _receiver_address = tdf.loc[0, '地址']
                             _receiver_phone_nbr = tdf.loc[0, '收件人電話']
                             _receiver_mobile = _receiver_phone_nbr
-                            _content = tdf.loc[0, '商品名稱']
+                            if '商品名稱' in _temp_df.columns:
+                                _content = tdf.loc[0, '商品名稱']
+                            else:
+                                _content = tdf.loc[0, '商品規格']
                             _vendor = vendor
                             # print(f"_how_much: {tdf.loc[:, '商品單價'].astype(int)}  {tdf.loc[:, '數量'].astype(int)} {tdf.loc[:, '商品單價'].astype(int) * tdf.loc[:, '數量'].astype(int)}")
                             _how_much = sum(tdf.loc[:, '商品單價'].astype(int) * tdf.loc[:, '數量'].astype(int))
