@@ -1927,6 +1927,18 @@ class ALICIA:
                 is_found = False
                 return is_found, is_error, exception_files
             else:
+                # 建立一個檢查是否規格為 XXXX*\d的機制
+                def check_if_contains_amounts_in_content_list(targets_list):
+                    pattern = r'\S*[*]\d+'
+                    results = list()
+                    for each_target in targets_list:
+                        # 檢查是否找到對應的規則
+                        results.append(
+                            len(re.findall(pattern, each_target)) > 0
+                        )
+                    return all(results)
+
+
                 for txn_path in txn_paths:
                     file_name_without_ext = ntpath.split(txn_path)[1]
                     vendor = file_name_without_ext.split('_')[-1].split('.')[0]
@@ -1974,8 +1986,13 @@ class ALICIA:
                             _charged = False
                             _ifsend = False
                             _ifcancel = False
-                            _subcontent = \
-                                ', '.join((tdf.loc[:, '商品規格'] + '*' + tdf.loc[:, '數量'].astype(str)).tolist())
+                            if check_if_contains_amounts_in_content_list(tdf.loc[:, '商品規格'].tolist()):
+                                # 如果已經含有數量了，就不需要再次餵進去
+                                _subcontent = ', '.join(tdf.loc[:, '商品規格'])
+                            else:
+                                _subcontent = \
+                                    ', '.join((tdf.loc[:, '商品規格'] + '*' + tdf.loc[:, '數量'].astype(str)).tolist())
+
                             sum_how_many = sum(tdf.loc[:, '數量'].astype(int))
                             if sum_how_many >= 4 and _vendor in ['水根肉乾', '水根']:
                                 _subcontent = _subcontent + ', 袋子*' + str(int(sum_how_many/4))
