@@ -719,7 +719,10 @@ class ALICIA:
 
 
     def _get_file_created_date(self, file_path):
-        return time.strftime('%Y-%m-%d', time.gmtime(os.path.getmtime(file_path)))
+        # return time.strftime('%Y-%m-%d', time.gmtime(os.path.getmtime(file_path)))
+        # 改成以當日日期為主
+        return date_function.today().strftime("%Y-%m-%d")
+
 
     
     def _get_unique_txns(self):
