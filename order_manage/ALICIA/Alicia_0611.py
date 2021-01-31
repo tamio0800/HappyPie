@@ -1258,7 +1258,7 @@ class ALICIA:
                                                                                         _low_temperature_shipping_link]
 
                     except Exception as e:
-                        print(e)
+                        print(f"Integrating with MOMO {e}")
                         is_error = True
                         exception_files.append(ntpath.split(txn_path)[1])       
                 return is_found, is_error, exception_files
