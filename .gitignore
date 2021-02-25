@@ -9,3 +9,4 @@ nohup.out
 migrations/
 all_flags/
 what_hp_input.txt
+db_backup/
