@@ -16,12 +16,11 @@ from django_pandas.io import read_frame
 from order_manage.SHIPPING.Shipping_Manager import *
 
 try:
-    kash = subprocess.Popen(['/home/edony-prod/miniconda3/envs/happypie/bin/python', os.path.join(os.getcwd(),'order_manage','KASH','kashgari_final_with_Alicia.py')],
+    kash = subprocess.Popen(['/home/edony/.conda/envs/happypie/bin/python', os.path.join(os.getcwd(),'order_manage','KASH','kashgari_final_with_Alicia.py')],
                             stdin=subprocess.PIPE, stdout=subprocess.PIPE)
 except:
     kash = subprocess.Popen(['python', os.path.join(os.getcwd(),'order_manage','KASH','kashgari_final_with_Alicia.py')],
                             stdin=subprocess.PIPE, stdout=subprocess.PIPE)
-# '/home/edony-prod/miniconda3/envs/happypie/bin/python'
 print('loading model.')
 
 is_ready = 0

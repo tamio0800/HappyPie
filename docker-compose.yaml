@@ -1,0 +1,10 @@
+version: "3"
+services:
+    happypie:
+        restart: always
+        build: .
+        command: python manage.py runserver 0.0.0.0:8001 --insecure
+        volumes:
+            - .:/code
+        ports:
+            - "8001:8001"

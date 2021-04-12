@@ -1,4 +1,5 @@
-#!/home/edony-prod/miniconda3/envs/happypie/bin/python
+#!/home/edony/.conda/envs/happypie/bin/python
+"""#!/home/edony/miniconda3/envs/happypie/bin/python"""
 """Django's command-line utility for administrative tasks."""
 import os
 import sys
