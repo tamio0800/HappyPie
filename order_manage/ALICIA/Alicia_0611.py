@@ -11,9 +11,10 @@ import numpy as np
 import msoffcrypto as ms
 import ntpath
 import xlrd
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, date as date_function
 import pyDes
 import base64
+from order_manage.models import Qingye_Niancai_raw_record
 
 
 class ALICIA:
@@ -82,18 +83,36 @@ class ALICIA:
             return True
 
     def move_files_and_decrypt_them(self, from_dir, to_dir):
-        # 先移動需要密碼的那三個平台, 因為處理方式略為不同
+        # 先移動需要密碼的那幾個平台, 因為處理方式略為不同
         assert from_dir != to_dir
         for encrypted_platform in ['MOMO', '亞伯', '東森得易購', '特力家Online店']:
             encrypted_txn_files = self._return_txn_path(from_dir, encrypted_platform)
+            if encrypted_platform == '亞伯':
+                encrypted_txn_files = [_ for _ in encrypted_txn_files if 'shipmentReport' not in _]
+            
+            print('encrypted_txn_files', encrypted_txn_files)
             for each_encrypted_txn_file in encrypted_txn_files:
                 # 下面這句是將路徑/檔案名 分解成 路徑, 檔案名, 使用ntpath在linux與windows環境下都可以正常運作
                 _, tail_of_file = ntpath.split(each_encrypted_txn_file)
+                print(f'Encrypted files: {each_encrypted_txn_file}')
                 if self.check_if_the_xl_file_is_encrypted(each_encrypted_txn_file):
-                    the_file = ms.OfficeFile(open(each_encrypted_txn_file, 'rb'))
-                    the_file.load_key(password=self.password_dict[encrypted_platform])
-                    the_file.decrypt(open(os.path.join(to_dir, tail_of_file), 'wb'))
-                    os.unlink(each_encrypted_txn_file)
+                    try:
+                        # 嘗試進行解密
+                        the_file = ms.OfficeFile(open(each_encrypted_txn_file, 'rb'))
+                        the_file.load_key(password=self.password_dict[encrypted_platform])
+                        the_file.decrypt(open(os.path.join(to_dir, tail_of_file), 'wb'))
+                    except Exception as e:
+                        the_file = ms.OfficeFile(open(each_encrypted_txn_file, 'rb'))
+                        the_file.load_key(password='')
+                        the_file.decrypt(open(os.path.join(to_dir, tail_of_file), 'wb'))
+                        pass
+                    print(f'each_encrypted_txn_file: {each_encrypted_txn_file}')
+                    print(f'os.path.join(to_dir, tail_of_file): {os.path.join(to_dir, tail_of_file)}')
+                    try:
+                        os.unlink(each_encrypted_txn_file)
+                    except Exception as e:
+                        print(f'move_files_and_decrypt_them EXCEPTION(2): {e}')
+                        # os.unlink(each_encrypted_txn_file)
                     # print('Successfully Moved ', tail_of_file)
         # 把剩下的檔案移一移, 包括原先就沒有加密的跟理論上會加密但沒有加密的那些檔案
         for each_file in os.listdir(from_dir):
@@ -123,22 +142,76 @@ class ALICIA:
 
     def pre_clean_raw_txns(self, unique_ids_in_database=None):
         if self.aggregated_txns.shape[0] > 0:
+            self.aggregated_txns['訂單編號'] = self.aggregated_txns['訂單編號'].apply(self.force_float_to_be_int_and_to_string)
             # self.aggregated_txns 至少要有東西再清理
             # 以通路 + 編號 + 內容物作為暫時的unique_id,
             # 來作為A交易在昨天與今天一起被重複匯進來的處理機制
-            self.aggregated_txns.loc[:, 'pre_clean_unique_id'] = self.aggregated_txns['通路'] + '|' + \
-                self.aggregated_txns['訂單編號'].apply(self.force_float_to_be_int_and_to_string) + '|' + \
-                self.aggregated_txns['供應商'] + '|' + self.aggregated_txns['內容物']
-                # self.aggregated_txns['訂單編號'].astype(str) + '-' + \
-            self.aggregated_txns = self.aggregated_txns.drop_duplicates(subset='pre_clean_unique_id', keep='first')
-            self.aggregated_txns = self.aggregated_txns.sort_values('pre_clean_unique_id').reset_index(drop=True)
-            self.aggregated_txns = self.aggregated_txns.drop(['pre_clean_unique_id'], axis=1)
+            self.aggregated_txns['內容物'] = self.aggregated_txns['內容物'].apply(lambda x: re.sub(r'神老師推薦》\s{0,4}', '神老師推薦》', x))
+            self.aggregated_txns['內容物'] = self.aggregated_txns['內容物'].apply(lambda x: re.sub(r'《青葉臺菜X神老師推薦》\s{0,4}冰箱', '《神老師推薦》冰箱', x))
+            self.aggregated_txns['規格'] = self.aggregated_txns['規格'].apply(lambda x: re.sub(r'輕滋', ' ', x))
+            self.aggregated_txns['規格'] = self.aggregated_txns['規格'].apply(lambda x: re.sub(r'到貨日\s{0,2}:\s{0,2}', ' ', x))
 
+            try:
+                print(f'pre_clean_raw_txns1 {self.aggregated_txns}')
+                self.aggregated_txns.loc[:, 'pre_clean_unique_id'] = self.aggregated_txns['通路'] + '|' + \
+                    self.aggregated_txns['訂單編號'].apply(self.force_float_to_be_int_and_to_string) + '|' + \
+                    self.aggregated_txns['供應商'] + '|' + self.aggregated_txns['內容物']
+                    # self.aggregated_txns['訂單編號'].astype(str) + '-' + \
+                self.aggregated_txns = self.aggregated_txns.drop_duplicates(subset='pre_clean_unique_id', keep='first')
+                self.aggregated_txns = self.aggregated_txns.sort_values('pre_clean_unique_id').reset_index(drop=True)
+                self.aggregated_txns = self.aggregated_txns.drop(['pre_clean_unique_id'], axis=1)
+                print(f'pre_clean_raw_txns2 {self.aggregated_txns}')
+            except Exception as e:
+                print(f'pre_clean_raw_txns_ERROR {e}')
+
+            
             # >> 以通路 + 供應商 + 編號 作為unique_id  2020.11.22
-            self.aggregated_txns.loc[:, 'unique_id'] = self.aggregated_txns['通路'] + '|' + \
-                self.aggregated_txns['供應商'] + '|' + \
-                self.aggregated_txns['訂單編號'].apply(self.force_float_to_be_int_and_to_string)
-        
+            # 2021.01.15 為官網的青葉年菜另做處理
+            try:
+                # print(f'before making unique_id col: {self.aggregated_txns.columns}')
+                official_qingye_txn_ids = self.aggregated_txns[
+                    (self.aggregated_txns['通路'] == '樂天派官網') &
+                    ((self.aggregated_txns['內容物'].str.contains('青葉臺菜')) | 
+                    (self.aggregated_txns['內容物'].str.contains('青葉台菜')))]['訂單編號'].unique()
+                self.aggregated_txns.loc[:, 'unique_id'] = \
+                    self.aggregated_txns['通路'] + '|'\
+                    + self.aggregated_txns['供應商'] + '|'\
+                    + self.aggregated_txns['訂單編號']
+                print(f'pre_clean_raw_txns3 {self.aggregated_txns.shape}')
+                self.aggregated_txns.loc[self.aggregated_txns['訂單編號'].isin(official_qingye_txn_ids), 'unique_id'] = \
+                    self.aggregated_txns[self.aggregated_txns['訂單編號'].isin(official_qingye_txn_ids)]['通路'] + '|'\
+                    + self.aggregated_txns[self.aggregated_txns['訂單編號'].isin(official_qingye_txn_ids)]['供應商'] + '|'\
+                    + self.aggregated_txns[self.aggregated_txns['訂單編號'].isin(official_qingye_txn_ids)]['訂單編號'].apply(self.force_float_to_be_int_and_to_string) + '|'\
+                    + self.aggregated_txns[self.aggregated_txns['訂單編號'].isin(official_qingye_txn_ids)]['內容物'][-20:]
+                print(f'pre_clean_raw_txns4 {self.aggregated_txns.shape}')
+                #self.aggregated_txns.loc[:, 'unique_id'] = \
+                #    self.aggregated_txns['通路'] + '|'\
+                #    + self.aggregated_txns['供應商'] + '|'\
+                #    + self.aggregated_txns['訂單編號'].apply(self.force_float_to_be_int_and_to_string)
+                #print(f'after making unique_id col: {self.aggregated_txns.columns}')
+                #print(f'pre_clean_raw_txns_making_unique_ids: {self.aggregated_txns.unique_id}')
+            except Exception as e:
+                print(f'pre_clean_raw_txns_making_unique_ids error: {e}')
+            #self.aggregated_txns.loc[:, 'unique_id'] = self.aggregated_txns['通路'] + '|' + \
+            #    self.aggregated_txns['供應商'] + '|' + \
+            #    self.aggregated_txns['訂單編號'].apply(self.force_float_to_be_int_and_to_string)
+
+            # 2021.01.10 >> 針對 輕滋百蔬宴米糕 做特別處理
+            self.aggregated_txns.loc[:, '規格'] = \
+                self.aggregated_txns.loc[:, '規格'].apply(lambda x: re.sub(r'輕滋百蔬宴米糕', ' 百蔬宴米糕', x)).apply(lambda x: re.sub(r'加購-錵魚一夜干', '加購 - 錵魚一夜干', x))
+
+            # 把Qingye 的 txn_id + content + vendor 當作unique_id做比對
+            qingye_unique_string = \
+                [f'{i}-{j}' for i, j in Qingye_Niancai_raw_record.objects.values_list('txn_id', 'content')]
+            if len(qingye_unique_string):
+                # 如果有值再比對就好，這裡要剔除裡面已經有的資料，避免重複計算
+                repeated_index = \
+                    self.aggregated_txns[
+                        (self.aggregated_txns['通路'] == '樂天派官網') &
+                        (self.aggregated_txns['訂單編號'] + '-' + self.aggregated_txns['內容物']).isin(qingye_unique_string)].index
+                self.aggregated_txns = self.aggregated_txns[~self.aggregated_txns.index.isin(repeated_index)]
+            print(f'pre_clean_raw_txns5 {self.aggregated_txns.shape}')
+            #print(f'check in pre_clean_function 1: {self.aggregated_txns}')
             # 針對亞伯做特殊處理
             yabo_part = self.aggregated_txns[self.aggregated_txns['通路']=='亞伯']
             non_yabo_part = self.aggregated_txns[~self.aggregated_txns.index.isin(yabo_part.index)]
@@ -170,6 +243,7 @@ class ALICIA:
                 # user有傳值進來
                 self.aggregated_txns = \
                     self.aggregated_txns[~self.aggregated_txns.unique_id.isin(unique_ids_in_database)].reset_index(drop=True)
+            #print(f'check in pre_clean_function 2: {self.aggregated_txns}')
             print('pre_clean_raw_txns 4:  Done Whole Part!')
 
     def get_today(self, format='%Y%m%d'):
@@ -200,8 +274,12 @@ class ALICIA:
             df['手機'] = df['手機'].apply(self.make_phone_and_mobile_number_clean)
             df['電話'] = df['電話'].apply(self.make_phone_and_mobile_number_clean)
             return df
+        
         if not_user_uploaded_df is not None:
             if user_uploaded_df is not None:
+                #print(f'combine_aggregated_txns_and_user_uploaded_aggregated_txns_user_uploaded_df {user_uploaded_df}')
+                #print(f'combine_aggregated_txns_and_user_uploaded_aggregated_txns_not_user_uploaded_df {not_user_uploaded_df}')
+                
                 not_user_uploaded_df.loc[:, 'unique_id'] = \
                     not_user_uploaded_df['通路'] + '|' + not_user_uploaded_df['供應商'] + '|' + \
                         not_user_uploaded_df['訂單編號'].apply(self.try_to_be_int_in_str)
@@ -210,16 +288,113 @@ class ALICIA:
                     user_uploaded_df['通路'] + '|' + user_uploaded_df['供應商'] + '|' + \
                     user_uploaded_df['訂單編號'].apply(self.try_to_be_int_in_str)
 
-                #  接著要整理一下，如果user_uploaded_df裡有的交易，就從not_user_uploaded_df中刪除
-                not_user_uploaded_df = \
-                    not_user_uploaded_df[~not_user_uploaded_df.unique_id.isin(user_uploaded_df.unique_id)]
-
-                # 再增加一個條件以加速資料寫入的流程>> 1個月以前的交易不做更新(直接從這次的batch中排除)
                 not_user_uploaded_df = not_user_uploaded_df[
-                    pd.to_datetime(not_user_uploaded_df['抓單日']) > (pd.to_datetime(not_user_uploaded_df['抓單日'])  - pd.Timedelta(days=31))
-                ]
-                user_uploaded_df.to_excel('1124_user_uploaded_df.xlsx', index=False)
+                        pd.to_datetime(not_user_uploaded_df['抓單日']) > (pd.to_datetime(not_user_uploaded_df['抓單日'])  - pd.Timedelta(days=31))
+                    ]
                 _temp_df = pd.concat([not_user_uploaded_df, user_uploaded_df], join='inner').reset_index(drop=True)
+                '''official_qingye_txn_ids = not_user_uploaded_df[
+                    (not_user_uploaded_df['通路'] == '樂天派官網') &
+                    ((not_user_uploaded_df['內容物'].str.contains('青葉臺菜')) | 
+                    (not_user_uploaded_df['內容物'].str.contains('青葉台菜')))]['訂單編號'].unique()
+                print(f'inside_combine_aggregated_txns 1: {not_user_uploaded_df}')
+                print(f'inside_combine_aggregated_txns 2: {official_qingye_txn_ids}')
+                print(f'inside_combine_aggregated_txns 3: {not_user_uploaded_df.columns}')
+                not_user_uploaded_df.loc[:, 'unique_id'] = \
+                    not_user_uploaded_df[~not_user_uploaded_df['訂單編號'].isin(official_qingye_txn_ids)]['通路'] + '|'\
+                        + not_user_uploaded_df[~not_user_uploaded_df['訂單編號'].isin(official_qingye_txn_ids)]['供應商'] + '|'\
+                        + not_user_uploaded_df[~not_user_uploaded_df['訂單編號'].isin(official_qingye_txn_ids)]['訂單編號'].apply(self.force_float_to_be_int_and_to_string)
+                
+                try:
+                    
+                    print(f'inside_combine_aggregated_txns 4: {not_user_uploaded_df.columns}')
+                    not_user_uploaded_df.loc[not_user_uploaded_df['訂單編號'].isin(official_qingye_txn_ids), 'unique_id'] = \
+                        not_user_uploaded_df[not_user_uploaded_df['訂單編號'].isin(official_qingye_txn_ids)]['通路'] + '|'\
+                        + not_user_uploaded_df[not_user_uploaded_df['訂單編號'].isin(official_qingye_txn_ids)]['供應商'] + '|'\
+                        + not_user_uploaded_df[not_user_uploaded_df['訂單編號'].isin(official_qingye_txn_ids)]['訂單編號'].apply(self.force_float_to_be_int_and_to_string) + '|'\
+                        + not_user_uploaded_df[not_user_uploaded_df['訂單編號'].isin(official_qingye_txn_ids)]['內容物'][-20:]
+                    print(f'inside_combine_aggregated_txns 5: {not_user_uploaded_df}')
+                    
+                    #not_user_uploaded_df.loc[~not_user_uploaded_df['訂單編號'].isin(official_qingye_txn_ids), 'unique_id'] = \
+                    #    not_user_uploaded_df[~not_user_uploaded_df['訂單編號'].isin(official_qingye_txn_ids)]['通路'] + '|'\
+                    #    + not_user_uploaded_df[~not_user_uploaded_df['訂單編號'].isin(official_qingye_txn_ids)]['供應商'] + '|'\
+                    #    + not_user_uploaded_df[~not_user_uploaded_df['訂單編號'].isin(official_qingye_txn_ids)]['訂單編號'].apply(self.force_float_to_be_int_and_to_string)
+                    print(f'inside_combine_aggregated_txns 6: {not_user_uploaded_df}')
+                    print(f'inside_combine_aggregated_txns7: {not_user_uploaded_df.unique_id}')
+                    
+                    # 再增加一個條件以加速資料寫入的流程>> 1個月以前的交易不做更新(直接從這次的batch中排除)
+                    
+                except Exception as e:
+                    print(f'Exception in combine_aggregated 1: {e}')
+                
+                try:
+                    if user_uploaded_df.shape[0]:
+                        user_uploaded_df.loc[:, 'unique_id'] = ''
+                        official_qingye_txn_ids = user_uploaded_df[
+                            (user_uploaded_df['通路'] == '樂天派官網') &
+                            ((user_uploaded_df['內容物'].str.contains('青葉臺菜')) | 
+                            (user_uploaded_df['內容物'].str.contains('青葉台菜')))]['訂單編號'].unique()
+
+                        user_uploaded_df.loc[user_uploaded_df['訂單編號'].isin(official_qingye_txn_ids), 'unique_id'] = \
+                            user_uploaded_df[user_uploaded_df['訂單編號'].isin(official_qingye_txn_ids)]['通路'] + '|'\
+                            + user_uploaded_df[user_uploaded_df['訂單編號'].isin(official_qingye_txn_ids)]['供應商'] + '|'\
+                            + user_uploaded_df[user_uploaded_df['訂單編號'].isin(official_qingye_txn_ids)]['訂單編號'].apply(self.force_float_to_be_int_and_to_string) + '|'\
+                            + user_uploaded_df[user_uploaded_df['訂單編號'].isin(official_qingye_txn_ids)]['內容物'][-20:]
+
+                        user_uploaded_df.loc[~user_uploaded_df['訂單編號'].isin(official_qingye_txn_ids), 'unique_id'] = \
+                            user_uploaded_df[~user_uploaded_df['訂單編號'].isin(official_qingye_txn_ids)]['通路'] + '|'\
+                            + user_uploaded_df[~user_uploaded_df['訂單編號'].isin(official_qingye_txn_ids)]['供應商'] + '|'\
+                            + user_uploaded_df[~user_uploaded_df['訂單編號'].isin(official_qingye_txn_ids)]['訂單編號'].apply(self.force_float_to_be_int_and_to_string)
+                        
+                        not_user_uploaded_df = \
+                            not_user_uploaded_df[~not_user_uploaded_df.unique_id.isin(user_uploaded_df.unique_id)]
+
+                        _temp_df = pd.concat([not_user_uploaded_df, user_uploaded_df], join='inner').reset_index(drop=True)
+                    else:
+                        _temp_df = not_user_uploaded_df
+
+                
+                # user_uploaded_df.to_excel('1124_user_uploaded_df.xlsx', index=False)
+                
+                        
+                        #print(f'combine_aggregated_txns_and_user_uploaded_aggregated_txns {not_user_uploaded_df.columns}')
+                except Exception as e:
+                    print(f'Exception in combine_aggregated 2: {e}')
+                official_qingye_txn_ids = not_user_uploaded_df[
+                    (not_user_uploaded_df['通路'] == '樂天派官網') &
+                    ((not_user_uploaded_df['內容物'].str.contains('青葉臺菜')) | 
+                    (not_user_uploaded_df['內容物'].str.contains('青葉台菜')))]['訂單編號'].unique()
+                not_user_uploaded_df.loc[:, 'unique_id'] = ''
+
+                not_user_uploaded_df[not_user_uploaded_df['訂單編號'].isin(official_qingye_txn_ids)].loc[:, 'unique_id'] = \
+                    not_user_uploaded_df[not_user_uploaded_df['訂單編號'].isin(official_qingye_txn_ids)]['通路'] + '|'\
+                    + not_user_uploaded_df[not_user_uploaded_df['訂單編號'].isin(official_qingye_txn_ids)]['供應商'] + '|'\
+                    + not_user_uploaded_df[not_user_uploaded_df['訂單編號'].isin(official_qingye_txn_ids)]['訂單編號'].apply(self.force_float_to_be_int_and_to_string) + '|'\
+                    + not_user_uploaded_df[not_user_uploaded_df['訂單編號'].isin(official_qingye_txn_ids)]['內容物'][-20:]
+
+                not_user_uploaded_df[~not_user_uploaded_df['訂單編號'].isin(official_qingye_txn_ids)].loc[:, 'unique_id'] = \
+                    not_user_uploaded_df[~not_user_uploaded_df['訂單編號'].isin(official_qingye_txn_ids)]['通路'] + '|'\
+                    + not_user_uploaded_df[~not_user_uploaded_df['訂單編號'].isin(official_qingye_txn_ids)]['供應商'] + '|'\
+                    + not_user_uploaded_df[~not_user_uploaded_df['訂單編號'].isin(official_qingye_txn_ids)]['訂單編號'].apply(self.force_float_to_be_int_and_to_string)
+
+                official_qingye_txn_ids = user_uploaded_df[
+                    (user_uploaded_df['通路'] == '樂天派官網') &
+                    ((user_uploaded_df['內容物'].str.contains('青葉臺菜')) | 
+                    (user_uploaded_df['內容物'].str.contains('青葉台菜')))]['訂單編號'].unique()
+                user_uploaded_df.loc[:, 'unique_id'] = ''
+
+                user_uploaded_df[user_uploaded_df['訂單編號'].isin(official_qingye_txn_ids)].loc[:, 'unique_id'] = \
+                    user_uploaded_df[user_uploaded_df['訂單編號'].isin(official_qingye_txn_ids)]['通路'] + '|'\
+                    + user_uploaded_df[user_uploaded_df['訂單編號'].isin(official_qingye_txn_ids)]['供應商'] + '|'\
+                    + user_uploaded_df[user_uploaded_df['訂單編號'].isin(official_qingye_txn_ids)]['訂單編號'].apply(self.force_float_to_be_int_and_to_string) + '|'\
+                    + user_uploaded_df[user_uploaded_df['訂單編號'].isin(official_qingye_txn_ids)]['內容物'][-20:]
+
+                user_uploaded_df[~user_uploaded_df['訂單編號'].isin(official_qingye_txn_ids)].loc[:, 'unique_id'] = \
+                    user_uploaded_df[~user_uploaded_df['訂單編號'].isin(official_qingye_txn_ids)]['通路'] + '|'\
+                    + user_uploaded_df[~user_uploaded_df['訂單編號'].isin(official_qingye_txn_ids)]['供應商'] + '|'\
+                    + user_uploaded_df[~user_uploaded_df['訂單編號'].isin(official_qingye_txn_ids)]['訂單編號'].apply(self.force_float_to_be_int_and_to_string)
+                print(f'combine_aggregated_txns_and_user_uploaded_aggregated_txns {not_user_uploaded_df.columns}')'''
+                #  接著要整理一下，如果user_uploaded_df裡有的交易，就從not_user_uploaded_df中刪除
+                
                 return clean_number_like_columns(_temp_df)
             else:
                 return clean_number_like_columns(not_user_uploaded_df)
@@ -257,35 +432,50 @@ class ALICIA:
         if dataframe_with_unique_id_column.shape[0] != len(dataframe_with_unique_id_column.unique_id.unique()):
             # dataframe 長度與 其中的 unique_id 長度不同, 代表需要進行整合歸戶(unique_id)
             _temp_df = dataframe_with_unique_id_column[dataframe_with_unique_id_column.unique_id.apply(
-                lambda x: True if dataframe_with_unique_id_column[dataframe_with_unique_id_column.unique_id==x].shape[0] == 1 else False)].reset_index(drop=True)
+                lambda x: True if dataframe_with_unique_id_column[dataframe_with_unique_id_column.unique_id==x].shape[0] == 1 else False)]
             _multi_df = dataframe_with_unique_id_column[~dataframe_with_unique_id_column.unique_id.isin(_temp_df.unique_id)].reset_index(drop=True)
             # 將只有1個row的交易移到_temp_df中, 剩下的放到_multi_df中
+            # print(f'_temp_df1: {_temp_df}')
+            try:
+                for each_unique_txn_id in _multi_df['訂單編號'].unique():
+                    tdf = dataframe_with_unique_id_column[dataframe_with_unique_id_column['訂單編號']==each_unique_txn_id]
+                    if sum(tdf['通路'].str.contains('樂天派官網')):
+                        if sum(tdf['內容物'].str.contains('青葉台菜')) + sum(tdf['內容物'].str.contains('青葉臺菜')):
+                            # 如果其中含有任一字眼
+                            _temp_df = pd.concat([tdf, _temp_df]).reset_index(drop=True)
+                        _multi_df = _multi_df[_multi_df['訂單編號'] != each_unique_txn_id].reset_index(drop=True)
+            except Exception as e:
+                print(f'to_one_unique_id_df_after_kash error: {e}')
+                exit()
 
-            for each_unique_txn_id in _multi_df.unique_id.unique():
-                _temp_small_multi_df = _multi_df[_multi_df.unique_id==each_unique_txn_id].reset_index(drop=True)
-                # 創建一個對應的dataframe, 內含交易為對應的unique_txn_id
-                _temp_small_multi_df.loc[0, '內容物'] = self._combine_columns(
-                        _temp_small_multi_df['內容物'].tolist(), linked_symbol)
-                _temp_small_multi_df.loc[0, '備註'] = self._combine_columns(
-                        list(
-                            filter(
-                                lambda x: pd.isnull(x) == False, 
-                                list(set(_temp_small_multi_df['備註'].tolist())))
-                            ), linked_symbol)
-                _temp_small_multi_df.loc[0, '規格'] = self._combine_columns(
-                        _temp_small_multi_df['規格'].tolist(), ', ')
-                _temp_small_multi_df.loc[0, '供應商'] = self._combine_columns(
-                        list(
-                            filter(
-                                lambda x: len(x) > 0, 
-                                list(set(_temp_small_multi_df['供應商'].tolist())))
-                            ), ', ')
-                try:
-                    _temp_small_multi_df.loc[0, '金額'] = _temp_small_multi_df['金額'].astype(int).sum()
-                except:
-                    pass
-                _temp_df.loc[_temp_df.shape[0]] = \
-                        _temp_small_multi_df.loc[0].tolist()
+            # print(f'_temp_df2: {_temp_df}')
+
+            if _multi_df.shape[0]:
+                for each_unique_txn_id in _multi_df.unique_id.unique():
+                    _temp_small_multi_df = _multi_df[_multi_df.unique_id==each_unique_txn_id].reset_index(drop=True)
+                    # 創建一個對應的dataframe, 內含交易為對應的unique_txn_id
+                    _temp_small_multi_df.loc[0, '內容物'] = self._combine_columns(
+                            _temp_small_multi_df['內容物'].tolist(), linked_symbol)
+                    _temp_small_multi_df.loc[0, '備註'] = self._combine_columns(
+                            list(
+                                filter(
+                                    lambda x: pd.isnull(x) == False, 
+                                    list(set(_temp_small_multi_df['備註'].tolist())))
+                                ), linked_symbol)
+                    _temp_small_multi_df.loc[0, '規格'] = self._combine_columns(
+                            _temp_small_multi_df['規格'].tolist(), ', ')
+                    _temp_small_multi_df.loc[0, '供應商'] = self._combine_columns(
+                            list(
+                                filter(
+                                    lambda x: len(x) > 0, 
+                                    list(set(_temp_small_multi_df['供應商'].tolist())))
+                                ), ', ')
+                    try:
+                        _temp_small_multi_df.loc[0, '金額'] = _temp_small_multi_df['金額'].astype(int).sum()
+                    except:
+                        pass
+                    _temp_df.loc[_temp_df.shape[0]] = \
+                            _temp_small_multi_df.loc[0].tolist()
 
             return _temp_df
             
@@ -298,17 +488,18 @@ class ALICIA:
                  '生活市集': re.compile(r'^2[0-9]{3}-[0-9]{2}-[0-9]{2}_生活市集_\S+'),
                  '樂天派官網': re.compile(r'.*export_[0-9]{2}\w{3}[0-9]{2}\s{0,2}.*xls[x]{0,1}$|.*2[0-9]{7}_export_default.{0,6}.xls[x]{0,1}'),
                  'MOMO': re.compile(r'[A-Z]\d+_\d_\d+_\d+_[20]\d+.xls|\S+\d+\s{0,2}[(]MOMO[)].xls|.*訂單查詢-第三方物流.*xls[x]{0,1}$|[A-Z]\d+_\d_\d+_[20]\d+.{0,6}.xls'),
-                 '亞伯': re.compile(r'[a-z]\d+_PoDetail_\d+.xls|\S+PoDetail_\d+\s{0,2}[(]亞伯[)].xls|[a-z]\d+_shipmentReport_\d+.{0,6}.xls'),
+                 '亞伯': re.compile(r'a52464493_PoDetail_\d+.xls|\S+PoDetail_\d+\s{0,2}[(]亞伯[)].xls[x]{0,1}|a52464493_shipmentReport_\d+.{0,6}.xls[x]{0,1}'),
                  '東森得易購': re.compile(r'^[a-z0-9]{8}_20\d+.{0,6}.xls'),
-                 'Yahoo購物中心': re.compile(r'^delivery - [0-9]{4}-[0-9]{2}-[0-9]{2}\S+\s{0,2}[(]YAHOO購物中心[)].xls|^delivery - [0-9]{4}-[0-9]{2}-[0-9]{2}\S+\s{0,2}.{0,6}.xls'),
+                 'Yahoo購物中心': re.compile(r'^delivery - [0-9]{4}-[0-9]{2}-[0-9]{2}\S+\s{0,2}[(]YAHOO購物中心[)].xls|^delivery - [0-9]{4}-[0-9]{2}-[0-9]{2}\S+\s{0,2}.{0,6}.xls|^delivery\s{0,2}[(]\d{0,3}[)].xls[x]{0,1}'),
                  'UDN': re.compile(r'^Order_2[0-9]{16}[(][Uu][Dd][Nn][)].{0,6}'),
-                 'Friday': re.compile(r'^OrderData_[0-9]{5} - 2[0-9]{3}-[0-9]{2}-\S+.{0,6}.csv'),
+                 'Friday': re.compile(r'^OrderData_[0-9]{5} - 2[0-9]{3}-[0-9]{2}-\S+.{0,6}.csv|^OrderData_[0-9]{5}\s{0,2}[(]\d{0,3}[)].csv'),
                  '博客來': re.compile(r'^take_order_2[0-9]{13}\s{0,2}[(]博客來[)].xls|^take_order_2[0-9]{13}\s{0,2}.{0,6}.xls'),
                  '台塑': re.compile(r'^Order_2[0-9]{16}[(]台塑[)]'),
                  '整合檔': re.compile(r'.*20[0-9]{6}-[0-9]{6}_.*整合檔.*.xls[x]{0,1}'),
                  'LaNew': re.compile(r'複{0,1}本{0,1}[_ ]{0,1}訂{0,1}單{0,1}接{0,1}單{0,1}[_ ]{0,1}[A-Z]{3}\d{2}_2[0-9]{3}[01][0-9][0123][0-9].{0,6}.xls[x]{0,1}'),
                  '快車肉乾銷港': re.compile(r'.{0,6}orders\s*[(]{0,1}\d*[)]{0,1}\s*.csv|.{0,6}orders\s*[(]{0,1}\d*[)]{0,1}\s*.{0,6}.xls[x]{0,1}'),
                  '特力家Online店': re.compile(r'複{0,1}本{0,1}[_ ]{0,1}TLW\d{27}\s{0,1}[(]{0,1}\d*[)]{0,1}.xls'),
+                 '龍哥': re.compile(r'^2\d{7}拋單_\S{1,10}.xls[x]{0,1}'),
                 }
         # 我們把 "整合檔" 也當作一個平台來處理，只是它不需要被再度整合、也不需要丟進kashgari做分析
         # by Annie and Tamio @2020.06.24
@@ -528,17 +719,20 @@ class ALICIA:
 
 
     def _get_file_created_date(self, file_path):
-        return time.strftime('%Y-%m-%d', time.gmtime(os.path.getmtime(file_path)))
+        # return time.strftime('%Y-%m-%d', time.gmtime(os.path.getmtime(file_path)))
+        # 改成以當日日期為主
+        return date_function.today().strftime("%Y-%m-%d")
+
 
     
     def _get_unique_txns(self):
         if self.aggregated_txns.shape[0]:
             # 上面那行代表 aggregated_txns dataframe裡面有資料
             self.aggregated_txns.loc[:, 'temp_unique_id'] = self.aggregated_txns['抓單日'] + '|' + \
-                                                       self.aggregated_txns['訂單編號'].apply(self.try_to_be_int_in_str) + '|' + \
-                                                       self.aggregated_txns['通路']
-                                                                                                  
+                self.aggregated_txns['訂單編號'].apply(self.try_to_be_int_in_str) + '|' + \
+                self.aggregated_txns['通路']                                                                                      
             # 創立一個暫時的unique_id
+
             if self.aggregated_txns.shape[0] != len(self.aggregated_txns['temp_unique_id'].unique()):
                 # dataframe 長度與 其中的 unique_id 長度不同, 代表需要進行整合歸戶(id)
                 _temp_df = self.aggregated_txns[self.aggregated_txns.temp_unique_id.apply(
@@ -763,7 +957,7 @@ class ALICIA:
                 return is_found, is_error, exception_files
         
 
-        elif platform == '樂天派官網':
+        elif platform == '樂天派官網':  
             def to_get_subcontent(target_string):
                 pattern = re.compile(r'[(]口味選擇:.*[)]|[(]口味:.*[)]|[(]商品規格:.*[)]|[(]規格:.*[)]')
                 if len(re.findall(pattern, target_string)) > 0:
@@ -783,6 +977,9 @@ class ALICIA:
                 is_found = False
                 return is_found, is_error, exception_files
             else:
+                # 有樂天派官網的資料
+                # 確認一下資料有沒有留存在青葉資料庫裏面，有的話要剔除
+
                 # print('_intergrate_with: ', platform, txn_paths)
                 for txn_path in txn_paths:
                     try:
@@ -823,7 +1020,11 @@ class ALICIA:
                             # temp_df = a._clean_dataframe(temp_df)
                             # temp_df.loc[1, '商品名稱'].split('(')[0].strip() + \
                             # ' - ' +
-                            _content = _temp_df.loc[each_row_index, '商品名稱']
+                            # print(f"_content before  {_temp_df.loc[each_row_index, '商品名稱']}")
+                            _content = re.sub(r'神老師推薦》\s{0,4}', '神老師推薦》', _temp_df.loc[each_row_index, '商品名稱'])
+                            _content = re.sub(r'《青葉臺菜X神老師推薦》\s{0,4}冰箱', '《神老師推薦》冰箱', _temp_df.loc[each_row_index, '商品名稱'])
+                            # print(f'_content after  {_content}')
+                            # 2021.01.15 >> 針對 《青葉臺菜X神老師推薦》被改成 《神老師推薦》 做特別處理
                             _vendor = self.who_is_vendor_from_this_product(_content)
                             _how_many = _temp_df.loc[each_row_index, '購買數量'].astype(int)
                             _how_much = _temp_df.loc[each_row_index, '單價'].astype(int)
@@ -835,6 +1036,21 @@ class ALICIA:
                             _ifsend = False
                             _ifcancel = False
                             _subcontent = to_get_subcontent(_temp_df.loc[each_row_index, '商品名稱'])
+
+                            if '青葉臺菜' in _subcontent:
+                                # (到貨日:花膠佛跳牆1組+鰻魚櫻花蝦米糕1組_2/3-2/9到貨)
+                                # (到貨日:花膠佛跳牆1組+鰻魚櫻花蝦米糕1組_1/27-2/2到貨)
+                                # (到貨日:1/27-2/2到貨)
+                                nian_cai_pattern = r'[(]到貨日:.*[)]$'
+                                _target_string = re.findall(nian_cai_pattern, _subcontent)
+                                if len(_target_string):
+                                    # found somthing
+                                    _target_string = _target_string[0][5:-1]
+                                    if len(_target_string) > 13:
+                                        # something like 花膠佛跳牆1組+鰻魚櫻花蝦米糕1組_2/3-2/9到貨
+                                        _subcontent = _target_string
+
+                            # print(f'after to_get_subcontent: {_subcontent}')
                             _room_temperature_shipping_link = ''
                             _low_temperature_shipping_link = ''
                             # 寫入資料
@@ -866,7 +1082,7 @@ class ALICIA:
                     except Exception as e:
                         print(e)
                         is_error = True
-                        exception_files.append(ntpath.split(txn_path)[1])                
+                        exception_files.append(ntpath.split(txn_path)[1])              
                 return is_found, is_error, exception_files
 
 
@@ -924,6 +1140,19 @@ class ALICIA:
                                 _ifsend = False
                                 _ifcancel = False
                                 _subcontent = _temp_df.loc[each_row_index, '單品詳細']
+                                pattern = r'\d{1,2}/\d{1,2}\s{0,1}-\s{0,1}\d{1,2}/\d{1,2}'
+                                
+                                if _subcontent == '無':
+                                    _subcontent = _content
+
+                                # 若「單品詳細」只有日期，則將與品名合在一起
+                                if len(re.findall(pattern, _subcontent)):
+                                    if re.findall(pattern, _subcontent)[0] == _subcontent:
+                                        _subcontent = \
+                                            self._combine_columns([_temp_df.loc[each_row_index, '品名'],
+                                                                  _temp_df.loc[each_row_index, '單品詳細']],
+                                                                  ' - ')
+
                                 #if len(re.findall(r'\d+/\d+/s{0,1}[-~]/s{0,1}\d+/\d+', _subcontent))
                                 _room_temperature_shipping_link = ''
                                 _low_temperature_shipping_link = ''
@@ -987,6 +1216,18 @@ class ALICIA:
                                 _ifsend = False
                                 _ifcancel = False
                                 _subcontent = _temp_df.loc[each_row_index, '單品詳細']
+                                pattern = r'\d{1,2}/\d{1,2}\s{0,1}-\s{0,1}\d{1,2}/\d{1,2}'
+                                if _subcontent == '無':
+                                    _subcontent = _content
+
+                                # 若「單品詳細」只有日期，則將與品名合在一起
+                                if len(re.findall(pattern, _subcontent)):
+                                    if re.findall(pattern, _subcontent)[0] == _subcontent:
+                                        _subcontent = \
+                                            self._combine_columns([_temp_df.loc[each_row_index, '品名'],
+                                                                  _temp_df.loc[each_row_index, '單品詳細']],
+                                                                  ' - ')
+                                                                  
                                 _room_temperature_shipping_link = ''
                                 _low_temperature_shipping_link = ''
                                 # 寫入資料
@@ -1017,7 +1258,7 @@ class ALICIA:
                                                                                         _low_temperature_shipping_link]
 
                     except Exception as e:
-                        print(e)
+                        print(f"Integrating with MOMO {e}")
                         is_error = True
                         exception_files.append(ntpath.split(txn_path)[1])       
                 return is_found, is_error, exception_files
@@ -1191,78 +1432,150 @@ class ALICIA:
                 is_found = False
                 return is_found, is_error, exception_files
             else:
+                print('Found Yabo.')
+                print(txn_paths)
                 try:
                     for txn_path in txn_paths:
-                        assert (txn_path.endswith('.xls') or txn_path.endswith('.xlsx') or txn_path.endswith('.xlsm'))
-                        # 檢查是否為excel檔
                         _file_created_date = self._get_file_created_date(txn_path)
+                        print('Yabo created_date', _file_created_date)
                         _temp_df = self._clean_dataframe(pd.read_excel(txn_path))
-                        for each_row_index in range(_temp_df.shape[0]):
-                            try:
-                                _txn_id = self._combine_columns([self.try_to_be_int_in_str(_temp_df.loc[each_row_index, '廠商訂單編號']),
-                                                                self.try_to_be_int_in_str(_temp_df.loc[each_row_index, '會員訂單編號'])],
-                                                                '-')
-                            except Exception as e:
-                                print(e)
-                                _txn_id = self._combine_columns([_temp_df.loc[each_row_index, '廠商訂單編號'],
-                                                                _temp_df.loc[each_row_index, '會員訂單編號']],
-                                                                '-')
-                            _customer_name = _temp_df.loc[each_row_index, '消費者']
-                            _receiver_name = _temp_df.loc[each_row_index, '收貨人姓名']
-                            _paid_after_receiving = False
-                            _receiver_address = _temp_df.loc[each_row_index, '收貨人地址']
-                            try:
-                                _receiver_phone_nbr = _temp_df.loc[each_row_index, '收貨人連絡電話']
-                                _receiver_mobile = _temp_df.loc[each_row_index, '收貨人連絡電話']
-                            except:
-                                _receiver_phone_nbr = _temp_df.loc[each_row_index, '收貨人聯絡電話']
-                                _receiver_mobile = _temp_df.loc[each_row_index, '收貨人聯絡電話']
-                            _content = self._combine_columns([_temp_df.loc[each_row_index, '品名'],
-                                                            _temp_df.loc[each_row_index, '選購規格']],
-                                                            ', ')
-                            _vendor = self.who_is_vendor_from_this_product(_content)
-                            _how_many = _temp_df.loc[each_row_index, '數量'].astype(int)
-                            _how_much = _temp_df.loc[each_row_index, '成本小計'].astype(int)
-                            _remark = ''
-                            _room_temperature_shipping_id = ''
-                            _low_temperature_shipping_id = ''
-                            _last_charged_date = ''
-                            _charged = False
-                            _ifsend = False
-                            _ifcancel = False
-                            if not pd.isnull(_temp_df.loc[each_row_index, '選購規格']):
-                                _subcontent = _temp_df.loc[each_row_index, '選購規格']
-                            else:
-                                _subcontent = _temp_df.loc[each_row_index, '品名']
-                            
-                            _room_temperature_shipping_link = ''
-                            _low_temperature_shipping_link = ''
-                            # 寫入資料
-                            self.aggregated_txns.loc[self.aggregated_txns.shape[0]] = [platform,
-                                                                                    _file_created_date,
-                                                                                    None,
-                                                                                    None,
-                                                                                    _txn_id,
-                                                                                    _customer_name,
-                                                                                    _receiver_name,
-                                                                                    _paid_after_receiving,
-                                                                                    _receiver_address,
-                                                                                    _receiver_phone_nbr,
-                                                                                    _receiver_mobile,
-                                                                                    _content,
-                                                                                    _how_many,
-                                                                                    _how_much,
-                                                                                    _remark,
-                                                                                    _room_temperature_shipping_id,
-                                                                                    _low_temperature_shipping_id,
-                                                                                    _last_charged_date,
-                                                                                    _charged,
-                                                                                    _ifsend,
-                                                                                    _ifcancel,
-                                                                                    _vendor,
-                                                                                    _subcontent,
-                                                                                    _room_temperature_shipping_link,
-                                                                                    _low_temperature_shipping_link]
+                        # 亞伯有兩個版本，目前這個是PoDetail版
+                        if 'PoDetail' in txn_path:
+                            for each_row_index in range(_temp_df.shape[0]):
+                                try:
+                                    _txn_id = self._combine_columns([self.try_to_be_int_in_str(_temp_df.loc[each_row_index, '廠商訂單編號']),
+                                                                    self.try_to_be_int_in_str(_temp_df.loc[each_row_index, '會員訂單編號'])],
+                                                                    '-')
+                                except Exception as e:
+                                    print(e)
+                                    _txn_id = self._combine_columns([_temp_df.loc[each_row_index, '廠商訂單編號'],
+                                                                    _temp_df.loc[each_row_index, '會員訂單編號']],
+                                                                    '-')
+                                print('_txn_id', _txn_id)
+                                _customer_name = _temp_df.loc[each_row_index, '消費者']
+                                _receiver_name = _temp_df.loc[each_row_index, '收貨人姓名']
+                                _paid_after_receiving = False
+                                _receiver_address = _temp_df.loc[each_row_index, '收貨人地址']
+                                try:
+                                    _receiver_phone_nbr = _temp_df.loc[each_row_index, '收貨人連絡電話']
+                                    _receiver_mobile = _temp_df.loc[each_row_index, '收貨人連絡電話']
+                                except:
+                                    _receiver_phone_nbr = _temp_df.loc[each_row_index, '收貨人聯絡電話']
+                                    _receiver_mobile = _temp_df.loc[each_row_index, '收貨人聯絡電話']
+                                _content = self._combine_columns([_temp_df.loc[each_row_index, '品名'],
+                                                                _temp_df.loc[each_row_index, '選購規格']],
+                                                                ', ')
+                                _vendor = self.who_is_vendor_from_this_product(_content)
+                                _how_many = _temp_df.loc[each_row_index, '數量'].astype(int)
+                                _how_much = _temp_df.loc[each_row_index, '成本小計'].astype(int)
+                                _remark = ''
+                                _room_temperature_shipping_id = ''
+                                _low_temperature_shipping_id = ''
+                                _last_charged_date = ''
+                                _charged = False
+                                _ifsend = False
+                                _ifcancel = False
+                                if not pd.isnull(_temp_df.loc[each_row_index, '選購規格']):
+                                    _subcontent = _temp_df.loc[each_row_index, '選購規格']
+                                else:
+                                    _subcontent = _temp_df.loc[each_row_index, '品名']
+                                
+                                _room_temperature_shipping_link = ''
+                                _low_temperature_shipping_link = ''
+                                # 寫入資料
+                                self.aggregated_txns.loc[self.aggregated_txns.shape[0]] = [platform,
+                                                                                        _file_created_date,
+                                                                                        None,
+                                                                                        None,
+                                                                                        _txn_id,
+                                                                                        _customer_name,
+                                                                                        _receiver_name,
+                                                                                        _paid_after_receiving,
+                                                                                        _receiver_address,
+                                                                                        _receiver_phone_nbr,
+                                                                                        _receiver_mobile,
+                                                                                        _content,
+                                                                                        _how_many,
+                                                                                        _how_much,
+                                                                                        _remark,
+                                                                                        _room_temperature_shipping_id,
+                                                                                        _low_temperature_shipping_id,
+                                                                                        _last_charged_date,
+                                                                                        _charged,
+                                                                                        _ifsend,
+                                                                                        _ifcancel,
+                                                                                        _vendor,
+                                                                                        _subcontent,
+                                                                                        _room_temperature_shipping_link,
+                                                                                        _low_temperature_shipping_link]
+                        elif 'shipmentReport' in txn_path:
+                            for each_row_index in range(_temp_df.shape[0]):
+                                try:
+                                    _txn_id = self._combine_columns([self.try_to_be_int_in_str(_temp_df.loc[each_row_index, '廠商訂單編號']),
+                                                                    self.try_to_be_int_in_str(_temp_df.loc[each_row_index, '會員訂單編號'])],
+                                                                    '-')
+                                except Exception as e:
+                                    print(e)
+                                    _txn_id = self._combine_columns([_temp_df.loc[each_row_index, '廠商訂單編號'],
+                                                                    _temp_df.loc[each_row_index, '會員訂單編號']],
+                                                                    '-')
+                                print('_txn_id', _txn_id)
+                                _customer_name = _temp_df.loc[each_row_index, '消費者']
+                                _receiver_name = _temp_df.loc[each_row_index, '收貨人姓名']
+                                _paid_after_receiving = False
+                                _receiver_address = _temp_df.loc[each_row_index, '收貨人地址']
+                                try:
+                                    _receiver_phone_nbr = _temp_df.loc[each_row_index, '收貨人連絡電話']
+                                    _receiver_mobile = _temp_df.loc[each_row_index, '收貨人連絡電話']
+                                except:
+                                    _receiver_phone_nbr = _temp_df.loc[each_row_index, '收貨人聯絡電話']
+                                    _receiver_mobile = _temp_df.loc[each_row_index, '收貨人聯絡電話']
+                                _content = self._combine_columns([_temp_df.loc[each_row_index, '品名'],
+                                                                _temp_df.loc[each_row_index, '選購規格']],
+                                                                ', ')
+                                _vendor = self.who_is_vendor_from_this_product(_content)
+                                _how_many = _temp_df.loc[each_row_index, '數量'].astype(int)
+                                _how_much = _temp_df.loc[each_row_index, '成本小計'].astype(int)
+                                _remark = ''
+                                _room_temperature_shipping_id = ''
+                                _low_temperature_shipping_id = ''
+                                _last_charged_date = ''
+                                _charged = False
+                                _ifsend = False
+                                _ifcancel = False
+                                if not pd.isnull(_temp_df.loc[each_row_index, '選購規格']):
+                                    _subcontent = _temp_df.loc[each_row_index, '選購規格']
+                                else:
+                                    _subcontent = _temp_df.loc[each_row_index, '品名']
+                                
+                                _room_temperature_shipping_link = ''
+                                _low_temperature_shipping_link = ''
+                                # 寫入資料
+                                self.aggregated_txns.loc[self.aggregated_txns.shape[0]] = [platform,
+                                                                                        _file_created_date,
+                                                                                        None,
+                                                                                        None,
+                                                                                        _txn_id,
+                                                                                        _customer_name,
+                                                                                        _receiver_name,
+                                                                                        _paid_after_receiving,
+                                                                                        _receiver_address,
+                                                                                        _receiver_phone_nbr,
+                                                                                        _receiver_mobile,
+                                                                                        _content,
+                                                                                        _how_many,
+                                                                                        _how_much,
+                                                                                        _remark,
+                                                                                        _room_temperature_shipping_id,
+                                                                                        _low_temperature_shipping_id,
+                                                                                        _last_charged_date,
+                                                                                        _charged,
+                                                                                        _ifsend,
+                                                                                        _ifcancel,
+                                                                                        _vendor,
+                                                                                        _subcontent,
+                                                                                        _room_temperature_shipping_link,
+                                                                                        _low_temperature_shipping_link]
                 except Exception as e:
                     print(e)
                     is_error = True
@@ -1608,6 +1921,118 @@ class ALICIA:
                 return is_found, is_error, exception_files
 
         
+        elif platform == '龍哥':
+            if len(txn_paths) == 0:
+                # print('未找到任何來自『' + platform + '』的交易資料。')
+                is_found = False
+                return is_found, is_error, exception_files
+            else:
+                # 建立一個檢查是否規格為 XXXX*\d的機制
+                def check_if_contains_amounts_in_content_list(targets_list):
+                    pattern = r'\S*[*]\d+'
+                    results = list()
+                    for each_target in targets_list:
+                        # 檢查是否找到對應的規則
+                        results.append(
+                            len(re.findall(pattern, each_target)) > 0
+                        )
+                    return all(results)
+
+
+                for txn_path in txn_paths:
+                    file_name_without_ext = ntpath.split(txn_path)[1]
+                    vendor = file_name_without_ext.split('_')[-1].split('.')[0]
+                    try:
+                        _file_created_date = self._get_file_created_date(txn_path)
+                        _temp_df = self._clean_dataframe(pd.read_excel(txn_path))
+                        # _temp_df['訂單編號'] = _temp_df['訂單編號'].astype(str)
+                        unique_txn_ids = list(_temp_df['訂單編號'].unique())
+                        # print(f'unique_txn_ids len: {len(unique_txn_ids)}')
+                        for each_unique_txn_id in unique_txn_ids:
+                            tdf = _temp_df[_temp_df['訂單編號']==each_unique_txn_id].reset_index(drop=True)
+                            _txn_id = each_unique_txn_id
+                            _customer_name = tdf.loc[0, '收件人']
+                            _receiver_name = _customer_name
+                            _paid_after_receiving = False
+                            _receiver_address = tdf.loc[0, '地址']
+                            _receiver_phone_nbr = tdf.loc[0, '收件人電話']
+                            _receiver_mobile = _receiver_phone_nbr
+                            if '商品名稱' in _temp_df.columns:
+                                _content = tdf.loc[0, '商品名稱']
+                            else:
+                                _content = tdf.loc[0, '商品規格']
+                            _vendor = vendor
+                            # print(f"_how_much: {tdf.loc[:, '商品單價'].astype(int)}  {tdf.loc[:, '數量'].astype(int)} {tdf.loc[:, '商品單價'].astype(int) * tdf.loc[:, '數量'].astype(int)}")
+                            _how_much = sum(tdf.loc[:, '商品單價'].astype(int) * tdf.loc[:, '數量'].astype(int))
+                            # print(f"_how_much: {_how_much}")
+                            _how_many = 1
+                            
+                            if pd.isnull(tdf.loc[0, "買家備註"]) and pd.isnull(tdf.loc[0, "賣家備註"]):
+                                _remark = ''
+                            elif pd.isnull(tdf.loc[0, "買家備註"]) == False and pd.isnull(tdf.loc[0, "賣家備註"]) == False:
+                                _remark = \
+                                    f'買家: {tdf.loc[0, "買家備註"]}\n賣家: {tdf.loc[0, "賣家備註"]}'
+                            elif pd.isnull(tdf.loc[0, "買家備註"]) == False:
+                                _remark = f'買家: {tdf.loc[0, "買家備註"]}'
+                            elif pd.isnull(tdf.loc[0, "賣家備註"]) == False:
+                                _remark = f'賣家: {tdf.loc[0, "賣家備註"]}'
+
+                            if '貨運編號' in tdf.columns:
+                                _room_temperature_shipping_id = tdf.loc[0, '貨運編號']
+                            else:
+                                _room_temperature_shipping_id = ''
+                            _low_temperature_shipping_id = ''
+                            _last_charged_date = ''
+                            _charged = False
+                            _ifsend = False
+                            _ifcancel = False
+                            if check_if_contains_amounts_in_content_list(tdf.loc[:, '商品規格'].tolist()):
+                                # 如果已經含有數量了，就不需要再次餵進去
+                                _subcontent = ', '.join(tdf.loc[:, '商品規格'])
+                            else:
+                                _subcontent = \
+                                    ', '.join((tdf.loc[:, '商品規格'] + '*' + tdf.loc[:, '數量'].astype(str)).tolist())
+
+                            sum_how_many = sum(tdf.loc[:, '數量'].astype(int))
+                            if sum_how_many >= 4 and _vendor in ['水根肉乾', '水根']:
+                                _subcontent = _subcontent + ', 袋子*' + str(int(sum_how_many/4))
+                            _room_temperature_shipping_link = ''
+                            _low_temperature_shipping_link = ''
+
+                            # 寫入資料
+                            self.aggregated_txns.loc[self.aggregated_txns.shape[0]] = [platform,
+                                                                                    _file_created_date,
+                                                                                    None,
+                                                                                    None,
+                                                                                    _txn_id,
+                                                                                    _customer_name,
+                                                                                    _receiver_name,
+                                                                                    _paid_after_receiving,
+                                                                                    _receiver_address,
+                                                                                    _receiver_phone_nbr,
+                                                                                    _receiver_mobile,
+                                                                                    _content,
+                                                                                    _how_many,
+                                                                                    _how_much,
+                                                                                    _remark,
+                                                                                    _room_temperature_shipping_id,
+                                                                                    _low_temperature_shipping_id,
+                                                                                    _last_charged_date,
+                                                                                    _charged,
+                                                                                    _ifsend,
+                                                                                    _ifcancel,
+                                                                                    _vendor,
+                                                                                    _subcontent,
+                                                                                    _room_temperature_shipping_link,
+                                                                                    _low_temperature_shipping_link]
+                    except Exception as e:
+                        print(e)
+                        is_error = True
+                        exception_files.append(ntpath.split(txn_path)[1]) 
+                #self.aggregated_txns.to_excel('long.xlsx', index=False)              
+                return is_found, is_error, exception_files
+
+        
         elif platform == '快車肉乾銷港':
             if len(txn_paths) == 0:
                 # print('未找到任何來自『' + platform + '』的交易資料。')
@@ -1618,10 +2043,9 @@ class ALICIA:
                     try:
                         _file_created_date = self._get_file_created_date(txn_path)
                         _temp_df = self._clean_dataframe(pd.read_csv(txn_path))
-                        # _temp_df.loc[:, '_temp_subcontent'] = _temp_df['Product Name'].apply(lambda x: x.split('-')[-1] if '-' in x else x.split(' ')[-2])
-                        # print('ali: spilt')
+                        _temp_df = _temp_df[_temp_df['Payment Status'] == 'paid'].reset_index(drop=True)
+
                         _temp_df.loc[:, '_temp_subcontent'] = _temp_df['Product Name'].apply(lambda x: x.split('】')[-1].split('-')[-1].strip() if '-' in x else x.split('】')[-1].strip())
-                        #_temp_df.loc[:, '_temp_subcontent'] = _temp_df['Product Name'].apply(lambda x: x.split('-')[-1].strip() if '-' in x else x.split(' ')[-2])
                         _temp_df.loc[:, 'customer_name'] = _temp_df['First Name'] + ' ' + _temp_df['Last Name']
                         _temp_df.loc[:, '_temp_remark'] = _temp_df['Order Note'] + '; email:' + _temp_df['Buyer\'s Email Address']
                         _temp_df['Shipping Address'] = _temp_df['Shipping Address'].apply(lambda x: x.replace('\n', ' '))
@@ -1777,6 +2201,9 @@ class ALICIA:
                         _temp_df['常溫宅單編號'][~pd.isnull(_temp_df['常溫宅單編號'])] = _temp_df['常溫宅單編號'][~pd.isnull(_temp_df['常溫宅單編號'])].apply(lambda x: str(x).split('.')[0].replace('\'', '').replace('-', ''))
                         _temp_df['低溫宅單編號'][~pd.isnull(_temp_df['低溫宅單編號'])] = _temp_df['低溫宅單編號'][~pd.isnull(_temp_df['低溫宅單編號'])].apply(lambda x: str(x).split('.')[0].replace('\'', '').replace('-', ''))
                         _temp_df['貨到付款'][pd.isnull(_temp_df['貨到付款'])] = False
+                        #_temp_df['修訂出貨日'] = pd.to_datetime(_temp_df['修訂出貨日'])
+                        #_temp_df['修訂出貨日'][pd.isnull(_temp_df['修訂出貨日'])] = ''
+                        _temp_df['地址'][pd.isnull(_temp_df['地址'])] = ''
                         _temp_df['地址'][pd.isnull(_temp_df['地址'])] = ''
                         _temp_df['金額'][pd.isnull(_temp_df['金額'])] = 0
                         _temp_df['數量'][pd.isnull(_temp_df['數量'])] = 1
@@ -1874,7 +2301,10 @@ class ALICIA:
         # 這個函式用來將同一個「自訂訂單編號」中相同的品項合併
         # 這個函式理論上收到「abc*1x, ccd*12x, abc*3x, ccd*1g」後，應該產出:
         # 「abc*4x, ccd*12x, ccd*1g」
+        # 將前綴詞與產品分離出來
+        prefix_words = ' '.join([_ for _ in target_string.split() if '*' not in _])
         splitted_target_string = target_string.split(',')
+
         pattern = r'\S+[*]\d+\S*'
         ## 接著我們組一個大字典，分別將all_found以下列方式儲存:
         ## {product_name: [商品名稱], volume: [數量], unit: [量詞, 沒有的話填入空字串], spec: [商品名稱-量詞]}
@@ -1920,7 +2350,7 @@ class ALICIA:
             temp_subcontent_in_list.append(
                 this_product_name + '*' + str(this_volume_sum) + this_unit)
         
-        return ', '.join(temp_subcontent_in_list)
+        return prefix_words + ' ' + ', '.join(temp_subcontent_in_list)
 
     def to_split_old_unique_ids(self, old_unique_id_in_list):
         # As old unique_id contains formats like channel-vendor1, vendor2-txn_id,
@@ -1928,16 +2358,19 @@ class ALICIA:
         # "channel-vendor1-txn_id" & "channel-vendor2-txn_id" these 2 unique_ids.
         _temp_list = list()
         for each_old_unique_id in old_unique_id_in_list:
-            if ',' in each_old_unique_id:
-                channel, vendors_string, txn_id = each_old_unique_id.split('|')
-                if ', ' in vendors_string:
-                    vendors_in_list = vendors_string.split(', ')
+            try:
+                if ',' in each_old_unique_id:
+                    channel, vendors_string, txn_id = each_old_unique_id.split('|')
+                    if ', ' in vendors_string:
+                        vendors_in_list = vendors_string.split(', ')
+                    else:
+                        vendors_in_list = vendors_string.split(',')
+                    for each_vendor in vendors_in_list:
+                        _temp_list.append(channel + '|' + each_vendor + '|' + txn_id)
                 else:
-                    vendors_in_list = vendors_string.split(',')
-                for each_vendor in vendors_in_list:
-                    _temp_list.append(channel + '|' + each_vendor + '|' + txn_id)
-            else:
-                _temp_list.append(each_old_unique_id)
+                    _temp_list.append(each_old_unique_id)
+            except Exception as e:
+                print(f'to_split_old_unique_ids ERROR {e}')
         return _temp_list
 
 
