@@ -195,6 +195,7 @@ def ordertracking(request):
                         fs_backup.save(alicia.get_today("%Y%m%d-%H%M%S") + '_' + each_file.name, each_file)
                         # 上傳的檔案將被存放在預設為 '/HAPPYPI_0610_ANNIE/temp_files/' 的資料夾中
                         # 注意! 上傳的檔案包括「需要解密」的檔案跟「不需要解密」的檔案
+                    print(f"上傳的檔案為：{os.listdir('user_uploaded_files')}")
                     alicia.move_files_and_decrypt_them(folder_where_are_uploaded_files_be, 
                                                     folder_where_i_want_all_decrypted_files_be_at)
                     print('Has Successfully Decrypted And Moved All Files.')
