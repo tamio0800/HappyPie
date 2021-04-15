@@ -69,6 +69,7 @@ smart-open==2.1.0
 sqlparse==0.3.1
 tensorboard==1.14.0
 tensorflow-estimator==1.14.0
+tensorflow-gpu==1.14.0
 termcolor==1.1.0
 threadpoolctl==2.1.0
 toml==0.10.1
