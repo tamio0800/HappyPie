@@ -90,11 +90,11 @@ class ALICIA:
             if encrypted_platform == '亞伯':
                 encrypted_txn_files = [_ for _ in encrypted_txn_files if 'shipmentReport' not in _]
             
-            print('encrypted_txn_files', encrypted_txn_files)
+            # print('encrypted_txn_files', encrypted_txn_files)
             for each_encrypted_txn_file in encrypted_txn_files:
                 # 下面這句是將路徑/檔案名 分解成 路徑, 檔案名, 使用ntpath在linux與windows環境下都可以正常運作
                 _, tail_of_file = ntpath.split(each_encrypted_txn_file)
-                print(f'Encrypted files: {each_encrypted_txn_file}')
+                # print(f'Encrypted files: {each_encrypted_txn_file}')
                 if self.check_if_the_xl_file_is_encrypted(each_encrypted_txn_file):
                     try:
                         # 嘗試進行解密
@@ -106,21 +106,19 @@ class ALICIA:
                         the_file.load_key(password='')
                         the_file.decrypt(open(os.path.join(to_dir, tail_of_file), 'wb'))
                         pass
-                    print(f'each_encrypted_txn_file: {each_encrypted_txn_file}')
-                    print(f'os.path.join(to_dir, tail_of_file): {os.path.join(to_dir, tail_of_file)}')
+
                     try:
                         os.unlink(each_encrypted_txn_file)
                     except Exception as e:
                         print(f'move_files_and_decrypt_them EXCEPTION(2): {e}')
-                        # os.unlink(each_encrypted_txn_file)
-                    # print('Successfully Moved ', tail_of_file)
+
         # 把剩下的檔案移一移, 包括原先就沒有加密的跟理論上會加密但沒有加密的那些檔案
         for each_file in os.listdir(from_dir):
             os.rename(
                 os.path.join(from_dir, each_file),
                 os.path.join(to_dir, each_file)
             )
-            # print('Successfully Moved ', tail_of_file)
+            print(f"成功將檔案解密並且移動：{each_file}  至 {to_dir}")
 
     def delete_files_in_the_folder(self, folder_path):
         for each_file in os.listdir(folder_path):
@@ -606,14 +604,18 @@ class ALICIA:
         return pd.DataFrame(columns=self.aggregated_txns_columns)
 
     def _clean_dataframe(self, pandas_dataframe, strip_only=False, make_null_be_nullstring=False, **kwargs):
+        print(f"_clean_dataframe 確認是否符合標準")
         assert type(pandas_dataframe) is pd.core.frame.DataFrame
+        print(f"_clean_dataframe 確認是否符合標準 >> 符合")
         columns_cannot_be_ffill = [
             '載具編號', '備註', '轉帳帳號', '室內電話', '預計配送日', '買家備註', '賣家備註', '客服備註',
             '購物車備註', '商品屬性', '活動序號', '配送備註', '購買備註', '特標語', 'shipxrem', 'xrem', 'spslgn',
-            '指交日期', 'sstockdat', '訂單備註', '搭配活動', '退/換貨原因', '宅單備註', '配送訊息', '約定配送日'
+            '指交日期', 'sstockdat', '訂單備註', '搭配活動', '退/換貨原因', '宅單備註', '配送訊息', '約定配送日',
+            '商品寄件人聯絡電話'
             ]
         # 檢查輸入值是否為pandas dataframe CLASS
         for each_col in pandas_dataframe.columns:
+            print(f"檢測each_col >> {each_col}")
             # print('ALICIA _clean_dataframe 1: ', each_col)
             if not strip_only:
                 if each_col not in columns_cannot_be_ffill:
@@ -636,7 +638,7 @@ class ALICIA:
             except Exception as e:
                 print(e)
                 pass
-            
+        
         # = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
         # 我想在這個函式裡加上一個功能，讓這個函式能夠處理如：將False轉成N，或null值轉成Flase等等的任務，       
         # 主要是讓user在看報表時，可以不要讓【是否取消】或【已出貨】的欄位內容充滿TRUE/FALSE那樣凌亂，         
@@ -1439,6 +1441,7 @@ class ALICIA:
                         _file_created_date = self._get_file_created_date(txn_path)
                         print('Yabo created_date', _file_created_date)
                         _temp_df = self._clean_dataframe(pd.read_excel(txn_path))
+                        print(f"亞伯 _temp_df:  {_temp_df.shape}")
                         # 亞伯有兩個版本，目前這個是PoDetail版
                         if 'PoDetail' in txn_path:
                             for each_row_index in range(_temp_df.shape[0]):
@@ -1459,9 +1462,11 @@ class ALICIA:
                                 try:
                                     _receiver_phone_nbr = _temp_df.loc[each_row_index, '收貨人連絡電話']
                                     _receiver_mobile = _temp_df.loc[each_row_index, '收貨人連絡電話']
+                                    print(f"_receiver_phone_nbr1 {_receiver_phone_nbr}")
                                 except:
                                     _receiver_phone_nbr = _temp_df.loc[each_row_index, '收貨人聯絡電話']
                                     _receiver_mobile = _temp_df.loc[each_row_index, '收貨人聯絡電話']
+                                    print(f"_receiver_phone_nbr2 {_receiver_phone_nbr}")
                                 _content = self._combine_columns([_temp_df.loc[each_row_index, '品名'],
                                                                 _temp_df.loc[each_row_index, '選購規格']],
                                                                 ', ')
@@ -1509,27 +1514,38 @@ class ALICIA:
                                                                                         _room_temperature_shipping_link,
                                                                                         _low_temperature_shipping_link]
                         elif 'shipmentReport' in txn_path:
+                            print("shipmentReport in txn_path")
                             for each_row_index in range(_temp_df.shape[0]):
                                 try:
                                     _txn_id = self._combine_columns([self.try_to_be_int_in_str(_temp_df.loc[each_row_index, '廠商訂單編號']),
                                                                     self.try_to_be_int_in_str(_temp_df.loc[each_row_index, '會員訂單編號'])],
                                                                     '-')
+                                    print(f"_txn_id: {_txn_id}")
                                 except Exception as e:
                                     print(e)
                                     _txn_id = self._combine_columns([_temp_df.loc[each_row_index, '廠商訂單編號'],
                                                                     _temp_df.loc[each_row_index, '會員訂單編號']],
                                                                     '-')
-                                print('_txn_id', _txn_id)
+                                    print(f"_txn_id2: {_txn_id}")
                                 _customer_name = _temp_df.loc[each_row_index, '消費者']
+                                print(f"消費者: {_customer_name}")
                                 _receiver_name = _temp_df.loc[each_row_index, '收貨人姓名']
+                                print(f"收貨人姓名: {_receiver_name}")
                                 _paid_after_receiving = False
                                 _receiver_address = _temp_df.loc[each_row_index, '收貨人地址']
-                                try:
-                                    _receiver_phone_nbr = _temp_df.loc[each_row_index, '收貨人連絡電話']
-                                    _receiver_mobile = _temp_df.loc[each_row_index, '收貨人連絡電話']
-                                except:
-                                    _receiver_phone_nbr = _temp_df.loc[each_row_index, '收貨人聯絡電話']
-                                    _receiver_mobile = _temp_df.loc[each_row_index, '收貨人聯絡電話']
+                                print(f"收貨人地址: {_receiver_address}")
+                                print("SO FAR SO GOOD!!")
+                                _receiver_phone_nbr = ''
+                                _receiver_mobile = ''
+                                # try:
+                                #     _receiver_phone_nbr = _temp_df.loc[each_row_index, '收貨人連絡電話']
+                                #     _receiver_mobile = _temp_df.loc[each_row_index, '收貨人連絡電話']
+                                #     print(f"_receiver_phone_nbr1 {_receiver_phone_nbr}")
+                                    
+                                # except:
+                                #     _receiver_phone_nbr = _temp_df.loc[each_row_index, '收貨人聯絡電話']
+                                #     _receiver_mobile = _temp_df.loc[each_row_index, '收貨人聯絡電話']
+                                #     print(f"_receiver_phone_nbr2 {_receiver_phone_nbr}")
                                 _content = self._combine_columns([_temp_df.loc[each_row_index, '品名'],
                                                                 _temp_df.loc[each_row_index, '選購規格']],
                                                                 ', ')
@@ -1966,7 +1982,7 @@ class ALICIA:
                             _how_much = sum(tdf.loc[:, '商品單價'].astype(int) * tdf.loc[:, '數量'].astype(int))
                             # print(f"_how_much: {_how_much}")
                             _how_many = 1
-                            
+
                             if pd.isnull(tdf.loc[0, "買家備註"]) and pd.isnull(tdf.loc[0, "賣家備註"]):
                                 _remark = ''
                             elif pd.isnull(tdf.loc[0, "買家備註"]) == False and pd.isnull(tdf.loc[0, "賣家備註"]) == False:
@@ -1986,16 +2002,26 @@ class ALICIA:
                             _charged = False
                             _ifsend = False
                             _ifcancel = False
-                            if check_if_contains_amounts_in_content_list(tdf.loc[:, '商品規格'].tolist()):
-                                # 如果已經含有數量了，就不需要再次餵進去
-                                _subcontent = ', '.join(tdf.loc[:, '商品規格'])
-                            else:
-                                _subcontent = \
-                                    ', '.join((tdf.loc[:, '商品規格'] + '*' + tdf.loc[:, '數量'].astype(str)).tolist())
-
+                            # if check_if_contains_amounts_in_content_list(tdf.loc[:, '商品規格'].tolist()):
+                            #     # 如果已經含有數量了，就不需要再次餵進去
+                            #     _subcontent = ', '.join(tdf.loc[:, '商品規格'])
+                            # else:
+                            #     _subcontent = \
+                            #         ', '.join((tdf.loc[:, '商品規格'] + '*' + tdf.loc[:, '數量'].astype(str)).tolist())
+                            _subcontent = list()
+                            prods = tdf.loc[:, '商品規格'].tolist()
+                            nums = tdf.loc[:, '數量'].tolist()
+                            for i, j in zip(prods, nums):
+                                _subcontent.append(
+                                    self.multiply_products(i, int(j))
+                                )
+                            
+                            _subcontent = self.aggregate_elements_in_subcontent(", ".join(_subcontent))
+                            
                             sum_how_many = sum(tdf.loc[:, '數量'].astype(int))
                             if sum_how_many >= 4 and _vendor in ['水根肉乾', '水根']:
                                 _subcontent = _subcontent + ', 袋子*' + str(int(sum_how_many/4))
+
                             _room_temperature_shipping_link = ''
                             _low_temperature_shipping_link = ''
 
@@ -2296,6 +2322,32 @@ class ALICIA:
             return raw_number
         else:
             return raw_number
+
+    def multiply_products(self, target_string, multiplier, split_by='+'):
+        '''
+        target_string 長的類似「abc*1x, ccd*12x, abc*3x, ccd*1g」or「牛湯4+牛渣渣3」or「炸醬」，
+        multiplier則是其數量，目的為：multiply_products("a*1 + b*2", 3) >> "a*3 + b*6"
+        '''
+        prod_list = list()
+        num_list = list()
+        pattern = re.compile(r'\d+$')
+
+        for each_prod in target_string.split(split_by):
+            each_prod = each_prod.strip()
+            if len(re.findall(pattern, each_prod)) > 0:
+                num_part = int(re.findall(pattern, each_prod)[0])
+                prod_part = each_prod[:len(each_prod)-len(str(num_part))]
+                num_list.append(num_part)
+                prod_list.append(prod_part)
+            else:
+                num_list.append(1)
+                prod_list.append(each_prod)
+        
+        _temp = list()
+        for i, j in zip(prod_list, num_list):
+            _temp.append(f"{i}*{j*multiplier}")
+        
+        return ", ".join(_temp)
 
     def aggregate_elements_in_subcontent(self, target_string):
         # 這個函式用來將同一個「自訂訂單編號」中相同的品項合併
