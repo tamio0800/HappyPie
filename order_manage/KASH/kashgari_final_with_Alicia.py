@@ -12,7 +12,7 @@ class kashgari_model:
         # '/mnt/c/Users/common tata/Desktop/Edony_AI/004_Customers/006_E-Commerce/20200331_Tina_aggregation/079_website/happypi_annie/20200426_bert/logs'
         # /home/edony/happypi_0610_annie
         try:
-            self.model = kashgari.utils.load_model("/home/edony/Desktop/HP_PROJECT/20200426_bert/logs/")
+            self.model = kashgari.utils.load_model("/home/edony-prod/HP_PROJECT/20200426_bert/logs/")
         except:
             self.model = kashgari.utils.load_model(os.path.join(os.curdir, '20200426_bert/logs'))
         # kashgari.utils.load_model(os.path.join(os.curdir, '20200426_bert/logs'))

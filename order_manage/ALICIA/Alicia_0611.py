@@ -1535,16 +1535,15 @@ class ALICIA:
                                 _receiver_address = _temp_df.loc[each_row_index, '收貨人地址']
                                 print(f"收貨人地址: {_receiver_address}")
                                 print("SO FAR SO GOOD!!")
-                                _receiver_phone_nbr = ''
-                                _receiver_mobile = ''
-                                # try:
-                                #     _receiver_phone_nbr = _temp_df.loc[each_row_index, '收貨人連絡電話']
-                                #     _receiver_mobile = _temp_df.loc[each_row_index, '收貨人連絡電話']
-                                #     print(f"_receiver_phone_nbr1 {_receiver_phone_nbr}")
-                                    
-                                # except:
-                                #     _receiver_phone_nbr = _temp_df.loc[each_row_index, '收貨人聯絡電話']
-                                #     _receiver_mobile = _temp_df.loc[each_row_index, '收貨人聯絡電話']
+                                # _receiver_phone_nbr = ''
+                                # _receiver_mobile = ''
+                                try:
+                                    _receiver_phone_nbr = _temp_df.loc[each_row_index, '收貨人連絡電話']
+                                    _receiver_mobile = _temp_df.loc[each_row_index, '收貨人連絡電話']
+                                #    print(f"_receiver_phone_nbr1 {_receiver_phone_nbr}")
+                                except:
+                                    _receiver_phone_nbr = _temp_df.loc[each_row_index, '收貨人聯絡電話']
+                                    _receiver_mobile = _temp_df.loc[each_row_index, '收貨人聯絡電話']
                                 #     print(f"_receiver_phone_nbr2 {_receiver_phone_nbr}")
                                 _content = self._combine_columns([_temp_df.loc[each_row_index, '品名'],
                                                                 _temp_df.loc[each_row_index, '選購規格']],
