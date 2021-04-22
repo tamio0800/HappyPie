@@ -1960,6 +1960,11 @@ class ALICIA:
                     try:
                         _file_created_date = self._get_file_created_date(txn_path)
                         _temp_df = self._clean_dataframe(pd.read_excel(txn_path))
+                        if '買家備註' not in _temp_df.columns:
+                            _temp_df.loc[:, '買家備註'] = None
+                        if '賣家備註' not in _temp_df.columns:
+                            _temp_df.loc[:, '賣家備註'] = None
+
                         # _temp_df['訂單編號'] = _temp_df['訂單編號'].astype(str)
                         unique_txn_ids = list(_temp_df['訂單編號'].unique())
                         # print(f'unique_txn_ids len: {len(unique_txn_ids)}')
