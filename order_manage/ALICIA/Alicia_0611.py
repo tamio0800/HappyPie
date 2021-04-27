@@ -823,10 +823,15 @@ class ALICIA:
                             _receiver_phone_nbr = _temp_df.loc[each_row_index, '電話']
                             _receiver_mobile = _receiver_phone_nbr
                             if not pd.isnull(_temp_df.loc[each_row_index, '實際出貨明細']):
-                                _content = self._combine_columns([_temp_df.loc[each_row_index, '檔次名稱'],
-                                                                _temp_df.loc[each_row_index, '方案*組數'],
-                                                                _temp_df.loc[each_row_index, '實際出貨明細']], ', ')
-                                _subcontent = _temp_df.loc[each_row_index, '實際出貨明細'].rsplit('/', 1)[1]    
+                                if _temp_df.loc[each_row_index, '實際出貨明細'][0] == '(' and _temp_df.loc[each_row_index, '實際出貨明細'][-1] == ')':
+                                    _content = self._combine_columns([_temp_df.loc[each_row_index, '檔次名稱'],
+                                                                _temp_df.loc[each_row_index, '方案*組數']],', ').rsplit('*', 1)[0]
+                                    _subcontent = _temp_df.loc[each_row_index, '方案*組數'].strip()
+                                else:
+                                    _content = self._combine_columns([_temp_df.loc[each_row_index, '檔次名稱'],
+                                                                    _temp_df.loc[each_row_index, '方案*組數'],
+                                                                    _temp_df.loc[each_row_index, '實際出貨明細']], ', ')
+                                    _subcontent = _temp_df.loc[each_row_index, '實際出貨明細'].rsplit('/', 1)[1]    
                             
                             else:
                                 _content = self._combine_columns([_temp_df.loc[each_row_index, '檔次名稱'],
