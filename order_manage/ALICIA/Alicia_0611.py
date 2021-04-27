@@ -1304,8 +1304,9 @@ class ALICIA:
                             _how_many = _temp_df.loc[each_row_index, '數量']
                             # _how_much = _temp_df.loc[each_row_index, '商品成本'].astype(int)
                             _how_much = _temp_df.loc[each_row_index, '成本小計'].astype(int)  # Jerry堅持要以總額來做紀錄  20.09.29
-                            # _remark = _temp_df.loc[each_row_index, '購物車備註']
-                            _remark = ''
+                            _remark = _temp_df.loc[each_row_index, '購物車備註']
+                            print(f"_remark: {_remark}")
+                            # _remark = ''
                             _room_temperature_shipping_id = ''
                             _low_temperature_shipping_id = ''
                             _last_charged_date = ''
