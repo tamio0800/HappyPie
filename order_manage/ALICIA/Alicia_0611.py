@@ -812,10 +812,16 @@ class ALICIA:
                         
                         for each_row_index in range(_temp_df.shape[0]):
                             try:
-                                _txn_id = self.try_to_be_int_in_str(_temp_df.loc[each_row_index, '訂單編號'])
+                                if '訂單編號' in _temp_df.columns:
+                                    _txn_id = self.try_to_be_int_in_str(_temp_df.loc[each_row_index, '訂單編號'])
+                                else:
+                                    _txn_id = self.try_to_be_int_in_str(_temp_df.loc[each_row_index, '商品訂單編號'])
                             except Exception as e:
                                 print(e)
-                                _txn_id = _temp_df.loc[each_row_index, '訂單編號']
+                                if '訂單編號' in _temp_df.columns:
+                                    _txn_id = _temp_df.loc[each_row_index, '訂單編號']
+                                else:
+                                    _txn_id = _temp_df.loc[each_row_index, '商品訂單編號']
                             _customer_name = _temp_df.loc[each_row_index, '備註(購買人資料)'].split('/')[0]
                             _receiver_name = _temp_df.loc[each_row_index, '收件人'].split()[0].strip()
                             _paid_after_receiving = False
@@ -841,9 +847,12 @@ class ALICIA:
                             _vendor = self.who_is_vendor_from_this_product(_content)
                             _how_many = int(_temp_df.loc[each_row_index, '方案*組數'].split('*')[-1])
                             _how_much = None
-                            _remark = self._combine_columns(['配送時段: ' + _temp_df.loc[each_row_index, '配送時段'],
-                                                            _temp_df.loc[each_row_index, '退貨或重複訂單']],
-                                                            ', ')
+                            if '配送時段' in _temp_df.columns:
+                                _remark = self._combine_columns(['配送時段: ' + _temp_df.loc[each_row_index, '配送時段'],
+                                                                _temp_df.loc[each_row_index, '退貨或重複訂單']],
+                                                                ', ')
+                            else:
+                                _remark = self._combine_columns([_temp_df.loc[each_row_index, '退貨或重複訂單']], ', ')
                             _room_temperature_shipping_id = ''
                             _low_temperature_shipping_id = ''
                             _last_charged_date = ''
